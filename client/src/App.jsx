@@ -5,6 +5,7 @@ import {
   Divider,
   Input,
   InputNumber,
+  Popover,
   Select,
   Space,
   Tag,
@@ -79,6 +80,8 @@ function App() {
   const [autoPlayCount, setAutoPlayCount] = useState(1);
   const [prefetching, setPrefetching] = useState(false);
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
+  const [activeWordId, setActiveWordId] = useState(null);
+  const [wordListOpen, setWordListOpen] = useState(false);
   const inputRefs = useRef({});
   const audioCache = useRef({});
 
@@ -86,6 +89,7 @@ function App() {
     () => buildSegments(sceneText, selectedWords),
     [sceneText, selectedWords],
   );
+  const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
 
   useEffect(() => {
     setCandidates(extractCandidates(sceneText));
@@ -95,6 +99,7 @@ function App() {
     setAnswers({});
     setStatuses({});
     inputRefs.current = {};
+    setActiveWordId(null);
   }, [sceneText, selectedWords]);
 
   const onExtract = () => {
@@ -111,6 +116,11 @@ function App() {
 
   const onReset = () => {
     setShowCloze(false);
+    const first = blanks[0];
+    if (first) {
+      setActiveWordId(first.id);
+      triggerAutoPlay(first.value);
+    }
     message.info('已恢复为原文');
   };
 
@@ -161,7 +171,6 @@ function App() {
     const correct = inputVal.localeCompare(item.value, undefined, { sensitivity: 'accent', usage: 'search' }) === 0;
     setStatuses((prev) => ({ ...prev, [item.id]: correct ? 'correct' : 'wrong' }));
     if (correct) {
-      const blanks = segments.filter((seg) => seg.type === 'blank');
       const idx = blanks.findIndex((seg) => seg.id === item.id);
       const next = blanks[idx + 1];
       if (next) {
@@ -184,6 +193,28 @@ function App() {
       }
     } catch (error) {
       console.error('Auto play failed', error);
+    }
+  };
+
+  const moveActive = (delta) => {
+    if (!blanks.length) return;
+    const idx = blanks.findIndex((b) => b.id === activeWordId);
+    const nextIdx = idx === -1 ? 0 : Math.max(0, Math.min(blanks.length - 1, idx + delta));
+    const target = blanks[nextIdx];
+    if (target) {
+      setActiveWordId(target.id);
+      triggerAutoPlay(target.value);
+    }
+  };
+
+  const onKeyNavigate = (e) => {
+    if (showCloze) return;
+    if (['ArrowRight', 'ArrowDown'].includes(e.key)) {
+      e.preventDefault();
+      moveActive(1);
+    } else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) {
+      e.preventDefault();
+      moveActive(-1);
     }
   };
 
@@ -308,7 +339,7 @@ function App() {
           title="挖空听写稿"
           extra={<Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>}
         >
-          <div className="cloze">
+          <div className="cloze" tabIndex={0} onKeyDown={onKeyNavigate}>
             {segments.map((item, idx) => {
               if (item.type === 'text') {
                 return (
@@ -334,15 +365,35 @@ function App() {
                       }}
                     />
                   ) : (
-                    item.value
+                    <span
+                      className={`word-audio ${activeWordId === item.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveWordId(item.id);
+                        triggerAutoPlay(item.value);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
+                          setActiveWordId(item.id);
+                          triggerAutoPlay(item.value);
+                        }
+                      }}
+                    >
+                      {item.value}
+                    </span>
                   )}
-                  <Button
-                    size="small"
-                    type="text"
-                    icon={<QuestionCircleOutlined />}
-                    loading={loadingWord === item.value}
-                    onClick={() => onPlay(item.value)}
-                  />
+                  {showCloze && (
+                    <Popover content={item.value} trigger="click">
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<QuestionCircleOutlined />}
+                        loading={loadingWord === item.value}
+                        onClick={() => onPlay(item.value)}
+                      />
+                    </Popover>
+                  )}
                 </span>
               );
             })}
@@ -350,10 +401,17 @@ function App() {
           <Divider />
           <Space size="small" wrap align="center">
             <Text strong>当前挖空词：</Text>
-            {selectedWords.length ? (
-              selectedWords.map((w) => <Tag key={w}>{w}</Tag>)
-            ) : (
-              <Text type="secondary">暂无，点击上方“智能提取”</Text>
+            <Button type="link" size="small" onClick={() => setWordListOpen((p) => !p)}>
+              {wordListOpen ? '折叠' : '展开'}
+            </Button>
+            {wordListOpen && (
+              <>
+                {selectedWords.length ? (
+                  selectedWords.map((w) => <Tag key={w}>{w}</Tag>)
+                ) : (
+                  <Text type="secondary">暂无，点击上方“智能提取”</Text>
+                )}
+              </>
             )}
           </Space>
         </Card>

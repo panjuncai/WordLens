@@ -113,6 +113,18 @@ body {
   color: var(--accent);
 }
 
+.word-audio {
+  color: var(--accent);
+  cursor: pointer;
+  padding: 0 2px;
+  border-bottom: 1px dashed var(--accent);
+}
+
+.word-audio.active {
+  background: rgba(37, 99, 235, 0.12);
+  border-bottom-color: #1d4ed8;
+}
+
 .blank-input {
   width: 90px;
 }

@@ -83,6 +83,7 @@ app.post('/api/tts', async (req, res) => {
           'X-Microsoft-OutputFormat': 'audio-24khz-48kbitrate-mono-mp3',
         },
         responseType: 'arraybuffer',
+        proxy: false, // avoid local HTTP(S)_PROXY intercepts that can cause ECONNRESET
       },
     );
 

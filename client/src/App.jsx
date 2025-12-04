@@ -533,6 +533,11 @@ function App() {
                   </div>
                 </div>
               );
+              const imagePopoverProps = {
+                content: imageContent,
+                onOpenChange: (open) => open && fetchImages(item.value),
+                trigger: 'click',
+              };
               return (
                 <span key={`b-${idx}`} className="blank">
                   {showCloze ? (
@@ -549,35 +554,39 @@ function App() {
                       }}
                     />
                   ) : (
-                    <span
-                      className={`word-audio ${activeWordId === item.id ? 'active' : ''}`}
-                      onClick={() => {
-                        setActiveWordId(item.id);
-                        triggerAutoPlay(item.value);
-                      }}
-                      role="button"
-                      tabIndex={0}
-                      onKeyDown={(e) => {
-                        if (e.key === 'Enter' || e.key === ' ') {
+                    <Popover {...imagePopoverProps}>
+                      <span
+                        className={`word-audio ${activeWordId === item.id ? 'active' : ''}`}
+                        onClick={() => {
                           setActiveWordId(item.id);
                           triggerAutoPlay(item.value);
-                        }
-                      }}
-                    >
-                      {item.value}
-                    </span>
+                        }}
+                        role="button"
+                        tabIndex={0}
+                        onKeyDown={(e) => {
+                          if (e.key === 'Enter' || e.key === ' ') {
+                            setActiveWordId(item.id);
+                            triggerAutoPlay(item.value);
+                          }
+                        }}
+                      >
+                        {item.value}
+                      </span>
+                    </Popover>
                   )}
-                  <Popover
-                    trigger="hover"
-                    content={imageContent}
-                    onOpenChange={(open) => open && fetchImages(item.value)}
-                  >
-                    <Button
-                      size="small"
-                      type="text"
-                      icon={<PictureOutlined />}
-                    />
-                  </Popover>
+                  {showCloze && (
+                    <Popover
+                      trigger="hover"
+                      content={imageContent}
+                      onOpenChange={(open) => open && fetchImages(item.value)}
+                    >
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<PictureOutlined />}
+                      />
+                    </Popover>
+                  )}
                   {showCloze && (
                     <Popover content={item.value} trigger="click">
                       <Button

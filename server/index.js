@@ -21,9 +21,10 @@ app.get('/api/health', (_req, res) => {
 
 app.get('/api/images', async (req, res) => {
   const word = (req.query.word || '').trim();
+  const offset = Number(req.query.offset || 0);
   if (!word) return res.status(400).json({ error: 'Missing word' });
   try {
-    const url = `https://www.bing.com/images/search?q=${encodeURIComponent(word)}`;
+    const url = `https://www.bing.com/images/search?q=${encodeURIComponent(word)}&first=${offset + 1}&count=5`;
     const response = await axios.get(url, {
       headers: {
         'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119 Safari/537.36',

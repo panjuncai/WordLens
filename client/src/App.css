@@ -152,6 +152,17 @@ body {
   object-fit: cover;
   border-radius: 6px;
   border: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+  transition: transform 120ms;
+}
+
+.image-thumb:hover {
+  transform: scale(1.03);
+}
+
+.image-actions {
+  grid-column: 1 / -1;
+  text-align: right;
 }
 
 .ant-input,

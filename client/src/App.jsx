@@ -11,9 +11,10 @@ import {
   Tag,
   Tooltip,
   Typography,
+  Modal,
   message,
 } from 'antd';
-import { PictureOutlined, QuestionCircleOutlined, UndoOutlined } from '@ant-design/icons';
+import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import './App.css';
 
@@ -126,6 +127,7 @@ function App() {
   const inputRefs = useRef({});
   const audioCache = useRef({});
   const [imageMap, setImageMap] = useState({});
+  const [previewSrc, setPreviewSrc] = useState('');
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -308,15 +310,24 @@ function App() {
     }
   };
 
-  const fetchImages = async (word) => {
+  const fetchImages = async (word, refresh = false) => {
     const key = word.toLowerCase();
-    if (imageMap[key]?.loading || imageMap[key]?.urls) return;
-    setImageMap((prev) => ({ ...prev, [key]: { ...prev[key], loading: true, error: null } }));
+    const current = imageMap[key] || {};
+    if (current.loading) return;
+    const nextPage = refresh ? (current.page || 0) + 1 : current.page || 0;
+    if (!refresh && current.urls) return;
+    setImageMap((prev) => ({
+      ...prev,
+      [key]: { ...prev[key], loading: true, error: null, page: nextPage },
+    }));
     try {
-      const { data } = await axios.get(`${API_BASE}/api/images`, { params: { word } });
-      setImageMap((prev) => ({ ...prev, [key]: { urls: data?.urls || [], loading: false, error: null } }));
+      const { data } = await axios.get(`${API_BASE}/api/images`, { params: { word, offset: nextPage * 5 } });
+      setImageMap((prev) => ({
+        ...prev,
+        [key]: { urls: data?.urls || [], loading: false, error: null, page: nextPage },
+      }));
     } catch (error) {
-      setImageMap((prev) => ({ ...prev, [key]: { urls: [], loading: false, error: '获取图片失败' } }));
+      setImageMap((prev) => ({ ...prev, [key]: { urls: [], loading: false, error: '获取图片失败', page: nextPage } }));
     }
   };
 
@@ -383,7 +394,7 @@ function App() {
             </Tooltip>
           </Space>
           <Tooltip title={infoContent} overlayClassName="info-overlay">
-            <Button shape="circle" type="text" icon={<QuestionCircleOutlined />} />
+            <Button shape="circle" type="text" icon={<SoundOutlined />} />
           </Tooltip>
         </div>
       </Card>
@@ -426,17 +437,39 @@ function App() {
                 );
               }
               const status = statuses[item.id];
+              const entry = imageMap[item.value.toLowerCase()];
               const imageContent = (
                 <div className="image-grid">
-                  {(() => {
-                    const entry = imageMap[item.value.toLowerCase()];
-                    if (entry?.loading) return <Text type="secondary">加载中...</Text>;
-                    if (entry?.error) return <Text type="danger">{entry.error}</Text>;
-                    if (!entry?.urls?.length) return <Text type="secondary">暂无图片</Text>;
-                    return entry.urls.map((src, i) => (
-                      <img key={src || i} src={src} alt={item.value} className="image-thumb" />
-                    ));
-                  })()}
+                  {entry?.loading && <Text type="secondary">加载中...</Text>}
+                  {!entry?.loading && entry?.error && <Text type="danger">{entry.error}</Text>}
+                  {!entry?.loading && !entry?.error && !entry?.urls?.length && <Text type="secondary">暂无图片</Text>}
+                  {!entry?.loading && entry?.urls?.length > 0 && (
+                    <>
+                      {entry.urls.map((src, i) => (
+                        <img
+                          key={src || i}
+                          src={src}
+                          alt={item.value}
+                          className="image-thumb"
+                          onClick={() => setPreviewSrc(src)}
+                        />
+                      ))}
+                    </>
+                  )}
+                  <div className="image-actions">
+                    <Button
+                      size="small"
+                      type="link"
+                      icon={<ReloadOutlined />}
+                      onClick={(e) => {
+                        e.preventDefault();
+                        e.stopPropagation();
+                        fetchImages(item.value, true);
+                      }}
+                    >
+                      换一组
+                    </Button>
+                  </div>
                 </div>
               );
               return (
@@ -489,7 +522,7 @@ function App() {
                       <Button
                         size="small"
                         type="text"
-                        icon={<QuestionCircleOutlined />}
+                        icon={<SoundOutlined />}
                         loading={loadingWord === item.value}
                         onClick={() => onPlay(item.value)}
                       />
@@ -517,6 +550,17 @@ function App() {
           </Space>
         </Card>
       </div>
+
+      <Modal
+        open={!!previewSrc}
+        footer={null}
+        onCancel={() => setPreviewSrc('')}
+        centered
+        width={720}
+        styles={{ body: { textAlign: 'center' } }}
+      >
+        <img src={previewSrc} alt="预览" style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
+      </Modal>
 
     </div>
   );

@@ -559,6 +559,18 @@ function App() {
                     setPreviewSrc(carouselState.urls[carouselState.index]);
                   }}
                 />
+                <Button
+                  size="small"
+                  type="text"
+                  icon={<ReloadOutlined />}
+                  className="carousel-refresh"
+                  onClick={(e) => {
+                    e.stopPropagation();
+                    fetchImages(carouselState.word, true);
+                  }}
+                >
+                  换一组
+                </Button>
                 <div className="carousel-dots">
                   {carouselState.urls.map((_, i) => (
                     <span

@@ -263,3 +263,13 @@ body {
 .carousel-arrow.right {
   right: 10px;
 }
+
+.carousel-refresh {
+  position: absolute;
+  bottom: -2px;
+  right: 6px;
+  background: rgba(255, 255, 255, 0.9);
+  border-radius: 8px;
+  border: 1px solid rgba(0, 0, 0, 0.06);
+  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
+}

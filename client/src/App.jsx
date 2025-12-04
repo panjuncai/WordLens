@@ -148,6 +148,7 @@ function App() {
   const carouselRef = useRef(null);
   const wordRefs = useRef({});
   const autoPlayTimer = useRef(null);
+  const [revealedIds, setRevealedIds] = useState(new Set());
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -169,6 +170,7 @@ function App() {
     setPreviewList([]);
     setPreviewIndex(0);
     setOpenImageWordId(null);
+    setRevealedIds(new Set());
     setCarouselState((prev) => ({ ...prev, visible: false, word: '', urls: [], loading: false }));
   }, [sceneText, selectedWords]);
 
@@ -224,6 +226,12 @@ function App() {
       }
     };
   }, [activeWordId, autoPlayEnabled, autoPlayDelay, showCloze, blanks, clampedCount]);
+
+  useEffect(() => {
+    if (!blurWords) {
+      setRevealedIds(new Set());
+    }
+  }, [blurWords]);
 
   useEffect(() => {
     if (!carouselState.visible || carouselState.urls.length <= 1) return undefined;
@@ -814,13 +822,24 @@ function App() {
                     />
                   ) : (
                     <span
-                      className={`word-audio ${activeWordId === item.id ? 'active' : ''} ${blurWords ? 'blurred' : ''}`}
+                      className={`word-audio ${activeWordId === item.id ? 'active' : ''} ${blurWords && !revealedIds.has(item.id) ? 'blurred' : ''}`}
                       onClick={() => {
                         setActiveWordId(item.id);
                         if (!autoPlayEnabled) {
                           triggerAutoPlay(item.value);
                         }
                         openImagesForWord(item.value, item.id);
+                        if (blurWords) {
+                          setRevealedIds((prev) => {
+                            const next = new Set(prev);
+                            if (next.has(item.id)) {
+                              next.delete(item.id);
+                            } else {
+                              next.add(item.id);
+                            }
+                            return next;
+                          });
+                        }
                       }}
                       role="button"
                       tabIndex={0}
@@ -838,6 +857,17 @@ function App() {
                             triggerAutoPlay(item.value);
                           }
                           openImagesForWord(item.value, item.id);
+                          if (blurWords) {
+                            setRevealedIds((prev) => {
+                              const next = new Set(prev);
+                              if (next.has(item.id)) {
+                                next.delete(item.id);
+                              } else {
+                                next.add(item.id);
+                              }
+                              return next;
+                            });
+                          }
                         }
                       }}
                     >

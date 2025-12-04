@@ -117,12 +117,15 @@ body {
   color: var(--accent);
   cursor: pointer;
   padding: 0 2px;
-  border-bottom: 1px dashed var(--accent);
+  border-radius: 6px;
+  transition: box-shadow 120ms, background 120ms, outline 120ms;
 }
 
 .word-audio.active {
-  background: rgba(37, 99, 235, 0.12);
-  border-bottom-color: #1d4ed8;
+  background: rgba(249, 115, 22, 0.15);
+  outline: 2px solid #f97316;
+  outline-offset: 2px;
+  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
 }
 
 .word-audio.blurred {

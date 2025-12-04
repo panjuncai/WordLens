@@ -133,6 +133,23 @@ body {
   user-select: none;
 }
 
+.markdown-text {
+  display: inline;
+}
+
+.markdown-text .md-list {
+  display: inline-block;
+  padding-left: 18px;
+  margin: 2px 6px;
+}
+
+.markdown-text .md-inline-code {
+  background: rgba(15, 23, 42, 0.08);
+  border-radius: 4px;
+  padding: 1px 4px;
+  font-size: 90%;
+}
+
 .blank-input {
   width: 90px;
 }

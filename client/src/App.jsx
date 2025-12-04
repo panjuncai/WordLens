@@ -16,6 +16,7 @@ import {
 } from 'antd';
 import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined, CloseOutlined } from '@ant-design/icons';
 import axios from 'axios';
+import ReactMarkdown from 'react-markdown';
 import './App.css';
 
 const { Text } = Typography;
@@ -243,6 +244,32 @@ function App() {
     }, 2500);
     return () => clearInterval(timer);
   }, [carouselState.visible, carouselState.urls]);
+
+  const markdownComponents = {
+    p: ({ children, ...props }) => <span {...props}>{children}</span>,
+    strong: ({ children, ...props }) => <strong {...props}>{children}</strong>,
+    em: ({ children, ...props }) => <em {...props}>{children}</em>,
+    code: ({ children, ...props }) => <code className="md-inline-code" {...props}>{children}</code>,
+    a: ({ children, href, ...props }) => (
+      <a href={href} target="_blank" rel="noreferrer" {...props}>
+        {children}
+      </a>
+    ),
+    ul: ({ children, ...props }) => <ul className="md-list" {...props}>{children}</ul>,
+    ol: ({ children, ...props }) => <ol className="md-list" {...props}>{children}</ol>,
+    li: ({ children, ...props }) => <li {...props}>{children}</li>,
+    br: () => <br />,
+  };
+
+  const renderMarkdown = (value) => (
+    <span className="markdown-text">
+      <ReactMarkdown
+        components={markdownComponents}
+      >
+        {value || ''}
+      </ReactMarkdown>
+    </span>
+  );
 
   const onExtract = () => {
     const words = extractCandidates(sceneText);
@@ -756,9 +783,9 @@ function App() {
             {segments.map((item, idx) => {
               if (item.type === 'text') {
                 return (
-                  <Text key={`t-${idx}`} className="cloze-text">
-                    {item.value}
-                  </Text>
+                  <span key={`t-${idx}`} className="cloze-text">
+                    {renderMarkdown(item.value)}
+                  </span>
                 );
               }
               const status = statuses[item.id];

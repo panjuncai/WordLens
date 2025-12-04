@@ -9,12 +9,13 @@ import {
   Select,
   Space,
   Tag,
+  Switch,
   Tooltip,
   Typography,
   Modal,
   message,
 } from 'antd';
-import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined } from '@ant-design/icons';
+import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined, CloseOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import './App.css';
 
@@ -132,6 +133,16 @@ function App() {
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [openImageWordId, setOpenImageWordId] = useState(null);
+  const [carouselState, setCarouselState] = useState({
+    word: '',
+    urls: [],
+    index: 0,
+    visible: false,
+    loading: false,
+  });
+  const [autoCarousel, setAutoCarousel] = useState(false);
+  const carouselRef = useRef(null);
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -150,7 +161,33 @@ function App() {
     setActiveWordId(null);
     setPreviewList([]);
     setPreviewIndex(0);
+    setOpenImageWordId(null);
+    setCarouselState((prev) => ({ ...prev, visible: false, word: '', urls: [], loading: false }));
   }, [sceneText, selectedWords]);
+
+  useEffect(() => {
+    if (showCloze) {
+      setOpenImageWordId(null);
+      setCarouselState((prev) => ({ ...prev, visible: false }));
+    }
+  }, [showCloze]);
+
+  useEffect(() => {
+    if (!autoCarousel) {
+      setCarouselState((prev) => ({ ...prev, visible: false }));
+    }
+  }, [autoCarousel]);
+
+  useEffect(() => {
+    if (!carouselState.visible || carouselState.urls.length <= 1) return undefined;
+    const timer = setInterval(() => {
+      setCarouselState((prev) => ({
+        ...prev,
+        index: prev.urls.length ? (prev.index + 1) % prev.urls.length : 0,
+      }));
+    }, 2500);
+    return () => clearInterval(timer);
+  }, [carouselState.visible, carouselState.urls]);
 
   const onExtract = () => {
     const words = extractCandidates(sceneText);
@@ -267,6 +304,9 @@ function App() {
     if (target) {
       setActiveWordId(target.id);
       triggerAutoPlay(target.value);
+      if (!showCloze) {
+        openImagesForWord(target.value, target.id);
+      }
     }
   };
 
@@ -316,22 +356,100 @@ function App() {
     }
   };
 
+  const preloadImages = (urls = []) => Promise.all(
+    (urls || []).map(
+      (src) => new Promise((resolve) => {
+        const img = new Image();
+        img.onload = img.onerror = () => resolve();
+        img.src = src;
+      }),
+    ),
+  );
+
+  const openImagesForWord = (word, id = null) => {
+    if (showCloze) return;
+    const key = word.toLowerCase();
+    const entry = imageMap[key];
+    setOpenImageWordId(id);
+    setCarouselState({
+      word,
+      urls: entry?.urls || [],
+      index: 0,
+      visible: autoCarousel,
+      loading: !entry?.urls?.length,
+    });
+    fetchImages(word);
+  };
+
+  const nextSlide = () => {
+    setCarouselState((prev) => {
+      if (!prev.urls.length) return prev;
+      return { ...prev, index: (prev.index + 1) % prev.urls.length };
+    });
+  };
+
+  const prevSlide = () => {
+    setCarouselState((prev) => {
+      if (!prev.urls.length) return prev;
+      return { ...prev, index: (prev.index - 1 + prev.urls.length) % prev.urls.length };
+    });
+  };
+
+  const handleCarouselWheel = (e) => {
+    if (!carouselState.visible) return;
+    const delta = Math.abs(e.deltaX) > Math.abs(e.deltaY) ? e.deltaX : e.deltaY;
+    if (delta > 0) {
+      nextSlide();
+    } else if (delta < 0) {
+      prevSlide();
+    }
+  };
+
   const fetchImages = async (word, refresh = false) => {
     const key = word.toLowerCase();
     const current = imageMap[key] || {};
     if (current.loading) return;
     const nextPage = refresh ? (current.page || 0) + 1 : current.page || 0;
-    if (!refresh && current.urls) return;
+    if (!refresh && current.urls) {
+      preloadImages(current.urls);
+      setCarouselState((prev) => {
+        if (prev.word.toLowerCase() === key) {
+          return {
+            ...prev,
+            urls: current.urls,
+            index: 0,
+            loading: false,
+            visible: autoCarousel,
+          };
+        }
+        return prev;
+      });
+      return;
+    }
     setImageMap((prev) => ({
       ...prev,
       [key]: { ...prev[key], loading: true, error: null, page: nextPage },
     }));
     try {
       const { data } = await axios.get(`${API_BASE}/api/images`, { params: { word, offset: nextPage * 5 } });
+      const urls = data?.urls || [];
       setImageMap((prev) => ({
         ...prev,
-        [key]: { urls: data?.urls || [], loading: false, error: null, page: nextPage },
+        [key]: { urls, loading: false, error: null, page: nextPage },
       }));
+      preloadImages(urls);
+      setCarouselState((prev) => {
+        if (prev.word.toLowerCase() === key) {
+          return {
+            ...prev,
+            urls,
+            loading: false,
+            index: 0,
+            visible: autoCarousel,
+          };
+        }
+        return prev;
+      });
     } catch (error) {
       setImageMap((prev) => ({ ...prev, [key]: { urls: [], loading: false, error: '获取图片失败', page: nextPage } }));
     }
@@ -394,6 +512,66 @@ function App() {
 
   return (
     <div className="page">
+      {autoCarousel && carouselState.visible && (
+        <div
+          className="carousel-overlay"
+          onWheel={handleCarouselWheel}
+          ref={carouselRef}
+        >
+          <Button
+            size="small"
+            type="text"
+            icon={<CloseOutlined />}
+            className="carousel-close"
+            onClick={() => setCarouselState((prev) => ({ ...prev, visible: false }))}
+          />
+          <div className="carousel-slide">
+            {carouselState.loading && <Text type="secondary">图片加载中...</Text>}
+            {!carouselState.loading && carouselState.urls.length === 0 && (
+              <Text type="secondary">暂无图片</Text>
+            )}
+            {!carouselState.loading && carouselState.urls.length > 0 && (
+              <>
+                <Button
+                  className="carousel-arrow left"
+                  shape="circle"
+                  size="small"
+                  type="text"
+                  onClick={prevSlide}
+                >
+                  ‹
+                </Button>
+                <Button
+                  className="carousel-arrow right"
+                  shape="circle"
+                  size="small"
+                  type="text"
+                  onClick={nextSlide}
+                >
+                  ›
+                </Button>
+                <img
+                  src={carouselState.urls[carouselState.index]}
+                  alt={carouselState.word}
+                  onClick={() => {
+                    setPreviewList(carouselState.urls);
+                    setPreviewIndex(carouselState.index);
+                    setPreviewSrc(carouselState.urls[carouselState.index]);
+                  }}
+                />
+                <div className="carousel-dots">
+                  {carouselState.urls.map((_, i) => (
+                    <span
+                      key={`${carouselState.word}-${i}`}
+                      className={`carousel-dot ${i === carouselState.index ? 'active' : ''}`}
+                    />
+                  ))}
+                </div>
+              </>
+            )}
+          </div>
+        </div>
+      )}
       <Card className="hero">
         <div className="hero-header">
           <Space size="middle" wrap className="hero-actions">
@@ -431,6 +609,14 @@ function App() {
               >
                 拉取图片
               </Button>
+              <Space size="small" align="center">
+                <Text type="secondary">自动轮播</Text>
+                <Switch
+                  size="small"
+                  checked={autoCarousel}
+                  onChange={(v) => setAutoCarousel(v)}
+                />
+              </Space>
               {imagePrefetching && (
                 <Text type="secondary">
                   {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
@@ -533,11 +719,6 @@ function App() {
                   </div>
                 </div>
               );
-              const imagePopoverProps = {
-                content: imageContent,
-                onOpenChange: (open) => open && fetchImages(item.value),
-                trigger: 'click',
-              };
               return (
                 <span key={`b-${idx}`} className="blank">
                   {showCloze ? (
@@ -554,25 +735,25 @@ function App() {
                       }}
                     />
                   ) : (
-                    <Popover {...imagePopoverProps}>
-                      <span
-                        className={`word-audio ${activeWordId === item.id ? 'active' : ''}`}
-                        onClick={() => {
+                    <span
+                      className={`word-audio ${activeWordId === item.id ? 'active' : ''}`}
+                      onClick={() => {
+                        setActiveWordId(item.id);
+                        triggerAutoPlay(item.value);
+                        openImagesForWord(item.value, item.id);
+                      }}
+                      role="button"
+                      tabIndex={0}
+                      onKeyDown={(e) => {
+                        if (e.key === 'Enter' || e.key === ' ') {
                           setActiveWordId(item.id);
                           triggerAutoPlay(item.value);
-                        }}
-                        role="button"
-                        tabIndex={0}
-                        onKeyDown={(e) => {
-                          if (e.key === 'Enter' || e.key === ' ') {
-                            setActiveWordId(item.id);
-                            triggerAutoPlay(item.value);
-                          }
-                        }}
-                      >
-                        {item.value}
-                      </span>
-                    </Popover>
+                          openImagesForWord(item.value, item.id);
+                        }
+                      }}
+                    >
+                      {item.value}
+                    </span>
                   )}
                   {showCloze && (
                     <Popover

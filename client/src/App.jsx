@@ -143,14 +143,18 @@ function App() {
   const [autoCarousel, setAutoCarousel] = useState(false);
   const [blurWords, setBlurWords] = useState(false);
   const [accentCheck, setAccentCheck] = useState(false);
+  const [autoPlayEnabled, setAutoPlayEnabled] = useState(false);
+  const [autoPlayDelay, setAutoPlayDelay] = useState(1);
   const carouselRef = useRef(null);
   const wordRefs = useRef({});
+  const autoPlayTimer = useRef(null);
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
     [sceneText, selectedWords],
   );
   const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
+  const clampedCount = Math.min(20, Math.max(0, autoPlayCount || 0));
 
   useEffect(() => {
     setCandidates(extractCandidates(sceneText));
@@ -182,6 +186,46 @@ function App() {
   }, [autoCarousel]);
 
   useEffect(() => {
+    return () => {
+      if (autoPlayTimer.current) {
+        clearTimeout(autoPlayTimer.current);
+        autoPlayTimer.current = null;
+      }
+    };
+  }, []);
+
+  useEffect(() => {
+    if (autoPlayTimer.current) {
+      clearTimeout(autoPlayTimer.current);
+      autoPlayTimer.current = null;
+    }
+    if (!autoPlayEnabled || showCloze || !blanks.length || !clampedCount) return;
+    const current = blanks.find((b) => b.id === activeWordId) || blanks[0];
+    if (!current) return;
+    let cancelled = false;
+    const run = async () => {
+      try {
+        await triggerAutoPlay(current.value);
+      } catch (err) {
+        // ignore
+      } finally {
+        if (cancelled) return;
+        autoPlayTimer.current = setTimeout(() => {
+          moveActive(1);
+        }, Math.min(60, Math.max(1, autoPlayDelay)) * 1000);
+      }
+    };
+    run();
+    return () => {
+      cancelled = true;
+      if (autoPlayTimer.current) {
+        clearTimeout(autoPlayTimer.current);
+        autoPlayTimer.current = null;
+      }
+    };
+  }, [activeWordId, autoPlayEnabled, autoPlayDelay, showCloze, blanks, clampedCount]);
+
+  useEffect(() => {
     if (!carouselState.visible || carouselState.urls.length <= 1) return undefined;
     const timer = setInterval(() => {
       setCarouselState((prev) => ({
@@ -209,7 +253,9 @@ function App() {
     const first = blanks[0];
     if (first) {
       setActiveWordId(first.id);
-      triggerAutoPlay(first.value);
+      if (!autoPlayEnabled) {
+        triggerAutoPlay(first.value);
+      }
     }
     message.info('已恢复为原文');
   };
@@ -288,8 +334,6 @@ function App() {
     }
   };
 
-  const clampedCount = Math.min(20, Math.max(0, autoPlayCount || 0));
-
   const triggerAutoPlay = async (word) => {
     if (!clampedCount) return;
     try {
@@ -310,7 +354,9 @@ function App() {
     const target = blanks[nextIdx];
     if (target) {
       setActiveWordId(target.id);
-      triggerAutoPlay(target.value);
+      if (!autoPlayEnabled) {
+        triggerAutoPlay(target.value);
+      }
       if (!showCloze) {
         openImagesForWord(target.value, target.id);
       }
@@ -337,7 +383,9 @@ function App() {
       const current = blanks.find((b) => b.id === activeWordId) || blanks[0];
       if (current) {
         setActiveWordId(current.id);
-        triggerAutoPlay(current.value);
+        if (!autoPlayEnabled) {
+          triggerAutoPlay(current.value);
+        }
       }
     }
   };
@@ -640,11 +688,29 @@ function App() {
                   onChange={(v) => setAccentCheck(v)}
                 />
               </Space>
-            {imagePrefetching && (
-              <Text type="secondary">
-                {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
-              </Text>
-            )}
+              <Space size="small" align="center">
+                <Text type="secondary">自动播放</Text>
+                <Switch
+                  size="small"
+                  checked={autoPlayEnabled}
+                  onChange={(v) => setAutoPlayEnabled(v)}
+                />
+                <InputNumber
+                  size="small"
+                  min={1}
+                  max={60}
+                  value={autoPlayDelay}
+                  onChange={(v) => setAutoPlayDelay(Math.min(60, Math.max(1, v || 1)))}
+                  disabled={!autoPlayEnabled}
+                  style={{ width: 80 }}
+                />
+                <Text type="secondary">秒</Text>
+              </Space>
+              {imagePrefetching && (
+                <Text type="secondary">
+                  {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
+                </Text>
+              )}
           </div>
         </Space>
       </div>
@@ -737,7 +803,11 @@ function App() {
                       value={answers[item.id] || ''}
                       onChange={(e) => handleChange(item.id, e.target.value)}
                       onKeyDown={(e) => handleKeyDown(e, item)}
-                      onFocus={() => triggerAutoPlay(item.value)}
+                      onFocus={() => {
+                        if (!autoPlayEnabled) {
+                          triggerAutoPlay(item.value);
+                        }
+                      }}
                       ref={(el) => {
                         if (el) inputRefs.current[item.id] = el;
                       }}
@@ -747,7 +817,9 @@ function App() {
                       className={`word-audio ${activeWordId === item.id ? 'active' : ''} ${blurWords ? 'blurred' : ''}`}
                       onClick={() => {
                         setActiveWordId(item.id);
-                        triggerAutoPlay(item.value);
+                        if (!autoPlayEnabled) {
+                          triggerAutoPlay(item.value);
+                        }
                         openImagesForWord(item.value, item.id);
                       }}
                       role="button"
@@ -762,7 +834,9 @@ function App() {
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           setActiveWordId(item.id);
-                          triggerAutoPlay(item.value);
+                          if (!autoPlayEnabled) {
+                            triggerAutoPlay(item.value);
+                          }
                           openImagesForWord(item.value, item.id);
                         }
                       }}

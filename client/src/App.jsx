@@ -49,6 +49,12 @@ const articleSet = new Set([
   'd’',
   'au',
   'aux',
+  "qu'",
+  'qu’',
+  "c'",
+  'c’',
+  "s'",
+  's’',
 ]);
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');

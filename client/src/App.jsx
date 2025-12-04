@@ -122,6 +122,8 @@ function App() {
   const [autoPlayCount, setAutoPlayCount] = useState(1);
   const [prefetching, setPrefetching] = useState(false);
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
+  const [imagePrefetching, setImagePrefetching] = useState(false);
+  const [imagePrefetchProgress, setImagePrefetchProgress] = useState({ done: 0, total: 0 });
   const [activeWordId, setActiveWordId] = useState(null);
   const [wordListOpen, setWordListOpen] = useState(false);
   const inputRefs = useRef({});
@@ -335,6 +337,29 @@ function App() {
     }
   };
 
+  const prefetchImages = async () => {
+    const words = Array.from(new Set(selectedWords));
+    if (!words.length) {
+      message.info('暂无可缓存的图片词汇');
+      return;
+    }
+    setImagePrefetching(true);
+    setImagePrefetchProgress({ done: 0, total: words.length });
+    try {
+      for (let i = 0; i < words.length; i += 1) {
+        const w = words[i];
+        // eslint-disable-next-line no-await-in-loop
+        await fetchImages(w);
+        setImagePrefetchProgress({ done: i + 1, total: words.length });
+      }
+      message.success('图片缓存完成');
+    } catch (error) {
+      message.error('图片缓存失败');
+    } finally {
+      setImagePrefetching(false);
+    }
+  };
+
   useEffect(() => {
     if (!previewSrc) return undefined;
     const handleKey = (e) => {
@@ -397,6 +422,18 @@ function App() {
               {prefetching && (
                 <Text type="secondary">
                   {prefetchProgress.done}/{prefetchProgress.total}
+                </Text>
+              )}
+              <Button
+                size="small"
+                onClick={prefetchImages}
+                loading={imagePrefetching}
+              >
+                拉取图片
+              </Button>
+              {imagePrefetching && (
+                <Text type="secondary">
+                  {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
                 </Text>
               )}
             </div>

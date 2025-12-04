@@ -215,6 +215,13 @@ function App() {
     } else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) {
       e.preventDefault();
       moveActive(-1);
+    } else if (e.key === 'Enter') {
+      e.preventDefault();
+      const current = blanks.find((b) => b.id === activeWordId) || blanks[0];
+      if (current) {
+        setActiveWordId(current.id);
+        triggerAutoPlay(current.value);
+      }
     }
   };
 

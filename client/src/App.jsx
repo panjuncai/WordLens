@@ -34,22 +34,57 @@ const SAMPLE_SCENE = `## 我的法语微电影：职场、生活与旅行
 const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 const wordPattern = /[A-Za-zÀ-ÖØ-öø-ÿ'’\-]+/g;
+const articleSet = new Set([
+  'un',
+  'une',
+  'des',
+  'du',
+  'de',
+  'le',
+  'la',
+  'les',
+  "l'",
+  'l’',
+  "d'",
+  'd’',
+  'au',
+  'aux',
+]);
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 function extractCandidates(text) {
-  const matches = text.match(wordPattern) || [];
+  const matches = [...(text.matchAll(wordPattern) || [])];
+  const tokens = matches.map((m) => m[0]);
   const seen = new Set();
-  const candidates = [];
-  matches.forEach((raw) => {
-    const cleaned = raw.replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ]+|[^A-Za-zÀ-ÖØ-öø-ÿ]+$/g, '');
+  const combos = [];
+
+  for (let i = 0; i < tokens.length - 1; i += 1) {
+    const cur = tokens[i];
+    const next = tokens[i + 1];
+    if (!cur || !next) continue;
+    const lowerCur = cur.toLowerCase();
+    if (articleSet.has(lowerCur)) {
+      const combo = `${cur} ${next}`;
+      const key = combo.toLowerCase();
+      if (!seen.has(key)) {
+        combos.push(combo);
+        seen.add(key);
+      }
+    }
+  }
+
+  const singles = [];
+  tokens.forEach((word) => {
+    const cleaned = word.replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ]+|[^A-Za-zÀ-ÖØ-öø-ÿ]+$/g, '');
     if (!cleaned || cleaned.length < 2) return;
-    const lower = cleaned.toLowerCase();
-    if (seen.has(lower)) return;
-    seen.add(lower);
-    candidates.push(cleaned);
+    const key = cleaned.toLowerCase();
+    if (seen.has(key)) return;
+    seen.add(key);
+    singles.push(cleaned);
   });
-  return candidates;
+
+  return [...combos, ...singles];
 }
 
 function buildSegments(text, targets) {

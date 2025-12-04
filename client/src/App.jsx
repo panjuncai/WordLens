@@ -200,8 +200,7 @@ function App() {
     setStatuses((prev) => ({ ...prev, [id]: undefined }));
   };
 
-  const handleEnter = (e, item) => {
-    if (e.key !== 'Enter') return;
+  const handleEnter = (item) => {
     const inputVal = (answers[item.id] || '').trim();
     const correct = inputVal.localeCompare(item.value, undefined, { sensitivity: 'accent', usage: 'search' }) === 0;
     setStatuses((prev) => ({ ...prev, [item.id]: correct ? 'correct' : 'wrong' }));
@@ -213,6 +212,20 @@ function App() {
       }
     } else {
       setTimeout(() => inputRefs.current[item.id]?.focus(), 10);
+    }
+  };
+
+  const handleKeyDown = (e, item) => {
+    if (e.key === 'Enter') {
+      e.preventDefault();
+      handleEnter(item);
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      const idx = blanks.findIndex((seg) => seg.id === item.id);
+      const next = blanks[idx + (e.shiftKey ? -1 : 1)];
+      if (next) {
+        setTimeout(() => inputRefs.current[next.id]?.focus(), 10);
+      }
     }
   };
 
@@ -250,6 +263,9 @@ function App() {
     } else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) {
       e.preventDefault();
       moveActive(-1);
+    } else if (e.key === 'Tab') {
+      e.preventDefault();
+      moveActive(e.shiftKey ? -1 : 1);
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const current = blanks.find((b) => b.id === activeWordId) || blanks[0];
@@ -400,7 +416,7 @@ function App() {
                       placeholder="____"
                       value={answers[item.id] || ''}
                       onChange={(e) => handleChange(item.id, e.target.value)}
-                      onKeyDown={(e) => handleEnter(e, item)}
+                      onKeyDown={(e) => handleKeyDown(e, item)}
                       onFocus={() => triggerAutoPlay(item.value)}
                       ref={(el) => {
                         if (el) inputRefs.current[item.id] = el;

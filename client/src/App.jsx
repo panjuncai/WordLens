@@ -13,7 +13,7 @@ import {
   Typography,
   message,
 } from 'antd';
-import { QuestionCircleOutlined, UndoOutlined } from '@ant-design/icons';
+import { PictureOutlined, QuestionCircleOutlined, UndoOutlined } from '@ant-design/icons';
 import axios from 'axios';
 import './App.css';
 
@@ -125,6 +125,7 @@ function App() {
   const [wordListOpen, setWordListOpen] = useState(false);
   const inputRefs = useRef({});
   const audioCache = useRef({});
+  const [imageMap, setImageMap] = useState({});
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -307,6 +308,18 @@ function App() {
     }
   };
 
+  const fetchImages = async (word) => {
+    const key = word.toLowerCase();
+    if (imageMap[key]?.loading || imageMap[key]?.urls) return;
+    setImageMap((prev) => ({ ...prev, [key]: { ...prev[key], loading: true, error: null } }));
+    try {
+      const { data } = await axios.get(`${API_BASE}/api/images`, { params: { word } });
+      setImageMap((prev) => ({ ...prev, [key]: { urls: data?.urls || [], loading: false, error: null } }));
+    } catch (error) {
+      setImageMap((prev) => ({ ...prev, [key]: { urls: [], loading: false, error: '获取图片失败' } }));
+    }
+  };
+
   const infoContent = (
     <div className="info-tip">
       <Text strong>使用步骤</Text>
@@ -413,6 +426,19 @@ function App() {
                 );
               }
               const status = statuses[item.id];
+              const imageContent = (
+                <div className="image-grid">
+                  {(() => {
+                    const entry = imageMap[item.value.toLowerCase()];
+                    if (entry?.loading) return <Text type="secondary">加载中...</Text>;
+                    if (entry?.error) return <Text type="danger">{entry.error}</Text>;
+                    if (!entry?.urls?.length) return <Text type="secondary">暂无图片</Text>;
+                    return entry.urls.map((src, i) => (
+                      <img key={src || i} src={src} alt={item.value} className="image-thumb" />
+                    ));
+                  })()}
+                </div>
+              );
               return (
                 <span key={`b-${idx}`} className="blank">
                   {showCloze ? (
@@ -447,6 +473,17 @@ function App() {
                       {item.value}
                     </span>
                   )}
+                  <Popover
+                    trigger="hover"
+                    content={imageContent}
+                    onOpenChange={(open) => open && fetchImages(item.value)}
+                  >
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={<PictureOutlined />}
+                    />
+                  </Popover>
                   {showCloze && (
                     <Popover content={item.value} trigger="click">
                       <Button

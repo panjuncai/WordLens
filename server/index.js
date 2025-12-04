@@ -2,6 +2,7 @@ const path = require('path');
 const express = require('express');
 const cors = require('cors');
 const axios = require('axios');
+const cheerio = require('cheerio');
 const dotenv = require('dotenv');
 
 dotenv.config({ path: path.join(__dirname, '.env') });
@@ -16,6 +17,33 @@ app.use(express.json({ limit: '1mb' }));
 
 app.get('/api/health', (_req, res) => {
   res.json({ status: 'ok' });
+});
+
+app.get('/api/images', async (req, res) => {
+  const word = (req.query.word || '').trim();
+  if (!word) return res.status(400).json({ error: 'Missing word' });
+  try {
+    const url = `https://www.bing.com/images/search?q=${encodeURIComponent(word)}`;
+    const response = await axios.get(url, {
+      headers: {
+        'User-Agent': 'Mozilla/5.0 (Windows NT 10.0; Win64; x64) AppleWebKit/537.36 (KHTML, like Gecko) Chrome/119 Safari/537.36',
+      },
+    });
+    const $ = cheerio.load(response.data);
+    const urls = [];
+    $('img').each((_, el) => {
+      const src = $(el).attr('data-src') || $(el).attr('src');
+      if (src && /^https?:\/\//.test(src)) {
+        urls.push(src);
+      }
+      if (urls.length >= 5) return false;
+      return undefined;
+    });
+    res.json({ urls });
+  } catch (error) {
+    console.error('Image fetch error', error.message);
+    res.status(500).json({ error: 'Image fetch failed' });
+  }
 });
 
 app.post('/api/tts', async (req, res) => {

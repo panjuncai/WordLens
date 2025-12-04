@@ -128,6 +128,8 @@ function App() {
   const audioCache = useRef({});
   const [imageMap, setImageMap] = useState({});
   const [previewSrc, setPreviewSrc] = useState('');
+  const [previewList, setPreviewList] = useState([]);
+  const [previewIndex, setPreviewIndex] = useState(0);
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -144,6 +146,8 @@ function App() {
     setStatuses({});
     inputRefs.current = {};
     setActiveWordId(null);
+    setPreviewList([]);
+    setPreviewIndex(0);
   }, [sceneText, selectedWords]);
 
   const onExtract = () => {
@@ -331,6 +335,22 @@ function App() {
     }
   };
 
+  useEffect(() => {
+    if (!previewSrc) return undefined;
+    const handleKey = (e) => {
+      if (!previewList.length) return;
+      if (e.key === 'ArrowRight') {
+        e.preventDefault();
+        setPreviewIndex((idx) => (idx + 1) % previewList.length);
+      } else if (e.key === 'ArrowLeft') {
+        e.preventDefault();
+        setPreviewIndex((idx) => (idx - 1 + previewList.length) % previewList.length);
+      }
+    };
+    window.addEventListener('keydown', handleKey);
+    return () => window.removeEventListener('keydown', handleKey);
+  }, [previewSrc, previewList]);
+
   const infoContent = (
     <div className="info-tip">
       <Text strong>使用步骤</Text>
@@ -440,22 +460,26 @@ function App() {
               const entry = imageMap[item.value.toLowerCase()];
               const imageContent = (
                 <div className="image-grid">
-                  {entry?.loading && <Text type="secondary">加载中...</Text>}
-                  {!entry?.loading && entry?.error && <Text type="danger">{entry.error}</Text>}
-                  {!entry?.loading && !entry?.error && !entry?.urls?.length && <Text type="secondary">暂无图片</Text>}
-                  {!entry?.loading && entry?.urls?.length > 0 && (
-                    <>
-                      {entry.urls.map((src, i) => (
-                        <img
-                          key={src || i}
-                          src={src}
-                          alt={item.value}
-                          className="image-thumb"
-                          onClick={() => setPreviewSrc(src)}
-                        />
-                      ))}
-                    </>
-                  )}
+                      {entry?.loading && <Text type="secondary">加载中...</Text>}
+                      {!entry?.loading && entry?.error && <Text type="danger">{entry.error}</Text>}
+                      {!entry?.loading && !entry?.error && !entry?.urls?.length && <Text type="secondary">暂无图片</Text>}
+                      {!entry?.loading && entry?.urls?.length > 0 && (
+                        <>
+                          {entry.urls.map((src, i) => (
+                            <img
+                              key={src || i}
+                              src={src}
+                              alt={item.value}
+                              className="image-thumb"
+                              onClick={() => {
+                                setPreviewList(entry.urls);
+                                setPreviewIndex(i);
+                                setPreviewSrc(src);
+                              }}
+                            />
+                          ))}
+                        </>
+                      )}
                   <div className="image-actions">
                     <Button
                       size="small"
@@ -554,12 +578,26 @@ function App() {
       <Modal
         open={!!previewSrc}
         footer={null}
-        onCancel={() => setPreviewSrc('')}
+        onCancel={() => {
+          setPreviewSrc('');
+          setPreviewList([]);
+          setPreviewIndex(0);
+        }}
         centered
-        width={720}
-        styles={{ body: { textAlign: 'center' } }}
+        closable={false}
+        maskClosable
+        width="fit-content"
+        styles={{
+          body: { padding: 0 },
+          content: { width: 'fit-content' },
+        }}
+        destroyOnClose
       >
-        <img src={previewSrc} alt="预览" style={{ maxWidth: '100%', maxHeight: '70vh', objectFit: 'contain' }} />
+        <img
+          src={previewList[previewIndex] || previewSrc}
+          alt="预览"
+          style={{ display: 'block', maxWidth: '80vw', maxHeight: '80vh', objectFit: 'contain' }}
+        />
       </Modal>
 
     </div>

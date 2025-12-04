@@ -59,6 +59,8 @@ const articleSet = new Set([
   's’',
 ]);
 const reflexiveSet = new Set(['se', "s'", 's’', 'me', "m'", 'm’', 'te', "t'", 't’', 'nous', 'vous']);
+const fixedCombos = ['en général'];
+const fixedComboFirsts = new Set(fixedCombos.map((c) => c.split(' ')[0]));
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -73,6 +75,15 @@ function extractCandidates(text) {
     const next = tokens[i + 1];
     if (!cur || !next) continue;
     const lowerCur = cur.toLowerCase();
+    const lowerNext = next.toLowerCase();
+    const comboPair = `${lowerCur} ${lowerNext}`;
+    if (fixedCombos.includes(comboPair)) {
+      if (!seen.has(comboPair)) {
+        combos.push(`${cur} ${next}`);
+        seen.add(comboPair);
+      }
+      continue;
+    }
     if (articleSet.has(lowerCur) || reflexiveSet.has(lowerCur)) {
       const combo = `${cur} ${next}`;
       const key = combo.toLowerCase();
@@ -83,12 +94,28 @@ function extractCandidates(text) {
     }
   }
 
+  for (let i = 0; i < tokens.length - 2; i += 1) {
+    const a = tokens[i];
+    const b = tokens[i + 1];
+    const c = tokens[i + 2];
+    if (!a || !b || !c) continue;
+    const lowerB = b.toLowerCase();
+    if (articleSet.has(lowerB) || reflexiveSet.has(lowerB)) {
+      const combo3 = `${a} ${b} ${c}`;
+      const key3 = combo3.toLowerCase();
+      if (!seen.has(key3)) {
+        combos.push(combo3);
+        seen.add(key3);
+      }
+    }
+  }
+
   const singles = [];
   tokens.forEach((word) => {
     const cleaned = word.replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ]+|[^A-Za-zÀ-ÖØ-öø-ÿ]+$/g, '');
     if (!cleaned || cleaned.length < 2) return;
     const key = cleaned.toLowerCase();
-    if (seen.has(key) || reflexiveSet.has(key)) return;
+    if (seen.has(key) || reflexiveSet.has(key) || fixedComboFirsts.has(key)) return;
     seen.add(key);
     singles.push(cleaned);
   });

@@ -142,6 +142,7 @@ function App() {
     loading: false,
   });
   const [autoCarousel, setAutoCarousel] = useState(false);
+  const [blurWords, setBlurWords] = useState(false);
   const carouselRef = useRef(null);
 
   const segments = useMemo(
@@ -629,6 +630,14 @@ function App() {
                   onChange={(v) => setAutoCarousel(v)}
                 />
               </Space>
+              <Space size="small" align="center">
+                <Text type="secondary">高斯模糊</Text>
+                <Switch
+                  size="small"
+                  checked={blurWords}
+                  onChange={(v) => setBlurWords(v)}
+                />
+              </Space>
               {imagePrefetching && (
                 <Text type="secondary">
                   {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
@@ -748,7 +757,7 @@ function App() {
                     />
                   ) : (
                     <span
-                      className={`word-audio ${activeWordId === item.id ? 'active' : ''}`}
+                      className={`word-audio ${activeWordId === item.id ? 'active' : ''} ${blurWords ? 'blurred' : ''}`}
                       onClick={() => {
                         setActiveWordId(item.id);
                         triggerAutoPlay(item.value);

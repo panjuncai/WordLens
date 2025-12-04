@@ -125,6 +125,11 @@ body {
   border-bottom-color: #1d4ed8;
 }
 
+.word-audio.blurred {
+  filter: blur(5px);
+  user-select: none;
+}
+
 .blank-input {
   width: 90px;
 }

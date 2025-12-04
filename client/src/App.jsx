@@ -58,6 +58,7 @@ const articleSet = new Set([
   "s'",
   's’',
 ]);
+const reflexiveSet = new Set(['se', "s'", 's’', 'me', "m'", 'm’', 'te', "t'", 't’', 'nous', 'vous']);
 
 const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
@@ -72,7 +73,7 @@ function extractCandidates(text) {
     const next = tokens[i + 1];
     if (!cur || !next) continue;
     const lowerCur = cur.toLowerCase();
-    if (articleSet.has(lowerCur)) {
+    if (articleSet.has(lowerCur) || reflexiveSet.has(lowerCur)) {
       const combo = `${cur} ${next}`;
       const key = combo.toLowerCase();
       if (!seen.has(key)) {
@@ -87,7 +88,7 @@ function extractCandidates(text) {
     const cleaned = word.replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ]+|[^A-Za-zÀ-ÖØ-öø-ÿ]+$/g, '');
     if (!cleaned || cleaned.length < 2) return;
     const key = cleaned.toLowerCase();
-    if (seen.has(key)) return;
+    if (seen.has(key) || reflexiveSet.has(key)) return;
     seen.add(key);
     singles.push(cleaned);
   });

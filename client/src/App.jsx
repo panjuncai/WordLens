@@ -6,7 +6,6 @@ import {
   Input,
   InputNumber,
   Popover,
-  Select,
   Space,
   Tag,
   Switch,
@@ -19,7 +18,7 @@ import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined, CloseOutl
 import axios from 'axios';
 import './App.css';
 
-const { Paragraph, Text } = Typography;
+const { Text } = Typography;
 const { TextArea } = Input;
 
 const SAMPLE_SCENE = `## 我的法语微电影：职场、生活与旅行
@@ -117,7 +116,7 @@ function App() {
   const [selectedWords, setSelectedWords] = useState(() => extractCandidates(SAMPLE_SCENE));
   const [showCloze, setShowCloze] = useState(false);
   const [loadingWord, setLoadingWord] = useState('');
-  const [inputCollapsed, setInputCollapsed] = useState(false);
+  const [inputCollapsed, setInputCollapsed] = useState(true);
   const [answers, setAnswers] = useState({});
   const [statuses, setStatuses] = useState({});
   const [autoPlayCount, setAutoPlayCount] = useState(1);
@@ -143,7 +142,9 @@ function App() {
   });
   const [autoCarousel, setAutoCarousel] = useState(false);
   const [blurWords, setBlurWords] = useState(false);
+  const [accentCheck, setAccentCheck] = useState(false);
   const carouselRef = useRef(null);
+  const wordRefs = useRef({});
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -159,6 +160,7 @@ function App() {
     setAnswers({});
     setStatuses({});
     inputRefs.current = {};
+    wordRefs.current = {};
     setActiveWordId(null);
     setPreviewList([]);
     setPreviewIndex(0);
@@ -255,7 +257,8 @@ function App() {
 
   const handleEnter = (item) => {
     const inputVal = (answers[item.id] || '').trim();
-    const correct = inputVal.localeCompare(item.value, undefined, { sensitivity: 'accent', usage: 'search' }) === 0;
+    const sensitivity = accentCheck ? 'accent' : 'base';
+    const correct = inputVal.localeCompare(item.value, undefined, { sensitivity, usage: 'search' }) === 0;
     setStatuses((prev) => ({ ...prev, [item.id]: correct ? 'correct' : 'wrong' }));
     if (correct) {
       const idx = blanks.findIndex((seg) => seg.id === item.id);
@@ -308,6 +311,10 @@ function App() {
       if (!showCloze) {
         openImagesForWord(target.value, target.id);
       }
+      setTimeout(() => {
+        const el = wordRefs.current[target.id];
+        if (el?.focus) el.focus();
+      }, 0);
     }
   };
 
@@ -495,22 +502,6 @@ function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [previewSrc, previewList]);
 
-  const infoContent = (
-    <div className="info-tip">
-      <Text strong>使用步骤</Text>
-      <ol>
-        <li>粘贴场景文本（可含中文提示和法语词）。</li>
-        <li>点“智能提取 + 挖空”生成听写版。</li>
-        <li>右侧下拉可增删挖空词，挖空区即时更新。</li>
-        <li>点击挖空处问号，Azure TTS 朗读该词；想看原文点“恢复原文”。</li>
-      </ol>
-      <Text strong>本地存储</Text>
-      <Paragraph>数据仅在本机内存，刷新清空；Azure TTS 需在 server/.env 配置 key 与 region 后再启动。</Paragraph>
-      <Text strong>技巧</Text>
-      <Paragraph>关键法语词多出现几次，优先提取含法语字符的词。</Paragraph>
-    </div>
-  );
-
   return (
     <div className="page">
       {autoCarousel && carouselState.visible && (
@@ -638,30 +629,23 @@ function App() {
                   onChange={(v) => setBlurWords(v)}
                 />
               </Space>
-              {imagePrefetching && (
-                <Text type="secondary">
-                  {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
-                </Text>
-              )}
-            </div>
-            <Tooltip title="选择要挖空的单词，可以自行增删">
-              <Select
-                mode="multiple"
-                allowClear
-                placeholder="自定义挖空单词"
-                value={selectedWords}
-                onChange={setSelectedWords}
-                options={wordOptions}
-                style={{ minWidth: 260 }}
-                maxTagCount="responsive"
-              />
-            </Tooltip>
-          </Space>
-          <Tooltip title={infoContent} overlayClassName="info-overlay">
-            <Button shape="circle" type="text" icon={<SoundOutlined />} />
-          </Tooltip>
-        </div>
-      </Card>
+              <Space size="small" align="center">
+                <Text type="secondary">重音检查</Text>
+                <Switch
+                  size="small"
+                  checked={accentCheck}
+                  onChange={(v) => setAccentCheck(v)}
+                />
+              </Space>
+            {imagePrefetching && (
+              <Text type="secondary">
+                {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
+              </Text>
+            )}
+          </div>
+        </Space>
+      </div>
+    </Card>
 
       <div className="stack">
         <Card
@@ -765,6 +749,13 @@ function App() {
                       }}
                       role="button"
                       tabIndex={0}
+                      ref={(el) => {
+                        if (el) {
+                          wordRefs.current[item.id] = el;
+                        } else {
+                          delete wordRefs.current[item.id];
+                        }
+                      }}
                       onKeyDown={(e) => {
                         if (e.key === 'Enter' || e.key === ' ') {
                           setActiveWordId(item.id);

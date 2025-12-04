@@ -34,10 +34,22 @@ app.get('/api/images', async (req, res) => {
     });
     const $ = cheerio.load(response.data);
     const urls = [];
-    $('.mimg').each((_, el) => {
-      const src = $(el).attr('data-src') || $(el).attr('src');
-      if (src && /^https?:\/\//.test(src)) {
-        urls.push(src);
+    $('.iusc').each((_, el) => {
+      const meta = $(el).attr('m');
+      if (meta) {
+        try {
+          const m = JSON.parse(meta);
+          if (m?.murl && /^https?:\/\//.test(m.murl)) {
+            urls.push(m.murl);
+          }
+        } catch (err) {
+          // ignore parse errors
+        }
+      }
+      const img = $(el).find('.mimg');
+      const thumb = img.attr('data-src') || img.attr('src');
+      if (thumb && /^https?:\/\//.test(thumb) && urls.length < 5) {
+        urls.push(thumb);
       }
       if (urls.length >= 5) return false;
       return undefined;

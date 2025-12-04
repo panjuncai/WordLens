@@ -259,6 +259,9 @@ function App() {
     const inputVal = (answers[item.id] || '').trim();
     const sensitivity = accentCheck ? 'accent' : 'base';
     const correct = inputVal.localeCompare(item.value, undefined, { sensitivity, usage: 'search' }) === 0;
+    if (correct && !accentCheck && inputVal !== item.value) {
+      setAnswers((prev) => ({ ...prev, [item.id]: item.value }));
+    }
     setStatuses((prev) => ({ ...prev, [item.id]: correct ? 'correct' : 'wrong' }));
     if (correct) {
       const idx = blanks.findIndex((seg) => seg.id === item.id);

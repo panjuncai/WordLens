@@ -19,9 +19,11 @@ import ReactMarkdown from 'react-markdown';
 import api from './api';
 import LoginScreen from './components/LoginScreen';
 import ConfigModal from './components/ConfigModal';
+import ArticleList from './components/ArticleList';
 import useAuth from './hooks/useAuth';
 import useTtsAudio from './hooks/useTtsAudio';
 import useImageSearch from './hooks/useImageSearch';
+import useArticles from './hooks/useArticles';
 import { SAMPLE_SCENE } from './constants/defaults';
 import { extractCandidates, buildSegments } from './utils/textProcessor';
 import './App.css';
@@ -89,6 +91,15 @@ function App() {
     prefetching: imagePrefetching,
     prefetchProgress: imagePrefetchProgress,
   } = useImageSearch();
+  const {
+    items: articles,
+    loading: articlesLoading,
+    saving: articlesSaving,
+    createItem: createArticle,
+    updateItem: updateArticle,
+    deleteItem: deleteArticle,
+  } = useArticles();
+  const [activeArticle, setActiveArticle] = useState(null);
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -110,6 +121,14 @@ function App() {
   useEffect(() => {
     setCandidates(extractCandidates(sceneText));
   }, [sceneText]);
+
+  useEffect(() => {
+    if (activeArticle) {
+      setSceneText(activeArticle.content);
+      setSelectedWords(extractCandidates(activeArticle.content));
+      setShowCloze(false);
+    }
+  }, [activeArticle]);
 
   useEffect(() => {
     setAnswers({});
@@ -701,35 +720,48 @@ function App() {
         </div>
       </Card>
 
-      <div className="stack">
-        <Card
-          title="输入 / 编辑场景文本"
-          className="input-card"
-          extra={(
-            <Button
-              type="link"
-              size="small"
-              onClick={() => setInputCollapsed((prev) => !prev)}
-            >
-              {inputCollapsed ? '展开' : '收起'}
-            </Button>
-          )}
-        >
-          {!inputCollapsed && (
-            <TextArea
-              value={sceneText}
-              onChange={(e) => setSceneText(e.target.value)}
-              autoSize={{ minRows: 6, maxRows: 10 }}
-              placeholder="在此粘贴你的法语或双语场景脚本"
-            />
-          )}
-        </Card>
+      <div className="workspace">
+        <div className="workspace-side">
+          <ArticleList
+            items={articles}
+            loading={articlesLoading}
+            saving={articlesSaving}
+            onCreate={createArticle}
+            onUpdate={updateArticle}
+            onDelete={deleteArticle}
+            onSelect={(item) => setActiveArticle(item)}
+            activeId={activeArticle?.id}
+          />
+        </div>
+        <div className="workspace-main">
+          <Card
+            title="输入 / 编辑场景文本"
+            className="input-card"
+            extra={(
+              <Button
+                type="link"
+                size="small"
+                onClick={() => setInputCollapsed((prev) => !prev)}
+              >
+                {inputCollapsed ? '展开' : '收起'}
+              </Button>
+            )}
+          >
+            {!inputCollapsed && (
+              <TextArea
+                value={sceneText}
+                onChange={(e) => setSceneText(e.target.value)}
+                autoSize={{ minRows: 6, maxRows: 10 }}
+                placeholder="在此粘贴你的法语或双语场景脚本"
+              />
+            )}
+          </Card>
 
-        <Card
-          title="挖空听写稿"
-          extra={<Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>}
-        >
-          <div className="cloze" tabIndex={0} onKeyDown={onKeyNavigate}>
+          <Card
+            title={activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
+            extra={<Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>}
+          >
+            <div className="cloze" tabIndex={0} onKeyDown={onKeyNavigate}>
             {segments.map((item, idx) => {
               if (item.type === 'text') {
                 return (
@@ -896,6 +928,7 @@ function App() {
             )}
           </Space>
         </Card>
+      </div>
       </div>
 
       <Modal

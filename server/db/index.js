@@ -15,6 +15,15 @@ db.serialize(() => {
   db.run('ALTER TABLE users ADD COLUMN azure_key TEXT', () => {});
   db.run('ALTER TABLE users ADD COLUMN azure_region TEXT', () => {});
   db.run('ALTER TABLE users ADD COLUMN azure_voice TEXT', () => {});
+  db.run(`CREATE TABLE IF NOT EXISTS user_articles (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    user_id INTEGER NOT NULL,
+    title TEXT NOT NULL,
+    content TEXT NOT NULL,
+    created_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    updated_at DATETIME DEFAULT CURRENT_TIMESTAMP,
+    FOREIGN KEY(user_id) REFERENCES users(id)
+  )`);
 });
 
 const run = (sql, params = []) => new Promise((resolve, reject) => {

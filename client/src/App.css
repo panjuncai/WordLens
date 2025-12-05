@@ -83,6 +83,22 @@ body {
   gap: 12px;
 }
 
+.workspace {
+  display: grid;
+  grid-template-columns: 320px 1fr;
+  gap: 12px;
+}
+
+.workspace-side {
+  min-width: 280px;
+}
+
+.workspace-main {
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
 .input-card .ant-card-head {
   min-height: 38px;
 }

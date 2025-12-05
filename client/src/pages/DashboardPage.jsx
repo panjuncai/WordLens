@@ -1,7 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Modal, Typography, message } from 'antd';
 import ReactMarkdown from 'react-markdown';
-import HeaderBar from '../components/HeaderBar';
 import HeroSection from '../components/HeroSection';
 import ArticleList from '../components/ArticleList';
 import ExerciseBoard from '../components/ExerciseBoard';
@@ -497,16 +496,6 @@ export default function DashboardPage() {
 
   return (
     <>
-      <HeaderBar
-        themeMode={themeMode}
-        onToggleTheme={setThemeMode}
-        onOpenConfig={() => {
-          setConfigOpen(true);
-          loadConfig();
-        }}
-        onLogout={logout}
-      />
-
       <ImageCarousel
         visible={autoCarousel && carouselState.visible}
         state={carouselState}
@@ -523,37 +512,8 @@ export default function DashboardPage() {
         innerRef={carouselRef}
       />
 
-      <Card className="hero">
-        <HeroSection
-          onExtract={onExtract}
-          onReset={onReset}
-          onOpenConfig={() => {
-            setConfigOpen(true);
-            loadConfig();
-          }}
-          autoPlayCount={autoPlayCount}
-          setAutoPlayCount={setAutoPlayCount}
-          prefetchAudio={prefetchAudio}
-          prefetching={prefetching}
-          prefetchProgress={prefetchProgress}
-          prefetchImages={prefetchImages}
-          imagePrefetching={imagePrefetching}
-          imagePrefetchProgress={imagePrefetchProgress}
-          autoCarousel={autoCarousel}
-          blurWords={blurWords}
-          accentCheck={accentCheck}
-          autoPlayEnabled={autoPlayEnabled}
-          autoPlayDelay={autoPlayDelay}
-          setAutoCarousel={setAutoCarousel}
-          setBlurWords={setBlurWords}
-          setAccentCheck={setAccentCheck}
-          setAutoPlayEnabled={setAutoPlayEnabled}
-          setAutoPlayDelay={setAutoPlayDelay}
-        />
-      </Card>
-
-      <div className="workspace">
-        <div className="workspace-side">
+      <div className="chat-layout">
+        <div className="workspace-side sidebar-shell">
           <ArticleList
             items={articles}
             loading={articlesLoading}
@@ -565,7 +525,35 @@ export default function DashboardPage() {
             activeId={activeArticle?.id}
           />
         </div>
-        <div className="workspace-main">
+        <div className="workspace-main chat-main">
+          <Card className="op-panel" bordered>
+            <HeroSection
+              onExtract={onExtract}
+              onReset={onReset}
+              onOpenConfig={() => {
+                setConfigOpen(true);
+                loadConfig();
+              }}
+              autoPlayCount={autoPlayCount}
+              setAutoPlayCount={setAutoPlayCount}
+              prefetchAudio={prefetchAudio}
+              prefetching={prefetching}
+              prefetchProgress={prefetchProgress}
+              prefetchImages={prefetchImages}
+              imagePrefetching={imagePrefetching}
+              imagePrefetchProgress={imagePrefetchProgress}
+              autoCarousel={autoCarousel}
+              blurWords={blurWords}
+              accentCheck={accentCheck}
+              autoPlayEnabled={autoPlayEnabled}
+              autoPlayDelay={autoPlayDelay}
+              setAutoCarousel={setAutoCarousel}
+              setBlurWords={setBlurWords}
+              setAccentCheck={setAccentCheck}
+              setAutoPlayEnabled={setAutoPlayEnabled}
+              setAutoPlayDelay={setAutoPlayDelay}
+            />
+          </Card>
           <Card
             title={activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
             extra={<Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>}

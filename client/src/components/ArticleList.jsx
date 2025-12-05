@@ -39,34 +39,38 @@ export default function ArticleList({
 
   return (
     <Card
-      title="我的文章"
-      extra={<Button type="primary" size="small" onClick={() => openModal()}>新增</Button>}
+      className="sidebar-card"
+      title="文章"
+      extra={<Button type="text" size="small" onClick={() => openModal()}>＋</Button>}
       loading={loading}
+      bordered
     >
-      <div className="article-list">
-        {items.length === 0 && <Text type="secondary">暂无文章，点击新增创建</Text>}
-        {items.map((item) => (
-          <div
-            key={item.id}
-            className="article-row"
-            style={{ background: activeId === item.id ? 'rgba(37,99,235,0.08)' : 'transparent' }}
-            onClick={() => onSelect(item)}
-          >
-            <div className="article-meta">
-              <Text strong>{item.title}</Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>更新于 {item.updated_at || ''}</Text>
+      <div className="sidebar-scroll">
+        <div className="article-list">
+          {items.length === 0 && <Text type="secondary">暂无文章，点击新增创建</Text>}
+          {items.map((item) => (
+            <div
+              key={item.id}
+              className="article-row"
+              style={{ background: activeId === item.id ? 'rgba(37,99,235,0.08)' : 'transparent' }}
+              onClick={() => onSelect(item)}
+            >
+              <div className="article-meta">
+                <Text strong>{item.title}</Text>
+                <Text type="secondary" style={{ fontSize: 12 }}>更新于 {item.updated_at || ''}</Text>
+              </div>
+              <Space size="small">
+                <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); openModal(item); }}>编辑</Button>
+                <Popconfirm
+                  title="确认删除？"
+                  onConfirm={(e) => { e?.stopPropagation(); onDelete(item.id); }}
+                >
+                  <Button type="link" danger size="small" onClick={(e) => e.stopPropagation()}>删除</Button>
+                </Popconfirm>
+              </Space>
             </div>
-            <Space size="small">
-              <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); openModal(item); }}>编辑</Button>
-              <Popconfirm
-                title="确认删除？"
-                onConfirm={(e) => { e?.stopPropagation(); onDelete(item.id); }}
-              >
-                <Button type="link" danger size="small" onClick={(e) => e.stopPropagation()}>删除</Button>
-              </Popconfirm>
-            </Space>
-          </div>
-        ))}
+          ))}
+        </div>
       </div>
 
       <Modal

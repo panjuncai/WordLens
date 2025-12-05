@@ -8,6 +8,14 @@
   --muted: #475569;
 }
 
+[data-theme='dark'] {
+  --bg: #0b1221;
+  --card: #0f172a;
+  --accent: #60a5fa;
+  --text: #e5e7eb;
+  --muted: #94a3b8;
+}
+
 * {
   box-sizing: border-box;
 }
@@ -19,6 +27,12 @@ body {
     linear-gradient(180deg, #f9fbff 0%, #eef2f8 100%);
   font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   color: var(--text);
+}
+
+body[data-theme='dark'] {
+  background: radial-gradient(circle at 20% 20%, rgba(96, 165, 250, 0.14), transparent 28%),
+    radial-gradient(circle at 80% 0%, rgba(16, 185, 129, 0.12), transparent 22%),
+    linear-gradient(180deg, #0b1221 0%, #0f172a 100%);
 }
 
 #root {
@@ -99,6 +113,12 @@ body {
   gap: 12px;
 }
 
+.user-bar {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
 .input-card {
   display: none;
 }
@@ -109,6 +129,27 @@ body {
 
 .input-card .ant-card-extra {
   padding: 8px 0;
+}
+
+.topbar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 0;
+}
+
+.brand {
+  font-weight: 700;
+  font-size: 18px;
+  color: var(--text);
+}
+
+.menu-switch {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  min-width: 160px;
 }
 
 .ant-card {
@@ -336,4 +377,47 @@ body {
   border-radius: 8px;
   border: 1px solid rgba(0, 0, 0, 0.06);
   box-shadow: 0 6px 18px rgba(15, 23, 42, 0.16);
+}
+
+body[data-theme='dark'] .hero {
+  background: linear-gradient(120deg, #0f172a, #111827);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 16px 50px rgba(0, 0, 0, 0.45);
+}
+
+body[data-theme='dark'] .ant-card {
+  border: 1px solid rgba(255, 255, 255, 0.08);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.35);
+}
+
+body[data-theme='dark'] .ant-typography {
+  color: var(--text);
+}
+
+body[data-theme='dark'] .markdown-text .md-inline-code {
+  background: rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme='dark'] .word-audio.active {
+  outline: 2px solid #fb923c;
+  box-shadow: 0 0 0 3px rgba(251, 146, 60, 0.35);
+}
+
+body[data-theme='dark'] .carousel-overlay {
+  background: rgba(17, 24, 39, 0.95);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme='dark'] .carousel-arrow {
+  background: rgba(31, 41, 55, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme='dark'] .carousel-refresh {
+  background: rgba(31, 41, 55, 0.9);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+body[data-theme='dark'] .image-thumb {
+  border: 1px solid rgba(255, 255, 255, 0.12);
 }

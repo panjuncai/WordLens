@@ -2,7 +2,9 @@ import { useEffect, useMemo, useRef, useState } from 'react';
 import {
   Button,
   Card,
+  ConfigProvider,
   Divider,
+  Dropdown,
   Input,
   InputNumber,
   Popover,
@@ -12,8 +14,9 @@ import {
   Typography,
   Modal,
   message,
+  theme,
 } from 'antd';
-import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined, CloseOutlined } from '@ant-design/icons';
+import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined, CloseOutlined, UserOutlined } from '@ant-design/icons';
 import ReactMarkdown from 'react-markdown';
 import api from './api';
 import LoginScreen from './components/LoginScreen';
@@ -28,7 +31,6 @@ import useConfigStore from './stores/useConfigStore';
 import './App.css';
 
 const { Text } = Typography;
-const { TextArea } = Input;
 
 function App() {
   const {
@@ -88,6 +90,8 @@ function App() {
     autoPlayEnabled,
     autoPlayDelay,
     autoPlayCount,
+    themeMode,
+    setThemeMode,
     setAutoCarousel,
     setBlurWords,
     setAccentCheck,
@@ -121,6 +125,10 @@ function App() {
 
   const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
   const clampedCount = Math.min(20, Math.max(0, autoPlayCount || 0));
+
+  useEffect(() => {
+    document.body.setAttribute('data-theme', themeMode);
+  }, [themeMode]);
 
   useEffect(() => {
     if (user) {
@@ -524,6 +532,41 @@ function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [previewSrc, previewList]);
 
+  const userMenuItems = [
+    {
+      key: 'config',
+      label: 'TTS 配置',
+    },
+    {
+      key: 'theme',
+      label: (
+        <div className="menu-switch">
+          <span>暗色模式</span>
+          <Switch
+            size="small"
+            checked={themeMode === 'dark'}
+            onClick={(e) => e.stopPropagation()}
+            onChange={(checked) => setThemeMode(checked ? 'dark' : 'light')}
+          />
+        </div>
+      ),
+    },
+    { type: 'divider' },
+    {
+      key: 'logout',
+      label: '退出登录',
+    },
+  ];
+
+  const handleUserMenuClick = ({ key }) => {
+    if (key === 'config') {
+      setConfigOpen(true);
+      loadConfig();
+    } else if (key === 'logout') {
+      handleLogout();
+    }
+  };
+
   if (!user) {
     return (
       <LoginScreen
@@ -540,7 +583,19 @@ function App() {
   }
 
   return (
-    <div className="page">
+    <ConfigProvider
+      theme={{
+        algorithm: themeMode === 'dark' ? theme.darkAlgorithm : theme.defaultAlgorithm,
+        token: { colorPrimary: '#2563eb' },
+      }}
+    >
+      <div className="page">
+        <div className="topbar">
+          <div className="brand">场景记单词</div>
+          <Dropdown menu={{ items: userMenuItems, onClick: handleUserMenuClick }} placement="bottomRight">
+            <Button type="text" icon={<UserOutlined />} />
+          </Dropdown>
+        </div>
       {autoCarousel && carouselState.visible && (
         <div
           className="carousel-overlay"
@@ -700,10 +755,6 @@ function App() {
                   {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
                 </Text>
               )}
-              <Space size="small" align="center">
-                <Text type="secondary">{user?.email}</Text>
-                <Button type="link" onClick={handleLogout}>退出</Button>
-              </Space>
             </div>
           </Space>
         </div>
@@ -935,7 +986,8 @@ function App() {
         />
       </Modal>
 
-    </div>
+      </div>
+    </ConfigProvider>
   );
 }
 

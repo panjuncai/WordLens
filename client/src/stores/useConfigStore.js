@@ -11,6 +11,7 @@ const useConfigStore = create(persist((set) => ({
   azureKey: '',
   azureRegion: '',
   azureVoice: '',
+  themeMode: 'light',
   setConfig: (payload) => set(payload),
   setAutoCarousel: (val) => set({ autoCarousel: val }),
   setBlurWords: (val) => set({ blurWords: val }),
@@ -21,6 +22,7 @@ const useConfigStore = create(persist((set) => ({
   setAzureKey: (val) => set({ azureKey: val }),
   setAzureRegion: (val) => set({ azureRegion: val }),
   setAzureVoice: (val) => set({ azureVoice: val }),
+  setThemeMode: (val) => set({ themeMode: val }),
 }), { name: 'wordlens-config' }));
 
 export default useConfigStore;

@@ -186,14 +186,13 @@ function App() {
     const run = async () => {
       try {
         await triggerAutoPlay(current.value);
-      } catch (err) {
+      } catch {
         // ignore
-      } finally {
-        if (cancelled) return;
-        autoPlayTimer.current = setTimeout(() => {
-          moveActive(1);
-        }, Math.min(60, Math.max(1, autoPlayDelay)) * 1000);
       }
+      if (cancelled) return;
+      autoPlayTimer.current = setTimeout(() => {
+        moveActive(1);
+      }, Math.min(60, Math.max(1, autoPlayDelay)) * 1000);
     };
     run();
     return () => {
@@ -273,7 +272,7 @@ function App() {
     setLoadingWord(word);
     try {
       await playWord(word);
-    } catch (error) {
+    } catch {
       // 错误已在 hook 中处理
     } finally {
       setLoadingWord('');
@@ -457,7 +456,7 @@ function App() {
         }
         return prev;
       });
-    } catch (error) {
+    } catch {
       setCarouselState((prev) => {
         if (prev.word.toLowerCase() === key) {
           return { ...prev, loading: false, urls: current.urls || prev.urls || [] };
@@ -478,7 +477,7 @@ function App() {
       setAzureKey(data.azure_key || '');
       setAzureRegion(data.azure_region || '');
       setAzureVoice(data.azure_voice || '');
-    } catch (error) {
+    } catch {
       message.error('加载配置失败');
     }
   };
@@ -493,7 +492,7 @@ function App() {
       });
       message.success('配置已保存');
       setConfigOpen(false);
-    } catch (error) {
+    } catch {
       message.error('保存失败');
     } finally {
       setConfigLoading(false);
@@ -527,31 +526,16 @@ function App() {
 
   if (!user) {
     return (
-      <div className="auth-wrap">
-        <Card className="auth-card">
-          <div className="auth-header">
-            <Text strong>{authMode === 'login' ? '登录' : '注册'}</Text>
-            <Button type="link" onClick={() => setAuthMode((m) => (m === 'login' ? 'register' : 'login'))}>
-              {authMode === 'login' ? '去注册' : '去登录'}
-            </Button>
-          </div>
-          <Space orientation="vertical" style={{ width: '100%' }}>
-            <Input
-              placeholder="邮箱"
-              value={authEmail}
-              onChange={(e) => setAuthEmail(e.target.value)}
-            />
-            <Input.Password
-              placeholder="密码"
-              value={authPassword}
-              onChange={(e) => setAuthPassword(e.target.value)}
-            />
-            <Button type="primary" block loading={authLoading} onClick={handleAuthSubmit}>
-              {authMode === 'login' ? '登录' : '注册'}
-            </Button>
-          </Space>
-        </Card>
-      </div>
+      <LoginScreen
+        mode={authMode}
+        setMode={setAuthMode}
+        email={authEmail}
+        password={authPassword}
+        onChangeEmail={setAuthEmail}
+        onChangePassword={setAuthPassword}
+        onSubmit={handleAuthSubmit}
+        loading={authLoading}
+      />
     );
   }
 
@@ -913,31 +897,18 @@ function App() {
       </div>
       </div>
 
-      <Modal
+      <ConfigModal
         open={configOpen}
-        title="Azure TTS 配置"
-        onCancel={() => setConfigOpen(false)}
-        onOk={saveConfig}
-        confirmLoading={configLoading}
-      >
-        <Space orientation="vertical" style={{ width: '100%' }}>
-          <Input
-            placeholder="AZURE_SPEECH_KEY"
-            value={azureKey}
-            onChange={(e) => setAzureKey(e.target.value)}
-          />
-          <Input
-            placeholder="AZURE_REGION (例如 eastasia)"
-            value={azureRegion}
-            onChange={(e) => setAzureRegion(e.target.value)}
-          />
-          <Input
-            placeholder="AZURE_VOICE (例如 fr-FR-DeniseNeural)"
-            value={azureVoice}
-            onChange={(e) => setAzureVoice(e.target.value)}
-          />
-        </Space>
-      </Modal>
+        onClose={() => setConfigOpen(false)}
+        onSave={saveConfig}
+        loading={configLoading}
+        azureKey={azureKey}
+        azureRegion={azureRegion}
+        azureVoice={azureVoice}
+        setAzureKey={setAzureKey}
+        setAzureRegion={setAzureRegion}
+        setAzureVoice={setAzureVoice}
+      />
 
       <Modal
         open={!!previewSrc}

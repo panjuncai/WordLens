@@ -16,10 +16,13 @@
   "description": "Mini web app for French vocabulary cloze practice with Azure TTS",
   "dependencies": {
     "axios": "^1.13.2",
+    "bcryptjs": "^3.0.3",
     "cheerio": "^1.1.2",
     "cors": "^2.8.5",
     "dotenv": "^17.2.3",
-    "express": "^5.2.1"
+    "express": "^5.2.1",
+    "jsonwebtoken": "^9.0.3",
+    "sqlite3": "^5.1.7"
   },
   "devDependencies": {
     "concurrently": "^9.2.1"

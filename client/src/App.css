@@ -43,6 +43,25 @@ body {
   color: #0b1b36 !important;
 }
 
+.auth-wrap {
+  min-height: 100vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  background: linear-gradient(180deg, #f9fbff 0%, #eef2f8 100%);
+}
+
+.auth-card {
+  width: 340px;
+}
+
+.auth-header {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 8px;
+}
+
 .hero p {
   color: #334155 !important;
 }

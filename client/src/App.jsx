@@ -15,7 +15,7 @@ import {
   message,
 } from 'antd';
 import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined, CloseOutlined } from '@ant-design/icons';
-import axios from 'axios';
+import api, { setAuthToken } from './api';
 import ReactMarkdown from 'react-markdown';
 import './App.css';
 
@@ -32,8 +32,6 @@ const SAMPLE_SCENE = `## 我的法语微电影：职场、生活与旅行
 
 第三幕：旅途中的惊喜邂逅
 假期开始，你做了新 coiffure，来到海边 juste là，朝 vers 沙滩 passer 一天。surprise！遇到 docteur 和 célèbre actrice，你们决定今晚 ensemble，把 reste 的故事留给明天。`;
-
-const API_BASE = import.meta.env.VITE_API_BASE_URL || 'http://localhost:4000';
 
 const wordPattern = /[A-Za-zÀ-ÖØ-öø-ÿ'’\-]+/g;
 const articleSet = new Set([
@@ -140,6 +138,17 @@ function buildSegments(text, targets) {
 }
 
 function App() {
+  const [token, setToken] = useState(localStorage.getItem('token') || '');
+  const [authedUser, setAuthedUser] = useState(null);
+  const [authMode, setAuthMode] = useState('login');
+  const [authEmail, setAuthEmail] = useState('');
+  const [authPassword, setAuthPassword] = useState('');
+  const [authLoading, setAuthLoading] = useState(false);
+  const [azureKey, setAzureKey] = useState('');
+  const [azureRegion, setAzureRegion] = useState('');
+  const [azureVoice, setAzureVoice] = useState('');
+  const [configOpen, setConfigOpen] = useState(false);
+  const [configLoading, setConfigLoading] = useState(false);
   const [sceneText, setSceneText] = useState(SAMPLE_SCENE);
   const [candidates, setCandidates] = useState(() => extractCandidates(SAMPLE_SCENE));
   const [selectedWords, setSelectedWords] = useState(() => extractCandidates(SAMPLE_SCENE));
@@ -185,6 +194,28 @@ function App() {
   );
   const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
   const clampedCount = Math.min(20, Math.max(0, autoPlayCount || 0));
+
+  useEffect(() => {
+    if (token) setAuthToken(token);
+    else setAuthToken('');
+  }, [token]);
+
+  useEffect(() => {
+    const existing = localStorage.getItem('token');
+    if (!existing) return;
+    setAuthToken(existing);
+    api.get('/api/auth/me')
+      .then((res) => {
+        setAuthedUser(res.data.user);
+        setToken(existing);
+        loadConfig();
+      })
+      .catch(() => {
+        localStorage.removeItem('token');
+        setToken('');
+        setAuthedUser(null);
+      });
+  }, []);
 
   useEffect(() => {
     setCandidates(extractCandidates(sceneText));
@@ -326,7 +357,7 @@ function App() {
   const ensureAudio = async (word) => {
     const key = word.toLowerCase();
     if (audioCache.current[key]) return audioCache.current[key];
-    const { data } = await axios.post(`${API_BASE}/api/tts`, { text: word });
+    const { data } = await api.post('/api/tts', { text: word });
     if (!data?.audioBase64) {
       throw new Error('未收到音频，请检查 Azure 配置');
     }
@@ -553,7 +584,7 @@ function App() {
       [key]: { ...prev[key], loading: true, error: null, page: nextPage },
     }));
     try {
-      const { data } = await axios.get(`${API_BASE}/api/images`, { params: { word, offset: nextPage * 5 } });
+      const { data } = await api.get('/api/images', { params: { word, offset: nextPage * 5 } });
       const urls = data?.urls || [];
       setImageMap((prev) => ({
         ...prev,
@@ -600,6 +631,60 @@ function App() {
     }
   };
 
+  const loadConfig = async () => {
+    try {
+      const { data } = await api.get('/api/user/config');
+      setAzureKey(data.azure_key || '');
+      setAzureRegion(data.azure_region || '');
+      setAzureVoice(data.azure_voice || '');
+    } catch (error) {
+      message.error('加载配置失败');
+    }
+  };
+
+  const saveConfig = async () => {
+    setConfigLoading(true);
+    try {
+      await api.put('/api/user/config', {
+        azure_key: azureKey,
+        azure_region: azureRegion,
+        azure_voice: azureVoice,
+      });
+      message.success('配置已保存');
+      setConfigOpen(false);
+    } catch (error) {
+      message.error('保存失败');
+    } finally {
+      setConfigLoading(false);
+    }
+  };
+
+  const handleAuthSubmit = async () => {
+    setAuthLoading(true);
+    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
+    try {
+      const { data } = await api.post(endpoint, { email: authEmail, password: authPassword });
+      if (data?.token) {
+        setAuthToken(data.token);
+        setToken(data.token);
+        setAuthedUser(data.user);
+        loadConfig();
+        message.success(authMode === 'login' ? '登录成功' : '注册成功');
+      }
+    } catch (error) {
+      const detail = error.response?.data?.error || error.message;
+      message.error(detail || '认证失败');
+    } finally {
+      setAuthLoading(false);
+    }
+  };
+
+  const handleLogout = () => {
+    localStorage.removeItem('token');
+    setToken('');
+    setAuthedUser(null);
+  };
+
   useEffect(() => {
     if (!previewSrc) return undefined;
     const handleKey = (e) => {
@@ -615,6 +700,36 @@ function App() {
     window.addEventListener('keydown', handleKey);
     return () => window.removeEventListener('keydown', handleKey);
   }, [previewSrc, previewList]);
+
+  if (!authedUser) {
+    return (
+      <div className="auth-wrap">
+        <Card className="auth-card">
+          <div className="auth-header">
+            <Text strong>{authMode === 'login' ? '登录' : '注册'}</Text>
+            <Button type="link" onClick={() => setAuthMode((m) => (m === 'login' ? 'register' : 'login'))}>
+              {authMode === 'login' ? '去注册' : '去登录'}
+            </Button>
+          </div>
+          <Space direction="vertical" style={{ width: '100%' }}>
+            <Input
+              placeholder="邮箱"
+              value={authEmail}
+              onChange={(e) => setAuthEmail(e.target.value)}
+            />
+            <Input.Password
+              placeholder="密码"
+              value={authPassword}
+              onChange={(e) => setAuthPassword(e.target.value)}
+            />
+            <Button type="primary" block loading={authLoading} onClick={handleAuthSubmit}>
+              {authMode === 'login' ? '登录' : '注册'}
+            </Button>
+          </Space>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="page">
@@ -699,6 +814,9 @@ function App() {
             <Button icon={<UndoOutlined />} onClick={onReset}>
               恢复原文
             </Button>
+            <Button onClick={() => { setConfigOpen(true); loadConfig(); }}>
+              TTS配置
+            </Button>
             <div className="audio-config">
               <Text type="secondary">自动发音次数</Text>
               <InputNumber
@@ -774,10 +892,14 @@ function App() {
                   {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
                 </Text>
               )}
-          </div>
-        </Space>
-      </div>
-    </Card>
+              <Space size="small" align="center">
+                <Text type="secondary">{authedUser?.email}</Text>
+                <Button type="link" onClick={handleLogout}>退出</Button>
+              </Space>
+            </div>
+          </Space>
+        </div>
+      </Card>
 
       <div className="stack">
         <Card
@@ -975,6 +1097,32 @@ function App() {
           </Space>
         </Card>
       </div>
+
+      <Modal
+        open={configOpen}
+        title="Azure TTS 配置"
+        onCancel={() => setConfigOpen(false)}
+        onOk={saveConfig}
+        confirmLoading={configLoading}
+      >
+        <Space direction="vertical" style={{ width: '100%' }}>
+          <Input
+            placeholder="AZURE_SPEECH_KEY"
+            value={azureKey}
+            onChange={(e) => setAzureKey(e.target.value)}
+          />
+          <Input
+            placeholder="AZURE_REGION (例如 eastasia)"
+            value={azureRegion}
+            onChange={(e) => setAzureRegion(e.target.value)}
+          />
+          <Input
+            placeholder="AZURE_VOICE (例如 fr-FR-DeniseNeural)"
+            value={azureVoice}
+            onChange={(e) => setAzureVoice(e.target.value)}
+          />
+        </Space>
+      </Modal>
 
       <Modal
         open={!!previewSrc}

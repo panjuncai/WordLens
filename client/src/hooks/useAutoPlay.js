@@ -30,7 +30,7 @@ export default function useAutoPlay({
       if (cancelled) return;
       timerRef.current = setTimeout(() => {
         moveActive(1);
-      }, Math.min(60, Math.max(1, delay)) * 1000);
+      }, (delay || 1) * 1000);
     };
     run();
     return () => {

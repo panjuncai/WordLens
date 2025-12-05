@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Card, Modal, Typography, message } from 'antd';
 import ReactMarkdown from 'react-markdown';
 import HeaderBar from '../components/HeaderBar';
@@ -15,6 +15,12 @@ import useConfigStore from '../stores/useConfigStore';
 import useAuthStore from '../stores/useAuthStore';
 import api from '../api';
 import useAutoPlay from '../hooks/useAutoPlay';
+import {
+  CAROUSEL_INTERVAL,
+  MAX_AUTOPLAY_COUNT,
+  MAX_AUTOPLAY_DELAY,
+  MIN_AUTOPLAY_DELAY,
+} from '../constants/config';
 
 const { Text } = Typography;
 
@@ -69,46 +75,44 @@ export default function DashboardPage() {
   const wordRefs = useRef({});
   const carouselRef = useRef(null);
 
-  const {
-    sceneText,
-    selectedWords,
-    segments,
-    showCloze,
-    answers,
-    statuses,
-    wordListOpen,
-    revealedIds,
-    loadArticle,
-    extractWords,
-    resetCloze,
-    setAnswer,
-    setStatus,
-    toggleWordList,
-    setRevealedIds,
-  } = useExerciseStore();
+  // fine-grained subscriptions to避免 getSnapshot警告
+  const sceneText = useExerciseStore((state) => state.sceneText);
+  const selectedWords = useExerciseStore((state) => state.selectedWords);
+  const segments = useExerciseStore((state) => state.segments);
+  const showCloze = useExerciseStore((state) => state.showCloze);
+  const answers = useExerciseStore((state) => state.answers);
+  const statuses = useExerciseStore((state) => state.statuses);
+  const wordListOpen = useExerciseStore((state) => state.wordListOpen);
+  const revealedIds = useExerciseStore((state) => state.revealedIds);
 
-  const {
-    autoCarousel,
-    blurWords,
-    accentCheck,
-    autoPlayEnabled,
-    autoPlayDelay,
-    autoPlayCount,
-    azureKey,
-    azureRegion,
-    azureVoice,
-    setAutoCarousel,
-    setBlurWords,
-    setAccentCheck,
-    setAutoPlayEnabled,
-    setAutoPlayDelay,
-    setAutoPlayCount,
-    setAzureKey,
-    setAzureRegion,
-    setAzureVoice,
-    themeMode,
-    setThemeMode,
-  } = useConfigStore();
+  const loadArticle = useExerciseStore((state) => state.loadArticle);
+  const extractWords = useExerciseStore((state) => state.extractWords);
+  const resetCloze = useExerciseStore((state) => state.resetCloze);
+  const setAnswer = useExerciseStore((state) => state.setAnswer);
+  const setStatus = useExerciseStore((state) => state.setStatus);
+  const toggleWordList = useExerciseStore((state) => state.toggleWordList);
+  const setRevealedIds = useExerciseStore((state) => state.setRevealedIds);
+
+  const autoCarousel = useConfigStore((state) => state.autoCarousel);
+  const blurWords = useConfigStore((state) => state.blurWords);
+  const accentCheck = useConfigStore((state) => state.accentCheck);
+  const autoPlayEnabled = useConfigStore((state) => state.autoPlayEnabled);
+  const autoPlayDelay = useConfigStore((state) => state.autoPlayDelay);
+  const autoPlayCount = useConfigStore((state) => state.autoPlayCount);
+  const azureKey = useConfigStore((state) => state.azureKey);
+  const azureRegion = useConfigStore((state) => state.azureRegion);
+  const azureVoice = useConfigStore((state) => state.azureVoice);
+  const setAutoCarousel = useConfigStore((state) => state.setAutoCarousel);
+  const setBlurWords = useConfigStore((state) => state.setBlurWords);
+  const setAccentCheck = useConfigStore((state) => state.setAccentCheck);
+  const setAutoPlayEnabled = useConfigStore((state) => state.setAutoPlayEnabled);
+  const setAutoPlayDelay = useConfigStore((state) => state.setAutoPlayDelay);
+  const setAutoPlayCount = useConfigStore((state) => state.setAutoPlayCount);
+  const setAzureKey = useConfigStore((state) => state.setAzureKey);
+  const setAzureRegion = useConfigStore((state) => state.setAzureRegion);
+  const setAzureVoice = useConfigStore((state) => state.setAzureVoice);
+  const themeMode = useConfigStore((state) => state.themeMode);
+  const setThemeMode = useConfigStore((state) => state.setThemeMode);
 
   const { playWord, ensureAudio } = useTtsAudio();
   const {
@@ -128,13 +132,46 @@ export default function DashboardPage() {
   } = useArticles(!!user);
 
   const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
-  const clampedCount = Math.min(20, Math.max(0, autoPlayCount || 0));
+  const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
+  const clampedDelay = Math.min(MAX_AUTOPLAY_DELAY, Math.max(MIN_AUTOPLAY_DELAY, autoPlayDelay || MIN_AUTOPLAY_DELAY));
 
   const renderMarkdown = (value) => (
     <span className="markdown-text">
       <ReactMarkdown components={markdownComponents}>{value || ''}</ReactMarkdown>
     </span>
   );
+
+  const fetchImages = useCallback(async (word, refresh = false) => {
+    const key = word.toLowerCase();
+    const current = imageMap[key] || {};
+    setCarouselState((prev) => {
+      if (prev.word.toLowerCase() === key) return { ...prev, loading: true };
+      return prev;
+    });
+    try {
+      const urls = await loadImages(word, refresh);
+      const nextUrls = urls || current.urls || [];
+      setCarouselState((prev) => {
+        if (prev.word.toLowerCase() === key) {
+          return {
+            ...prev,
+            urls: nextUrls,
+            loading: false,
+            index: 0,
+            visible: autoCarousel,
+          };
+        }
+        return prev;
+      });
+    } catch {
+      setCarouselState((prev) => {
+        if (prev.word.toLowerCase() === key) {
+          return { ...prev, loading: false, urls: current.urls || prev.urls || [] };
+        }
+        return prev;
+      });
+    }
+  }, [autoCarousel, imageMap, loadImages]);
 
   useEffect(() => {
     if (user) {
@@ -180,7 +217,18 @@ export default function DashboardPage() {
   }, [blurWords]);
 
   useEffect(() => {
-    if (!previewSrc) return undefined;
+    if (!carouselState.visible || carouselState.urls.length <= 1) return () => {};
+    const timer = setInterval(() => {
+      setCarouselState((prev) => ({
+        ...prev,
+        index: prev.urls.length ? (prev.index + 1) % prev.urls.length : 0,
+      }));
+    }, CAROUSEL_INTERVAL);
+    return () => clearInterval(timer);
+  }, [carouselState.visible, carouselState.urls]);
+
+  useEffect(() => {
+    if (!previewSrc) return () => {};
     const handleKey = (e) => {
       if (!previewList.length) return;
       if (e.key === 'ArrowRight') {
@@ -192,19 +240,38 @@ export default function DashboardPage() {
       }
     };
     window.addEventListener('keydown', handleKey);
-    return () => window.removeEventListener('keydown', handleKey);
+    return () => {
+      window.removeEventListener('keydown', handleKey);
+    };
   }, [previewSrc, previewList]);
 
-  const triggerAutoPlay = async (word) => {
+  const triggerAutoPlay = useCallback(async (word) => {
     if (!clampedCount) return;
     try {
       await playWord(word, clampedCount);
     } catch (error) {
       console.error('Auto play failed', error);
     }
-  };
+  }, [clampedCount, playWord]);
 
-  const moveActive = (delta) => {
+  const openImagesForWord = useCallback((word, id = null) => {
+    if (showCloze) return;
+    const key = word.toLowerCase();
+    const entry = imageMap[key];
+    setCarouselState({
+      word,
+      urls: entry?.urls || [],
+      index: 0,
+      visible: autoCarousel,
+      loading: !entry?.urls?.length,
+    });
+    fetchImages(word);
+    if (id !== null) {
+      setActiveWordId(id);
+    }
+  }, [autoCarousel, fetchImages, imageMap, showCloze]);
+
+  const moveActive = useCallback((delta) => {
     if (!blanks.length) return;
     const idx = blanks.findIndex((b) => b.id === activeWordId);
     const nextIdx = idx === -1 ? 0 : Math.max(0, Math.min(blanks.length - 1, idx + delta));
@@ -222,13 +289,13 @@ export default function DashboardPage() {
         if (el?.focus) el.focus();
       }, 0);
     }
-  };
+  }, [activeWordId, autoPlayEnabled, blanks, openImagesForWord, showCloze, triggerAutoPlay]);
 
   useAutoPlay({
     activeWordId,
     blanks,
     enabled: autoPlayEnabled,
-    delay: autoPlayDelay,
+    delay: clampedDelay,
     showCloze,
     playCount: clampedCount,
     triggerAutoPlay,
@@ -352,21 +419,6 @@ export default function DashboardPage() {
     }
   };
 
-  const openImagesForWord = (word, id = null) => {
-    if (showCloze) return;
-    const key = word.toLowerCase();
-    const entry = imageMap[key];
-    setCarouselState({
-      word,
-      urls: entry?.urls || [],
-      index: 0,
-      visible: autoCarousel,
-      loading: !entry?.urls?.length,
-    });
-    fetchImages(word);
-    setActiveWordId(id);
-  };
-
   const nextSlide = () => {
     setCarouselState((prev) => {
       if (!prev.urls.length) return prev;
@@ -388,38 +440,6 @@ export default function DashboardPage() {
       nextSlide();
     } else if (delta < 0) {
       prevSlide();
-    }
-  };
-
-  const fetchImages = async (word, refresh = false) => {
-    const key = word.toLowerCase();
-    const current = imageMap[key] || {};
-    setCarouselState((prev) => {
-      if (prev.word.toLowerCase() === key) return { ...prev, loading: true };
-      return prev;
-    });
-    try {
-      const urls = await loadImages(word, refresh);
-      const nextUrls = urls || current.urls || [];
-      setCarouselState((prev) => {
-        if (prev.word.toLowerCase() === key) {
-          return {
-            ...prev,
-            urls: nextUrls,
-            loading: false,
-            index: 0,
-            visible: autoCarousel,
-          };
-        }
-        return prev;
-      });
-    } catch {
-      setCarouselState((prev) => {
-        if (prev.word.toLowerCase() === key) {
-          return { ...prev, loading: false, urls: current.urls || prev.urls || [] };
-        }
-        return prev;
-      });
     }
   };
 
@@ -624,7 +644,7 @@ export default function DashboardPage() {
           body: { padding: 0 },
           content: { width: 'fit-content' },
         }}
-        destroyOnClose
+        destroyOnHidden
       >
         <img
           src={previewList[previewIndex] || previewSrc}

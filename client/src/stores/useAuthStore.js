@@ -20,7 +20,7 @@ const useAuthStore = create((set) => ({
     try {
       const { data } = await meApi();
       set({ user: data.user, token: existing, initDone: true });
-    } catch (error) {
+    } catch {
       setAuthToken('');
       set({ user: null, token: '', initDone: true });
     }

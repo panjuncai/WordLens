@@ -1,6 +1,7 @@
 import { useState } from 'react';
 import { message } from 'antd';
 import { fetchImages } from '../services/mediaService';
+import { IMAGE_PREFETCH_CONCURRENCY } from '../constants/config';
 
 export default function useImageSearch() {
   const [imageMap, setImageMap] = useState({});
@@ -58,14 +59,16 @@ export default function useImageSearch() {
     setPrefetching(true);
     setPrefetchProgress({ done: 0, total: words.length });
     try {
-      for (let i = 0; i < words.length; i += 1) {
-        const w = words[i];
+      let done = 0;
+      for (let i = 0; i < words.length; i += IMAGE_PREFETCH_CONCURRENCY) {
+        const chunk = words.slice(i, i + IMAGE_PREFETCH_CONCURRENCY);
         // eslint-disable-next-line no-await-in-loop
-        await loadImages(w);
-        setPrefetchProgress({ done: i + 1, total: words.length });
+        await Promise.all(chunk.map((w) => loadImages(w).catch(() => {})));
+        done += chunk.length;
+        setPrefetchProgress({ done: Math.min(done, words.length), total: words.length });
       }
       message.success('图片缓存完成');
-    } catch (error) {
+    } catch {
       message.error('图片缓存失败');
     } finally {
       setPrefetching(false);

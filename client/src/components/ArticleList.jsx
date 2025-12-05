@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Input, List, Modal, Space, Typography, Popconfirm } from 'antd';
+import { Button, Card, Input, Modal, Space, Typography, Popconfirm } from 'antd';
 
 const { Text } = Typography;
 
@@ -43,33 +43,31 @@ export default function ArticleList({
       extra={<Button type="primary" size="small" onClick={() => openModal()}>新增</Button>}
       loading={loading}
     >
-      <List
-        dataSource={items}
-        locale={{ emptyText: '暂无文章，点击新增创建' }}
-        renderItem={(item) => (
-          <List.Item
-            actions={[
-              <Button type="link" size="small" onClick={() => openModal(item)}>编辑</Button>,
+      <div className="article-list">
+        {items.length === 0 && <Text type="secondary">暂无文章，点击新增创建</Text>}
+        {items.map((item) => (
+          <div
+            key={item.id}
+            className="article-row"
+            style={{ background: activeId === item.id ? 'rgba(37,99,235,0.08)' : 'transparent' }}
+            onClick={() => onSelect(item)}
+          >
+            <div className="article-meta">
+              <Text strong>{item.title}</Text>
+              <Text type="secondary" style={{ fontSize: 12 }}>更新于 {item.updated_at || ''}</Text>
+            </div>
+            <Space size="small">
+              <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); openModal(item); }}>编辑</Button>
               <Popconfirm
                 title="确认删除？"
-                onConfirm={() => onDelete(item.id)}
+                onConfirm={(e) => { e?.stopPropagation(); onDelete(item.id); }}
               >
-                <Button type="link" danger size="small">删除</Button>
-              </Popconfirm>,
-            ]}
-            onClick={() => onSelect(item)}
-            style={{
-              background: activeId === item.id ? 'rgba(37,99,235,0.08)' : 'transparent',
-              cursor: 'pointer',
-            }}
-          >
-            <List.Item.Meta
-              title={<Text strong>{item.title}</Text>}
-              description={<Text type="secondary">更新于 {item.updated_at || ''}</Text>}
-            />
-          </List.Item>
-        )}
-      />
+                <Button type="link" danger size="small" onClick={(e) => e.stopPropagation()}>删除</Button>
+              </Popconfirm>
+            </Space>
+          </div>
+        ))}
+      </div>
 
       <Modal
         title={editing ? '编辑文章' : '新增文章'}
@@ -77,6 +75,7 @@ export default function ArticleList({
         onCancel={() => setModalOpen(false)}
         onOk={submit}
         confirmLoading={saving}
+        destroyOnHidden
       >
         <Space direction="vertical" style={{ width: '100%' }}>
           <Input placeholder="标题" value={title} onChange={(e) => setTitle(e.target.value)} />

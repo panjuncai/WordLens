@@ -21,6 +21,7 @@ import LoginScreen from './components/LoginScreen';
 import ConfigModal from './components/ConfigModal';
 import useAuth from './hooks/useAuth';
 import useTtsAudio from './hooks/useTtsAudio';
+import useImageSearch from './hooks/useImageSearch';
 import { SAMPLE_SCENE } from './constants/defaults';
 import { extractCandidates, buildSegments } from './utils/textProcessor';
 import './App.css';
@@ -60,7 +61,6 @@ function App() {
   const [activeWordId, setActiveWordId] = useState(null);
   const [wordListOpen, setWordListOpen] = useState(false);
   const inputRefs = useRef({});
-  const [imageMap, setImageMap] = useState({});
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -82,8 +82,13 @@ function App() {
   const autoPlayTimer = useRef(null);
   const [revealedIds, setRevealedIds] = useState(new Set());
   const { playWord, ensureAudio } = useTtsAudio();
-  const [imagePrefetching, setImagePrefetching] = useState(false);
-  const [imagePrefetchProgress, setImagePrefetchProgress] = useState({ done: 0, total: 0 });
+  const {
+    imageMap,
+    loadImages,
+    prefetchImages: prefetchImagesAll,
+    prefetching: imagePrefetching,
+    prefetchProgress: imagePrefetchProgress,
+  } = useImageSearch();
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -367,16 +372,6 @@ function App() {
     }
   };
 
-  const preloadImages = (urls = []) => Promise.all(
-    (urls || []).map(
-      (src) => new Promise((resolve) => {
-        const img = new Image();
-        img.onload = img.onerror = () => resolve();
-        img.src = src;
-      }),
-    ),
-  );
-
   const openImagesForWord = (word, id = null) => {
     if (showCloze) return;
     const key = word.toLowerCase();
@@ -419,41 +414,18 @@ function App() {
   const fetchImages = async (word, refresh = false) => {
     const key = word.toLowerCase();
     const current = imageMap[key] || {};
-    if (current.loading) return;
-    const nextPage = refresh ? (current.page || 0) + 1 : current.page || 0;
-    if (!refresh && current.urls) {
-      preloadImages(current.urls);
-      setCarouselState((prev) => {
-        if (prev.word.toLowerCase() === key) {
-          return {
-            ...prev,
-            urls: current.urls,
-            index: 0,
-            loading: false,
-            visible: autoCarousel,
-          };
-        }
-        return prev;
-      });
-      return;
-    }
-    setImageMap((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], loading: true, error: null, page: nextPage },
-    }));
+    setCarouselState((prev) => {
+      if (prev.word.toLowerCase() === key) return { ...prev, loading: true };
+      return prev;
+    });
     try {
-      const { data } = await api.get('/api/images', { params: { word, offset: nextPage * 5 } });
-      const urls = data?.urls || [];
-      setImageMap((prev) => ({
-        ...prev,
-        [key]: { urls, loading: false, error: null, page: nextPage },
-      }));
-      preloadImages(urls);
+      const urls = await loadImages(word, refresh);
+      const nextUrls = urls || current.urls || [];
       setCarouselState((prev) => {
         if (prev.word.toLowerCase() === key) {
           return {
             ...prev,
-            urls,
+            urls: nextUrls,
             loading: false,
             index: 0,
             visible: autoCarousel,
@@ -462,31 +434,18 @@ function App() {
         return prev;
       });
     } catch (error) {
-      setImageMap((prev) => ({ ...prev, [key]: { urls: [], loading: false, error: '获取图片失败', page: nextPage } }));
+      setCarouselState((prev) => {
+        if (prev.word.toLowerCase() === key) {
+          return { ...prev, loading: false, urls: current.urls || prev.urls || [] };
+        }
+        return prev;
+      });
     }
   };
 
   const prefetchImages = async () => {
     const words = Array.from(new Set(selectedWords));
-    if (!words.length) {
-      message.info('暂无可缓存的图片词汇');
-      return;
-    }
-    setImagePrefetching(true);
-    setImagePrefetchProgress({ done: 0, total: words.length });
-    try {
-      for (let i = 0; i < words.length; i += 1) {
-        const w = words[i];
-        // eslint-disable-next-line no-await-in-loop
-        await fetchImages(w);
-        setImagePrefetchProgress({ done: i + 1, total: words.length });
-      }
-      message.success('图片缓存完成');
-    } catch (error) {
-      message.error('图片缓存失败');
-    } finally {
-      setImagePrefetching(false);
-    }
+    await prefetchImagesAll(words);
   };
 
   const loadConfig = async () => {

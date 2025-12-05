@@ -7,6 +7,16 @@ export default function useImageSearch() {
   const [prefetching, setPrefetching] = useState(false);
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
 
+  const preloadImages = (urls = []) => Promise.all(
+    urls.map(
+      (src) => new Promise((resolve) => {
+        const img = new Image();
+        img.onload = img.onerror = resolve;
+        img.src = src;
+      }),
+    ),
+  );
+
   const loadImages = async (word, refresh = false) => {
     const key = word.toLowerCase();
     const current = imageMap[key] || {};
@@ -19,12 +29,24 @@ export default function useImageSearch() {
     }));
     try {
       const { data } = await fetchImages(word, nextPage * 5);
+      const urls = data?.urls || [];
       setImageMap((prev) => ({
         ...prev,
-        [key]: { urls: data?.urls || [], loading: false, error: null, page: nextPage },
+        [key]: { urls, loading: false, error: null, page: nextPage },
       }));
+      preloadImages(urls);
+      return urls;
     } catch (error) {
-      setImageMap((prev) => ({ ...prev, [key]: { urls: [], loading: false, error: '获取图片失败', page: nextPage } }));
+      setImageMap((prev) => ({
+        ...prev,
+        [key]: {
+          urls: prev[key]?.urls || current.urls || [],
+          loading: false,
+          error: '获取图片失败',
+          page: current.page || 0,
+        },
+      }));
+      throw error;
     }
   };
 

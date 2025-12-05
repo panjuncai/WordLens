@@ -17,7 +17,7 @@ export default function LoginScreen({
       <Card className="auth-card">
         <div className="auth-header">
           <Text strong>{mode === 'login' ? '登录' : '注册'}</Text>
-          <Button type="link" onClick={() => setMode((m) => (m === 'login' ? 'register' : 'login'))}>
+          <Button type="link" onClick={() => setMode(mode === 'login' ? 'register' : 'login')}>
             {mode === 'login' ? '去注册' : '去登录'}
           </Button>
         </div>

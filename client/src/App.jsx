@@ -20,12 +20,14 @@ import api from './api';
 import LoginScreen from './components/LoginScreen';
 import ConfigModal from './components/ConfigModal';
 import ArticleList from './components/ArticleList';
-import useAuth from './hooks/useAuth';
 import useTtsAudio from './hooks/useTtsAudio';
 import useImageSearch from './hooks/useImageSearch';
 import useArticles from './hooks/useArticles';
 import { SAMPLE_SCENE } from './constants/defaults';
 import { extractCandidates, buildSegments } from './utils/textProcessor';
+import useAuthStore from './stores/useAuthStore';
+import useExerciseStore from './stores/useExerciseStore';
+import useConfigStore from './stores/useConfigStore';
 import './App.css';
 
 const { Text } = Typography;
@@ -41,7 +43,8 @@ function App() {
     login: loginUser,
     register: registerUser,
     logout,
-  } = useAuth();
+    checkAuth,
+  } = useAuthStore();
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
   const [azureKey, setAzureKey] = useState('');
@@ -49,15 +52,8 @@ function App() {
   const [azureVoice, setAzureVoice] = useState('');
   const [configOpen, setConfigOpen] = useState(false);
   const [configLoading, setConfigLoading] = useState(false);
-  const [sceneText, setSceneText] = useState(SAMPLE_SCENE);
-  const [candidates, setCandidates] = useState(() => extractCandidates(SAMPLE_SCENE));
-  const [selectedWords, setSelectedWords] = useState(() => extractCandidates(SAMPLE_SCENE));
-  const [showCloze, setShowCloze] = useState(false);
   const [loadingWord, setLoadingWord] = useState('');
   const [inputCollapsed, setInputCollapsed] = useState(true);
-  const [answers, setAnswers] = useState({});
-  const [statuses, setStatuses] = useState({});
-  const [autoPlayCount, setAutoPlayCount] = useState(1);
   const [prefetching, setPrefetching] = useState(false);
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
   const [activeWordId, setActiveWordId] = useState(null);
@@ -101,10 +97,6 @@ function App() {
   } = useArticles();
   const [activeArticle, setActiveArticle] = useState(null);
 
-  const segments = useMemo(
-    () => buildSegments(sceneText, selectedWords),
-    [sceneText, selectedWords],
-  );
   const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
   const clampedCount = Math.min(20, Math.max(0, autoPlayCount || 0));
 
@@ -119,8 +111,8 @@ function App() {
   }, [user]);
 
   useEffect(() => {
-    setCandidates(extractCandidates(sceneText));
-  }, [sceneText]);
+    checkAuth();
+  }, []);
 
   useEffect(() => {
     if (activeArticle) {
@@ -131,15 +123,12 @@ function App() {
   }, [activeArticle]);
 
   useEffect(() => {
-    setAnswers({});
-    setStatuses({});
     inputRefs.current = {};
     wordRefs.current = {};
     setActiveWordId(null);
     setPreviewList([]);
     setPreviewIndex(0);
     setOpenImageWordId(null);
-    setRevealedIds(new Set());
     setCarouselState((prev) => ({ ...prev, visible: false, word: '', urls: [], loading: false }));
   }, [sceneText, selectedWords]);
 
@@ -240,19 +229,16 @@ function App() {
   );
 
   const onExtract = () => {
-    const words = extractCandidates(sceneText);
-    if (!words.length) {
+    const count = extractWords();
+    if (!count) {
       message.warning('未找到可挖空的法语候选词，请检查文本');
       return;
     }
-    setCandidates(words);
-    setSelectedWords(words);
-    setShowCloze(true);
-    message.success(`已提取 ${words.length} 个候选词并完成挖空`);
+    message.success(`已提取 ${count} 个候选词并完成挖空`);
   };
 
   const onReset = () => {
-    setShowCloze(false);
+    resetCloze();
     const first = blanks[0];
     if (first) {
       setActiveWordId(first.id);
@@ -274,11 +260,10 @@ function App() {
     }
   };
 
-  const wordOptions = candidates.map((word) => ({ label: word, value: word }));
+  const wordOptions = selectedWords.map((word) => ({ label: word, value: word }));
 
   const handleChange = (id, val) => {
-    setAnswers((prev) => ({ ...prev, [id]: val }));
-    setStatuses((prev) => ({ ...prev, [id]: undefined }));
+    setAnswer(id, val);
   };
 
   const handleEnter = (item) => {
@@ -286,9 +271,9 @@ function App() {
     const sensitivity = accentCheck ? 'accent' : 'base';
     const correct = inputVal.localeCompare(item.value, undefined, { sensitivity, usage: 'search' }) === 0;
     if (correct && !accentCheck && inputVal !== item.value) {
-      setAnswers((prev) => ({ ...prev, [item.id]: item.value }));
+      setAnswer(item.id, item.value);
     }
-    setStatuses((prev) => ({ ...prev, [item.id]: correct ? 'correct' : 'wrong' }));
+    setStatus(item.id, correct ? 'correct' : 'wrong');
     if (correct) {
       const idx = blanks.findIndex((seg) => seg.id === item.id);
       const next = blanks[idx + 1];

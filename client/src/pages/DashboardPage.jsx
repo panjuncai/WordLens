@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
   const [activeArticle, setActiveArticle] = useState(null);
   const [activeWordId, setActiveWordId] = useState(null);
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
@@ -523,6 +524,16 @@ export default function DashboardPage() {
             onDelete={deleteArticle}
             onSelect={(item) => setActiveArticle(item)}
             activeId={activeArticle?.id}
+            collapsed={sidebarCollapsed}
+            onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+            userEmail={user?.email || ''}
+            themeMode={themeMode}
+            onToggleTheme={setThemeMode}
+            onOpenConfig={() => {
+              setConfigOpen(true);
+              loadConfig();
+            }}
+            onLogout={logout}
           />
         </div>
         <div className="workspace-main chat-main">

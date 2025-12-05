@@ -125,12 +125,15 @@ body[data-theme='dark'] {
 .sidebar-card {
   height: 100%;
   overflow: hidden;
+  display: flex;
+  flex-direction: column;
 }
 
 .sidebar-scroll {
   height: calc(100% - 48px);
   overflow: auto;
   padding-right: 6px;
+  flex: 1;
 }
 
 .chat-main {
@@ -173,6 +176,43 @@ body[data-theme='dark'] {
   display: flex;
   flex-direction: column;
   gap: 2px;
+}
+
+.sidebar-footer {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 12px;
+  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  cursor: pointer;
+}
+
+.sidebar-footer:hover {
+  background: rgba(37, 99, 235, 0.08);
+}
+
+.sidebar-footer-text {
+  display: flex;
+  flex-direction: column;
+  line-height: 1.2;
+}
+
+.sidebar-card.collapsed {
+  width: 72px;
+  min-width: 72px;
+}
+
+.sidebar-card.collapsed .sidebar-scroll,
+.sidebar-card.collapsed .ant-card-head-title {
+  display: none;
+}
+
+.sidebar-card.collapsed .ant-card-head {
+  padding: 0 8px;
+}
+
+.sidebar-card.collapsed .sidebar-footer {
+  justify-content: center;
 }
 
 .user-bar {

@@ -55,7 +55,12 @@ const useExerciseStore = create((set, get) => ({
   })),
   setActiveWordId: (id) => set({ activeWordId: id }),
   toggleWordList: () => set((state) => ({ wordListOpen: !state.wordListOpen })),
-  setRevealedIds: (updater) => set((state) => ({ revealedIds: updater(state.revealedIds) })),
+  setRevealedIds: (updater) => set((state) => {
+    if (typeof updater === 'function') {
+      return { revealedIds: updater(state.revealedIds) };
+    }
+    return { revealedIds: updater instanceof Set ? updater : new Set(updater || []) };
+  }),
 }));
 
 export default useExerciseStore;

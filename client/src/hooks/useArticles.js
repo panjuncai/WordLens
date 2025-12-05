@@ -7,12 +7,13 @@ import {
   deleteArticle,
 } from '../services/articleService';
 
-export default function useArticles() {
+export default function useArticles(enabled = true) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
   const load = async () => {
+    if (!enabled) return;
     setLoading(true);
     try {
       const { data } = await listArticles();
@@ -26,7 +27,7 @@ export default function useArticles() {
 
   useEffect(() => {
     load();
-  }, []);
+  }, [enabled]);
 
   const createItem = async (title, content) => {
     setSaving(true);

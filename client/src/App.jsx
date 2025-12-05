@@ -9,7 +9,6 @@ import {
   Space,
   Tag,
   Switch,
-  Tooltip,
   Typography,
   Modal,
   message,
@@ -23,8 +22,6 @@ import ArticleList from './components/ArticleList';
 import useTtsAudio from './hooks/useTtsAudio';
 import useImageSearch from './hooks/useImageSearch';
 import useArticles from './hooks/useArticles';
-import { SAMPLE_SCENE } from './constants/defaults';
-import { extractCandidates, buildSegments } from './utils/textProcessor';
 import useAuthStore from './stores/useAuthStore';
 import useExerciseStore from './stores/useExerciseStore';
 import useConfigStore from './stores/useConfigStore';
@@ -39,7 +36,6 @@ function App() {
     mode: authMode,
     setMode: setAuthMode,
     loading: authLoading,
-    initDone,
     login: loginUser,
     register: registerUser,
     logout,
@@ -47,17 +43,12 @@ function App() {
   } = useAuthStore();
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
-  const [azureKey, setAzureKey] = useState('');
-  const [azureRegion, setAzureRegion] = useState('');
-  const [azureVoice, setAzureVoice] = useState('');
   const [configOpen, setConfigOpen] = useState(false);
   const [configLoading, setConfigLoading] = useState(false);
   const [loadingWord, setLoadingWord] = useState('');
-  const [inputCollapsed, setInputCollapsed] = useState(true);
   const [prefetching, setPrefetching] = useState(false);
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
   const [activeWordId, setActiveWordId] = useState(null);
-  const [wordListOpen, setWordListOpen] = useState(false);
   const inputRefs = useRef({});
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
@@ -70,15 +61,46 @@ function App() {
     visible: false,
     loading: false,
   });
-  const [autoCarousel, setAutoCarousel] = useState(false);
-  const [blurWords, setBlurWords] = useState(false);
-  const [accentCheck, setAccentCheck] = useState(false);
-  const [autoPlayEnabled, setAutoPlayEnabled] = useState(false);
-  const [autoPlayDelay, setAutoPlayDelay] = useState(1);
   const carouselRef = useRef(null);
   const wordRefs = useRef({});
   const autoPlayTimer = useRef(null);
-  const [revealedIds, setRevealedIds] = useState(new Set());
+  const {
+    sceneText,
+    selectedWords,
+    segments,
+    showCloze,
+    answers,
+    statuses,
+    wordListOpen,
+    revealedIds,
+    loadArticle,
+    extractWords,
+    resetCloze,
+    setAnswer,
+    setStatus,
+    toggleWordList,
+    setRevealedIds,
+  } = useExerciseStore();
+  const {
+    autoCarousel,
+    blurWords,
+    accentCheck,
+    autoPlayEnabled,
+    autoPlayDelay,
+    autoPlayCount,
+    setAutoCarousel,
+    setBlurWords,
+    setAccentCheck,
+    setAutoPlayEnabled,
+    setAutoPlayDelay,
+    setAutoPlayCount,
+    azureKey,
+    azureRegion,
+    azureVoice,
+    setAzureKey,
+    setAzureRegion,
+    setAzureVoice,
+  } = useConfigStore();
   const { playWord, ensureAudio } = useTtsAudio();
   const {
     imageMap,
@@ -94,7 +116,7 @@ function App() {
     createItem: createArticle,
     updateItem: updateArticle,
     deleteItem: deleteArticle,
-  } = useArticles();
+  } = useArticles(!!user);
   const [activeArticle, setActiveArticle] = useState(null);
 
   const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
@@ -116,9 +138,7 @@ function App() {
 
   useEffect(() => {
     if (activeArticle) {
-      setSceneText(activeArticle.content);
-      setSelectedWords(extractCandidates(activeArticle.content));
-      setShowCloze(false);
+      loadArticle(activeArticle.content);
     }
   }, [activeArticle]);
 
@@ -260,7 +280,7 @@ function App() {
     }
   };
 
-  const wordOptions = selectedWords.map((word) => ({ label: word, value: word }));
+  //const wordOptions = selectedWords.map((word) => ({ label: word, value: word }));
 
   const handleChange = (id, val) => {
     setAnswer(id, val);
@@ -515,7 +535,7 @@ function App() {
               {authMode === 'login' ? '去注册' : '去登录'}
             </Button>
           </div>
-          <Space direction="vertical" style={{ width: '100%' }}>
+          <Space orientation="vertical" style={{ width: '100%' }}>
             <Input
               placeholder="邮箱"
               value={authEmail}
@@ -874,11 +894,11 @@ function App() {
             })}
           </div>
           <Divider />
-          <Space size="small" wrap align="center">
-            <Text strong>当前挖空词：</Text>
-            <Button type="link" size="small" onClick={() => setWordListOpen((p) => !p)}>
-              {wordListOpen ? '折叠' : '展开'}
-            </Button>
+            <Space size="small" wrap align="center">
+              <Text strong>当前挖空词：</Text>
+              <Button type="link" size="small" onClick={toggleWordList}>
+                {wordListOpen ? '折叠' : '展开'}
+              </Button>
             {wordListOpen && (
               <>
                 {selectedWords.length ? (
@@ -900,7 +920,7 @@ function App() {
         onOk={saveConfig}
         confirmLoading={configLoading}
       >
-        <Space direction="vertical" style={{ width: '100%' }}>
+        <Space orientation="vertical" style={{ width: '100%' }}>
           <Input
             placeholder="AZURE_SPEECH_KEY"
             value={azureKey}

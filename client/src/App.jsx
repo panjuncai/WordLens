@@ -735,29 +735,6 @@ function App() {
         </div>
         <div className="workspace-main">
           <Card
-            title="输入 / 编辑场景文本"
-            className="input-card"
-            extra={(
-              <Button
-                type="link"
-                size="small"
-                onClick={() => setInputCollapsed((prev) => !prev)}
-              >
-                {inputCollapsed ? '展开' : '收起'}
-              </Button>
-            )}
-          >
-            {!inputCollapsed && (
-              <TextArea
-                value={sceneText}
-                onChange={(e) => setSceneText(e.target.value)}
-                autoSize={{ minRows: 6, maxRows: 10 }}
-                placeholder="在此粘贴你的法语或双语场景脚本"
-              />
-            )}
-          </Card>
-
-          <Card
             title={activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
             extra={<Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>}
           >

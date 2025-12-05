@@ -99,6 +99,10 @@ body {
   gap: 12px;
 }
 
+.input-card {
+  display: none;
+}
+
 .input-card .ant-card-head {
   min-height: 38px;
 }

@@ -15,135 +15,32 @@ import {
   message,
 } from 'antd';
 import { PictureOutlined, ReloadOutlined, SoundOutlined, UndoOutlined, CloseOutlined } from '@ant-design/icons';
-import api, { setAuthToken } from './api';
 import ReactMarkdown from 'react-markdown';
+import api from './api';
+import LoginScreen from './components/LoginScreen';
+import ConfigModal from './components/ConfigModal';
+import useAuth from './hooks/useAuth';
+import useTtsAudio from './hooks/useTtsAudio';
+import { SAMPLE_SCENE } from './constants/defaults';
+import { extractCandidates, buildSegments } from './utils/textProcessor';
 import './App.css';
 
 const { Text } = Typography;
 const { TextArea } = Input;
 
-const SAMPLE_SCENE = `## 我的法语微电影：职场、生活与旅行
-
-第一幕：繁忙的都市节奏
-你是一名 informaticien。很 tôt，闹钟响了。你翻开 agenda，感叹 “c'est la vie”。新的一 semaine commencer，你去 société travailler。大家在 cabinet 开 réunion，一直很 tard，你只想 rentrer 回家。
-
-第二幕：意外的转折与计划
-周五 soir 终于回到家，你拿起 journal voir 广告。mais 去哪里？Londres、Vendôme tous 想去。donc，vacances 是 possible！你抱起 guitare，兴奋起来。
-
-第三幕：旅途中的惊喜邂逅
-假期开始，你做了新 coiffure，来到海边 juste là，朝 vers 沙滩 passer 一天。surprise！遇到 docteur 和 célèbre actrice，你们决定今晚 ensemble，把 reste 的故事留给明天。`;
-
-const wordPattern = /[A-Za-zÀ-ÖØ-öø-ÿ'’\-]+/g;
-const articleSet = new Set([
-  'un',
-  'une',
-  'des',
-  'du',
-  'de',
-  'le',
-  'la',
-  'les',
-  "l'",
-  'l’',
-  "d'",
-  'd’',
-  'au',
-  'aux',
-  "qu'",
-  'qu’',
-  "c'",
-  'c’',
-  "s'",
-  's’',
-]);
-const reflexiveSet = new Set(['se', "s'", 's’', 'me', "m'", 'm’', 'te', "t'", 't’', 'nous', 'vous']);
-const fixedCombos = ['en général'];
-const fixedComboFirsts = new Set(fixedCombos.map((c) => c.split(' ')[0]));
-
-const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
-
-function extractCandidates(text) {
-  const matches = [...(text.matchAll(wordPattern) || [])];
-  const tokens = matches.map((m) => m[0]);
-  const seen = new Set();
-  const combos = [];
-
-  for (let i = 0; i < tokens.length - 1; i += 1) {
-    const cur = tokens[i];
-    const next = tokens[i + 1];
-    if (!cur || !next) continue;
-    const lowerCur = cur.toLowerCase();
-    const lowerNext = next.toLowerCase();
-    const comboPair = `${lowerCur} ${lowerNext}`;
-    if (fixedCombos.includes(comboPair)) {
-      if (!seen.has(comboPair)) {
-        combos.push(`${cur} ${next}`);
-        seen.add(comboPair);
-      }
-      continue;
-    }
-    if (articleSet.has(lowerCur) || reflexiveSet.has(lowerCur)) {
-      const combo = `${cur} ${next}`;
-      const key = combo.toLowerCase();
-      if (!seen.has(key)) {
-        combos.push(combo);
-        seen.add(key);
-      }
-    }
-  }
-
-  for (let i = 0; i < tokens.length - 2; i += 1) {
-    const a = tokens[i];
-    const b = tokens[i + 1];
-    const c = tokens[i + 2];
-    if (!a || !b || !c) continue;
-    const lowerB = b.toLowerCase();
-    if (articleSet.has(lowerB) || reflexiveSet.has(lowerB)) {
-      const combo3 = `${a} ${b} ${c}`;
-      const key3 = combo3.toLowerCase();
-      if (!seen.has(key3)) {
-        combos.push(combo3);
-        seen.add(key3);
-      }
-    }
-  }
-
-  const singles = [];
-  tokens.forEach((word) => {
-    const cleaned = word.replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ]+|[^A-Za-zÀ-ÖØ-öø-ÿ]+$/g, '');
-    if (!cleaned || cleaned.length < 2) return;
-    const key = cleaned.toLowerCase();
-    if (seen.has(key) || reflexiveSet.has(key) || fixedComboFirsts.has(key)) return;
-    seen.add(key);
-    singles.push(cleaned);
-  });
-
-  return [...combos, ...singles];
-}
-
-function buildSegments(text, targets) {
-  if (!targets.length) return [{ type: 'text', value: text }];
-  const escaped = targets.map((w) => escapeRegex(w)).join('|');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  const parts = text.split(regex);
-  let counter = 0;
-  return parts.map((part) => {
-    const match = targets.find((w) => w.localeCompare(part, undefined, { sensitivity: 'accent', usage: 'search' }) === 0);
-    if (match) {
-      counter += 1;
-      return { type: 'blank', value: match, id: counter };
-    }
-    return { type: 'text', value: part };
-  });
-}
-
 function App() {
-  const [token, setToken] = useState(localStorage.getItem('token') || '');
-  const [authedUser, setAuthedUser] = useState(null);
-  const [authMode, setAuthMode] = useState('login');
+  const {
+    user,
+    mode: authMode,
+    setMode: setAuthMode,
+    loading: authLoading,
+    initDone,
+    login: loginUser,
+    register: registerUser,
+    logout,
+  } = useAuth();
   const [authEmail, setAuthEmail] = useState('');
   const [authPassword, setAuthPassword] = useState('');
-  const [authLoading, setAuthLoading] = useState(false);
   const [azureKey, setAzureKey] = useState('');
   const [azureRegion, setAzureRegion] = useState('');
   const [azureVoice, setAzureVoice] = useState('');
@@ -160,12 +57,9 @@ function App() {
   const [autoPlayCount, setAutoPlayCount] = useState(1);
   const [prefetching, setPrefetching] = useState(false);
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
-  const [imagePrefetching, setImagePrefetching] = useState(false);
-  const [imagePrefetchProgress, setImagePrefetchProgress] = useState({ done: 0, total: 0 });
   const [activeWordId, setActiveWordId] = useState(null);
   const [wordListOpen, setWordListOpen] = useState(false);
   const inputRefs = useRef({});
-  const audioCache = useRef({});
   const [imageMap, setImageMap] = useState({});
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
@@ -187,6 +81,9 @@ function App() {
   const wordRefs = useRef({});
   const autoPlayTimer = useRef(null);
   const [revealedIds, setRevealedIds] = useState(new Set());
+  const { playWord, ensureAudio } = useTtsAudio();
+  const [imagePrefetching, setImagePrefetching] = useState(false);
+  const [imagePrefetchProgress, setImagePrefetchProgress] = useState({ done: 0, total: 0 });
 
   const segments = useMemo(
     () => buildSegments(sceneText, selectedWords),
@@ -196,26 +93,14 @@ function App() {
   const clampedCount = Math.min(20, Math.max(0, autoPlayCount || 0));
 
   useEffect(() => {
-    if (token) setAuthToken(token);
-    else setAuthToken('');
-  }, [token]);
-
-  useEffect(() => {
-    const existing = localStorage.getItem('token');
-    if (!existing) return;
-    setAuthToken(existing);
-    api.get('/api/auth/me')
-      .then((res) => {
-        setAuthedUser(res.data.user);
-        setToken(existing);
-        loadConfig();
-      })
-      .catch(() => {
-        localStorage.removeItem('token');
-        setToken('');
-        setAuthedUser(null);
-      });
-  }, []);
+    if (user) {
+      loadConfig();
+    } else {
+      setAzureKey('');
+      setAzureRegion('');
+      setAzureVoice('');
+    }
+  }, [user]);
 
   useEffect(() => {
     setCandidates(extractCandidates(sceneText));
@@ -354,35 +239,12 @@ function App() {
     message.info('已恢复为原文');
   };
 
-  const ensureAudio = async (word) => {
-    const key = word.toLowerCase();
-    if (audioCache.current[key]) return audioCache.current[key];
-    const { data } = await api.post('/api/tts', { text: word });
-    if (!data?.audioBase64) {
-      throw new Error('未收到音频，请检查 Azure 配置');
-    }
-    const url = `data:${data.format || 'audio/mp3'};base64,${data.audioBase64}`;
-    audioCache.current[key] = url;
-    return url;
-  };
-
-  const playAudioUrl = (url) => new Promise((resolve) => {
-    const audio = new Audio(url);
-    audio.onended = resolve;
-    audio.onerror = resolve;
-    audio.play();
-  });
-
   const onPlay = async (word) => {
     setLoadingWord(word);
     try {
-      const url = await ensureAudio(word);
-      await playAudioUrl(url);
+      await playWord(word);
     } catch (error) {
-      const detail = error.response?.data?.message || error.response?.data?.error || error.message;
-      const status = error.response?.status;
-      console.error(error);
-      message.error(`调用 Azure TTS 失败${status ? ` (${status})` : ''}${detail ? `: ${detail}` : ''}`);
+      // 错误已在 hook 中处理
     } finally {
       setLoadingWord('');
     }
@@ -431,11 +293,7 @@ function App() {
   const triggerAutoPlay = async (word) => {
     if (!clampedCount) return;
     try {
-      const url = await ensureAudio(word);
-      for (let i = 0; i < clampedCount; i += 1) {
-        // eslint-disable-next-line no-await-in-loop
-        await playAudioUrl(url);
-      }
+      await playWord(word, clampedCount);
     } catch (error) {
       console.error('Auto play failed', error);
     }
@@ -660,29 +518,12 @@ function App() {
   };
 
   const handleAuthSubmit = async () => {
-    setAuthLoading(true);
-    const endpoint = authMode === 'login' ? '/api/auth/login' : '/api/auth/register';
-    try {
-      const { data } = await api.post(endpoint, { email: authEmail, password: authPassword });
-      if (data?.token) {
-        setAuthToken(data.token);
-        setToken(data.token);
-        setAuthedUser(data.user);
-        loadConfig();
-        message.success(authMode === 'login' ? '登录成功' : '注册成功');
-      }
-    } catch (error) {
-      const detail = error.response?.data?.error || error.message;
-      message.error(detail || '认证失败');
-    } finally {
-      setAuthLoading(false);
-    }
+    if (authMode === 'login') await loginUser(authEmail, authPassword);
+    else await registerUser(authEmail, authPassword);
   };
 
   const handleLogout = () => {
-    localStorage.removeItem('token');
-    setToken('');
-    setAuthedUser(null);
+    logout();
   };
 
   useEffect(() => {
@@ -701,7 +542,7 @@ function App() {
     return () => window.removeEventListener('keydown', handleKey);
   }, [previewSrc, previewList]);
 
-  if (!authedUser) {
+  if (!user) {
     return (
       <div className="auth-wrap">
         <Card className="auth-card">
@@ -893,7 +734,7 @@ function App() {
                 </Text>
               )}
               <Space size="small" align="center">
-                <Text type="secondary">{authedUser?.email}</Text>
+                <Text type="secondary">{user?.email}</Text>
                 <Button type="link" onClick={handleLogout}>退出</Button>
               </Space>
             </div>

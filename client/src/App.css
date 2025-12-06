@@ -173,19 +173,24 @@ body,
 
 .hero-header {
   display: flex;
+  flex-direction: column;
+  gap: 6px;
+}
+
+.hero-toolbar {
+  display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 12px;
 }
 
-.hero-actions {
-  margin-top: 8px;
+.hero-center {
+  justify-content: center;
 }
 
-.stack {
-  display: flex;
-  flex-direction: column;
-  gap: 12px;
+.hero-progress {
+  min-height: 18px;
+  color: var(--muted);
 }
 
 .workspace-side {

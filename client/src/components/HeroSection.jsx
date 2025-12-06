@@ -1,5 +1,5 @@
-import { Button, InputNumber, Space, Switch, Typography } from 'antd';
-import { ReloadOutlined, UndoOutlined } from '@ant-design/icons';
+import { Button, Dropdown, InputNumber, Space, Switch, Typography } from 'antd';
+import { EllipsisOutlined, ReloadOutlined, UndoOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -21,34 +21,58 @@ export default function HeroSection({
   setBlurWords,
   setAccentCheck,
 }) {
-  return (
-    <div className="hero-header">
-      <Space size="middle" wrap className="hero-actions">
-        <Button type="primary" onClick={onExtract}>
-          智能提取 + 挖空
-        </Button>
-        <Button icon={<UndoOutlined />} onClick={onReset}>
-          恢复原文
-        </Button>
-        <div className="audio-config">
-          <Text type="secondary">自动发音次数</Text>
+  const menuItems = [
+    {
+      key: 'count',
+      label: (
+        <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+          <Text>自动发音次数</Text>
           <InputNumber
             size="small"
             min={0}
             max={20}
             value={autoPlayCount}
             onChange={(v) => setAutoPlayCount(v || 0)}
+            style={{ width: 80 }}
           />
-          <Button size="small" onClick={prefetchAudio} loading={prefetching}>
-            拉取声音
+        </div>
+      ),
+    },
+    {
+      key: 'audio',
+      label: '拉取声音',
+      disabled: prefetching,
+    },
+    {
+      key: 'image',
+      label: '拉取图片',
+      disabled: imagePrefetching,
+    },
+    {
+      key: 'accent',
+      label: (
+        <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+          <Text>重音检查</Text>
+          <Switch size="small" checked={accentCheck} onChange={setAccentCheck} />
+        </div>
+      ),
+    },
+  ];
+
+  const handleMenuClick = ({ key }) => {
+    if (key === 'audio') prefetchAudio();
+    if (key === 'image') prefetchImages();
+  };
+
+  return (
+    <div className="hero-header">
+      <div className="hero-toolbar">
+        <Space size="middle" className="hero-center" wrap>
+          <Button type="primary" onClick={onExtract}>
+            填空练习
           </Button>
-          {prefetching && (
-            <Text type="secondary">
-              {prefetchProgress.done}/{prefetchProgress.total}
-            </Text>
-          )}
-          <Button size="small" onClick={prefetchImages} loading={imagePrefetching}>
-            拉取图片
+          <Button icon={<UndoOutlined />} onClick={onReset}>
+            恢复原文
           </Button>
           <Space size="small" align="center">
             <Text type="secondary">自动轮播</Text>
@@ -58,17 +82,25 @@ export default function HeroSection({
             <Text type="secondary">高斯模糊</Text>
             <Switch size="small" checked={blurWords} onChange={setBlurWords} />
           </Space>
-          <Space size="small" align="center">
-            <Text type="secondary">重音检查</Text>
-            <Switch size="small" checked={accentCheck} onChange={setAccentCheck} />
-          </Space>
-          {imagePrefetching && (
-            <Text type="secondary">
-              {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
-            </Text>
-          )}
-        </div>
-      </Space>
+          <div className="hero-progress">
+            {prefetching && (
+              <Text type="secondary" style={{ marginRight: 12 }}>
+                声音 {prefetchProgress.done}/{prefetchProgress.total}
+              </Text>
+            )}
+            {imagePrefetching && (
+              <Text type="secondary">
+                图片 {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
+              </Text>
+            )}
+          </div>
+        </Space>
+
+        <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']} placement="bottomRight">
+          <Button icon={<EllipsisOutlined />} />
+        </Dropdown>
+      </div>
+      
     </div>
   );
 }

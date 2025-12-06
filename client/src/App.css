@@ -96,6 +96,7 @@ body,
   flex-direction: column;
   align-items: center;
   background: var(--surface);
+  padding-top: 20px;
 }
 
 .article-panel {
@@ -111,7 +112,7 @@ body,
   box-shadow: none;
   display: flex;
   flex-direction: column;
-  justify-content: center;
+  justify-content: flex-start;
 }
 
 .new-article-shell {
@@ -120,7 +121,7 @@ body,
   justify-content: center;
   min-height: 60vh;
   position: relative;
-  margin-top:-120px;
+  margin-top:100px;
 }
 
 .new-article-form {
@@ -188,10 +189,23 @@ body,
   border-radius: 0;
   padding: 0;
   background: transparent;
+  flex: 1;
 }
 
 .body-input::placeholder {
   color: #b3b3b3;
+}
+
+.input-error {
+  border: 1px solid #ef4444 !important;
+  border-radius: 8px;
+  padding: 4px 8px;
+}
+
+.input-error-text {
+  color: #ef4444;
+  font-size: 12px;
+  margin-top: 4px;
 }
 
 

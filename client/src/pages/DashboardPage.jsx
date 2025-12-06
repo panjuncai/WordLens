@@ -57,6 +57,7 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
   const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
+  const [contentError, setContentError] = useState('');
   const [activeWordId, setActiveWordId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewSrc, setPreviewSrc] = useState('');
@@ -155,7 +156,7 @@ export default function DashboardPage() {
   const copyArticle = async () => {
     try {
       await navigator.clipboard.writeText(sceneText || '');
-      message.success('挖空稿已复制');
+      message.success('全文已复制');
     } catch {
       message.error('复制失败，请检查浏览器权限');
     }
@@ -518,17 +519,24 @@ export default function DashboardPage() {
   };
 
   const saveCreate = async () => {
-    if (!newContent.trim()) {
-      message.warning('请填写内容');
+    const trimmed = newContent.trim();
+    if (!trimmed) {
+      setContentError('请填写内容');
       return;
     }
-    const computedTitle = newContent.trim().split(/\s+/)[0] || '未命名';
+    if (trimmed.length > 20) {
+      setContentError('不能超过20个字符');
+      return;
+    }
+    setContentError('');
+    const computedTitle = trimmed.split(/\s+/)[0] || '未命名';
     const created = await createArticle(computedTitle, newContent);
     if (created) {
       setActiveArticle(created);
       setCreating(false);
       setNewTitle('');
       setNewContent('');
+      setContentError('');
     }
   };
 
@@ -719,8 +727,8 @@ export default function DashboardPage() {
                 />
               </div>
             </div>
+            // <></>
           )}
-
           <div className="main-scroll-area">
             <div className="content-container">
               {creating || (!activeArticle && !articles.length) ? (
@@ -736,11 +744,18 @@ export default function DashboardPage() {
                       <div className="bubble-heading">想场景化背单词吗？</div>
                       <div className="bubble-body">
                         <textarea
-                          className="bubble-input body-input"
+                          className={`bubble-input body-input ${contentError ? 'input-error' : ''}`}
                           placeholder="输入场景文章..."
                           rows={4}
                           value={newContent}
-                          onChange={(e) => setNewContent(e.target.value)}
+                          onChange={(e) => {
+                            setNewContent(e.target.value);
+                            if (e.target.value.trim().length > 2000) {
+                              setContentError('不能超过2000个字符');
+                            } else {
+                              setContentError('');
+                            }
+                          }}
                           onKeyDown={(e) => {
                             if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
                               e.preventDefault();
@@ -748,6 +763,7 @@ export default function DashboardPage() {
                             }
                           }}
                         />
+                        {contentError && <div className="input-error-text">{contentError}</div>}
                         <div className="bubble-actions">
                           <Button
                             className="bubble-send"

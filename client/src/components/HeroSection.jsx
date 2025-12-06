@@ -1,4 +1,4 @@
-import { Button, Dropdown, InputNumber, Space, Switch, Typography } from 'antd';
+import { Button, Dropdown, InputNumber, Space, Switch, Typography,Tooltip } from 'antd';
 import {
   EllipsisOutlined,
   ReloadOutlined,
@@ -94,41 +94,48 @@ export default function HeroSection({
         <div className="hero-section hero-section-center">
           <Space size="middle" wrap align="center">
             <Space size="small" align="center">
-              <Switch
-                size="large"
-                checked={showCloze}
-                title="练习模式"
-                onChange={(checked) => {
-                  if (checked) onExtract();
-                  else onReset();
-                }}
-                checkedChildren={<FormOutlined />}
-                unCheckedChildren={<RedoOutlined />}
-              />
+              <Tooltip title="全文朗读">
+                <Button type="text" icon={<SoundOutlined />} onClick={onReadAll} loading={readingAll}>
+                </Button>
+              </Tooltip>
             </Space>
             <Space size="small" align="center">
-              <Switch
-                size="large"
-                title="自动轮播"
-                checked={autoCarousel}
-                onChange={setAutoCarousel}
-                checkedChildren={<RetweetOutlined />}
-                unCheckedChildren={<PoweroffOutlined  />}
-              />
+              <Tooltip title="练习模式(听写/原文)">
+                <Switch
+                  size="large"
+                  checked={showCloze}
+                  onChange={(checked) => {
+                    if (checked) onExtract();
+                    else onReset();
+                  }}
+                  checkedChildren={<FormOutlined />}
+                  unCheckedChildren={<RedoOutlined />}
+                />
+              </Tooltip>
             </Space>
             <Space size="small" align="center">
-              <Switch
-                size="large"
-                title="高斯模糊"
-                checked={blurWords}
-                onChange={setBlurWords}
-                checkedChildren={<EyeInvisibleOutlined />}
-                unCheckedChildren={<EyeOutlined />}
-              />
+              <Tooltip title="图片轮播">
+                <Switch
+                  size="large"
+                  checked={autoCarousel}
+                  onChange={setAutoCarousel}
+                  checkedChildren={<RetweetOutlined />}
+                  unCheckedChildren={<PoweroffOutlined  />}
+                />
+              </Tooltip>
             </Space>
-            <Button icon={<SoundOutlined />} onClick={onReadAll} loading={readingAll}>
-              全文朗读
-            </Button>
+            <Space size="small" align="center">
+              <Tooltip title="单词遮挡">
+                <Switch
+                  size="large"
+                  checked={blurWords}
+                  onChange={setBlurWords}
+                  checkedChildren={<EyeInvisibleOutlined />}
+                  unCheckedChildren={<EyeOutlined />}
+                />
+              </Tooltip>
+            </Space>
+            
             <div className="hero-progress">
               {prefetching && (
                 <Text type="secondary" style={{ marginRight: 12 }}>

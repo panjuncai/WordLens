@@ -675,7 +675,7 @@ export default function DashboardPage() {
                         <textarea
                           className="bubble-input body-input"
                           placeholder="输入场景文章..."
-                          rows={10}
+                          rows={4}
                           value={newContent}
                           onChange={(e) => setNewContent(e.target.value)}
                           onKeyDown={(e) => {

@@ -48,17 +48,17 @@ export default function HeroSection({
     },
     {
       key: 'audio',
-      label: '拉取外语声音',
+      label: '缓存外语音频',
       disabled: prefetching,
     },
     {
       key: 'audio-cn',
-      label: '拉取中文声音',
+      label: '缓存中文音频',
       disabled: prefetchingCn,
     },
     {
       key: 'image',
-      label: '拉取图片',
+      label: '缓存图片',
       disabled: imagePrefetching,
     },
     {

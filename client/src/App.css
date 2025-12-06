@@ -2,18 +2,22 @@
 
 :root {
   --bg: #f3f6fb;
-  --card: #ffffff;
+  --surface: #ffffff;
+  --sidebar: #f1f5f9;
   --accent: #2563eb;
   --text: #0f172a;
   --muted: #475569;
+  --border: rgba(0, 0, 0, 0.06);
 }
 
 [data-theme='dark'] {
-  --bg: #0b1221;
-  --card: #0f172a;
+  --bg: #0c111c;
+  --surface: #0f172a;
+  --sidebar: #0f172a;
   --accent: #60a5fa;
   --text: #e5e7eb;
   --muted: #94a3b8;
+  --border: rgba(255, 255, 255, 0.08);
 }
 
 * {
@@ -22,7 +26,7 @@
 
 body {
   margin: 0;
-  background: #f9fafb;
+  background: var(--bg);
   font-family: 'Manrope', system-ui, -apple-system, sans-serif;
   color: var(--text);
   overflow: hidden;
@@ -47,14 +51,14 @@ body,
   width: 100vw;
   height: 100vh;
   overflow: hidden;
-  background: #f9fafb;
+  background: var(--bg);
 }
 
 .app-sidebar {
   height: 100%;
   overflow-y: auto;
-  background: #f1f5f9;
-  border-right: 1px solid rgba(0, 0, 0, 0.04);
+  background: var(--sidebar);
+  border-right: 1px solid var(--border);
   padding: 0;
   flex-shrink: 0;
 }
@@ -79,7 +83,7 @@ body,
 
 .main-header {
   flex-shrink: 0;
-  background: #f9fafb;
+  background: var(--surface);
   z-index: 10;
   box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
 }
@@ -106,7 +110,7 @@ body,
   align-items: center;
   justify-content: space-between;
   padding: 8px 2px 6px;
-  background: #f9fafb;
+  background: var(--surface);
 }
 
 .article-title-text {
@@ -318,12 +322,12 @@ body,
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-top: 1px solid rgba(0, 0, 0, 0.06);
+  border-top: 1px solid var(--border);
   cursor: pointer;
   margin-top: auto;
   position: sticky;
   bottom: 0;
-  background: #eef1f5;
+  background: var(--sidebar);
   box-shadow: none;
 }
 
@@ -402,7 +406,7 @@ body,
 }
 
 .ant-card {
-  background: var(--card);
+  background: var(--surface);
   border: none;
   color: var(--text);
   box-shadow: none;

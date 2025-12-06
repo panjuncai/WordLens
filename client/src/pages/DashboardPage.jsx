@@ -536,10 +536,6 @@ export default function DashboardPage() {
               <HeroSection
                 onExtract={onExtract}
                 onReset={onReset}
-                onOpenConfig={() => {
-                  setConfigOpen(true);
-                  loadConfig();
-                }}
                 autoPlayCount={autoPlayCount}
                 setAutoPlayCount={setAutoPlayCount}
                 prefetchAudio={prefetchAudio}

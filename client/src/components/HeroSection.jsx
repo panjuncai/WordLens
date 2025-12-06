@@ -6,7 +6,6 @@ const { Text } = Typography;
 export default function HeroSection({
   onExtract,
   onReset,
-  onOpenConfig,
   autoPlayCount,
   setAutoPlayCount,
   prefetchAudio,
@@ -31,7 +30,6 @@ export default function HeroSection({
         <Button icon={<UndoOutlined />} onClick={onReset}>
           恢复原文
         </Button>
-        <Button onClick={onOpenConfig}>TTS配置</Button>
         <div className="audio-config">
           <Text type="secondary">自动发音次数</Text>
           <InputNumber

@@ -705,8 +705,8 @@ export default function DashboardPage() {
 
       <div className="app-layout">
         <aside
-          className="app-sidebar"
-          style={{ width: sidebarCollapsed ? 72 : 280, minWidth: sidebarCollapsed ? 72 : 240 }}
+          className={`app-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}
+          style={{ width: sidebarCollapsed ? 60 : 280, minWidth: sidebarCollapsed ? 60 : 240 }}
         >
           <ArticleList
             items={articles}

@@ -103,7 +103,7 @@ export default function HeroSection({
 
         <div className="hero-section hero-section-end">
           <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']} placement="bottomRight">
-            <Button icon={<EllipsisOutlined />} />
+            <Button type="text" icon={<EllipsisOutlined />} />
           </Dropdown>
         </div>
       </div>

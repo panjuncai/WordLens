@@ -158,7 +158,7 @@ export default function ArticleList({
       loading={loading}
     >
       {!collapsed && (
-        <div className="sidebar-scroll">
+        <div className="sidebar-scroll" style={{ overflowX: 'hidden' }}>
           <div className="article-list">
             {items.length === 0 && <Text type="secondary">暂无文章，点击新增创建</Text>}
             {items.map((item) => (

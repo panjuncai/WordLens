@@ -57,6 +57,7 @@ body,
 .app-sidebar {
   height: 100%;
   overflow-y: auto;
+  overflow-x: hidden;
   background: var(--sidebar);
   border-right: 1px solid var(--border);
   padding: 0;
@@ -408,6 +409,7 @@ body,
 .sidebar-scroll {
   flex: 1;
   overflow-y: auto;
+  overflow-x: hidden;
   padding-right: 6px;
   margin-bottom: 8px;
 }

@@ -32,7 +32,7 @@ body[data-theme='dark'] {
 }
 
 #root {
-  padding: 16px 20px;
+  padding: 12px 16px;
 }
 
 .page {
@@ -103,18 +103,23 @@ body[data-theme='dark'] {
   flex-direction: column;
   gap: 12px;
   flex: 1;
+  min-width: 0;
 }
 
 .chat-layout {
   display: flex;
   gap: 12px;
   align-items: flex-start;
+  min-height: 100vh;
 }
 
 .sidebar-shell {
   position: sticky;
-  top: 12px;
-  height: calc(100vh - 48px);
+  top: 0;
+  height: 100vh;
+  background: #eef1f5;
+  border-right: 1px solid rgba(0, 0, 0, 0.04);
+  padding: 12px 10px;
 }
 
 .sidebar-shell.is-collapsed {
@@ -127,17 +132,23 @@ body[data-theme='dark'] {
   display: flex;
   flex-direction: column;
   border: none;
-  box-shadow: 0 1px 8px rgba(0, 0, 0, 0.05);
-  background: #fff;
+  box-shadow: none;
+  background: transparent;
+  padding: 0;
 }
 
 .sidebar-card .ant-card-head {
   padding: 8px 10px;
   border-bottom: none;
+  background: transparent;
 }
 
 .sidebar-card .ant-card-body {
   padding: 6px 8px 10px;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .sidebar-scroll {
@@ -152,21 +163,25 @@ body[data-theme='dark'] {
   display: flex;
   flex-direction: column;
   gap: 12px;
+  min-width: 0;
 }
 
 .op-panel {
   position: sticky;
-  top: 12px;
-  z-index: 5;
-  border-radius: 12px;
+  top: 0;
+  z-index: 10;
+  border-radius: 0;
   border: none;
-  box-shadow: 0 6px 18px rgba(15, 23, 42, 0.06);
+  box-shadow: none;
+  background: #f9fafb;
+  padding: 8px 0 6px;
 }
 
 .article-list {
   display: flex;
   flex-direction: column;
   gap: 4px;
+  padding: 4px 0;
 }
 
 .article-row {
@@ -215,8 +230,8 @@ body[data-theme='dark'] {
   margin-top: auto;
   position: sticky;
   bottom: 0;
-  background: var(--card);
-  box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.06);
+  background: #eef1f5;
+  box-shadow: none;
 }
 
 .sidebar-footer:hover {
@@ -295,9 +310,9 @@ body[data-theme='dark'] {
 
 .ant-card {
   background: var(--card);
-  border: 1px solid rgba(15, 23, 42, 0.05);
+  border: none;
   color: var(--text);
-  box-shadow: 0 4px 20px rgba(15, 23, 42, 0.04);
+  box-shadow: none;
 }
 
 .ant-typography {

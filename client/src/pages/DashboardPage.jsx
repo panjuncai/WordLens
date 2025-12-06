@@ -505,7 +505,7 @@ export default function DashboardPage() {
         innerRef={carouselRef}
       />
 
-      <div className="chat-layout">
+      <div className="chat-layout bare-layout">
         <div className={`workspace-side sidebar-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
           <ArticleList
             items={articles}
@@ -529,7 +529,7 @@ export default function DashboardPage() {
           />
         </div>
         <div className="workspace-main chat-main">
-          <Card className="op-panel" variant="outlined">
+          <div className="op-panel bare-panel">
             <HeroSection
               onExtract={onExtract}
               onReset={onReset}
@@ -552,11 +552,14 @@ export default function DashboardPage() {
               setBlurWords={setBlurWords}
               setAccentCheck={setAccentCheck}
             />
-          </Card>
-          <Card
-            title={activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
-            extra={<Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>}
-          >
+          </div>
+          <div className="article-panel bare-panel">
+            <div className="article-panel-head">
+              <div className="article-title-text">
+                {activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
+              </div>
+              <Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>
+            </div>
             <ExerciseBoard
               segments={segments}
               statuses={statuses}
@@ -597,7 +600,7 @@ export default function DashboardPage() {
                 setPreviewSrc(urls[idx]);
               }}
             />
-          </Card>
+          </div>
         </div>
       </div>
 

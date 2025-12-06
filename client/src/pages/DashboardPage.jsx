@@ -514,6 +514,7 @@ export default function DashboardPage() {
     setActiveArticle(null);
     setNewTitle('');
     setNewContent('');
+    setCarouselState((prev) => ({ ...prev, visible: false }));
   };
 
   const saveCreate = async () => {

@@ -437,6 +437,12 @@ body,
   background: rgba(37, 99, 235, 0.12);
 }
 
+.sidebar-logo {
+  height: 20px;
+  background: transparent;
+  display: block;
+}
+
 .article-title {
   flex: 1;
   font-weight: 600;

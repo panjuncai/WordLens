@@ -113,7 +113,7 @@ export default function ArticleList({
   return (
     <Card
       className={`sidebar-card ${collapsed ? 'collapsed' : ''}`}
-      title={collapsed ? null : '文章'}
+      title={collapsed ? null : <img src="/Sola.svg" alt="logo" className="sidebar-logo" />}
       variant="outlined"
       extra={(
         <Space size="small">

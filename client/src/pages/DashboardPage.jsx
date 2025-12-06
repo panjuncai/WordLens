@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Card, Modal, message } from 'antd';
+import { Modal, message,Button } from 'antd';
 import ReactMarkdown from 'react-markdown';
 import HeroSection from '../components/HeroSection';
 import ArticleList from '../components/ArticleList';
@@ -54,6 +54,9 @@ export default function DashboardPage() {
   const [prefetchingCn, setPrefetchingCn] = useState(false);
   const [prefetchProgressCn, setPrefetchProgressCn] = useState({ done: 0, total: 0 });
   const [activeArticle, setActiveArticle] = useState(null);
+  const [creating, setCreating] = useState(false);
+  const [newTitle, setNewTitle] = useState('');
+  const [newContent, setNewContent] = useState('');
   const [activeWordId, setActiveWordId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewSrc, setPreviewSrc] = useState('');
@@ -190,6 +193,7 @@ export default function DashboardPage() {
   useEffect(() => {
     if (activeArticle) {
       loadArticle(activeArticle.content);
+      setCreating(false);
     }
   }, [activeArticle]);
 
@@ -201,6 +205,16 @@ export default function DashboardPage() {
     setPreviewIndex(0);
     setCarouselState((prev) => ({ ...prev, visible: false, word: '', urls: [], loading: false }));
   }, [sceneText, selectedWords]);
+
+  useEffect(() => {
+    if (articles.length && !creating && !activeArticle) {
+      setActiveArticle(articles[0]);
+    }
+    if (!articles.length) {
+      setCreating(true);
+      setActiveArticle(null);
+    }
+  }, [articles, activeArticle, creating]);
 
   useEffect(() => {
     if (showCloze) {
@@ -463,6 +477,34 @@ export default function DashboardPage() {
     }
   };
 
+  const startCreate = () => {
+    setCreating(true);
+    setActiveArticle(null);
+    setNewTitle('');
+    setNewContent('');
+  };
+
+  const saveCreate = async () => {
+    if (!newTitle.trim() || !newContent.trim()) {
+      message.warning('请填写标题和内容');
+      return;
+    }
+    const created = await createArticle(newTitle, newContent);
+    if (created) {
+      setActiveArticle(created);
+      setCreating(false);
+      setNewTitle('');
+      setNewContent('');
+    }
+  };
+
+  const cancelCreate = () => {
+    setCreating(false);
+    if (articles.length) {
+      setActiveArticle(articles[0]);
+    }
+  };
+
   const nextSlide = () => {
     setCarouselState((prev) => {
       if (!prev.urls.length) return prev;
@@ -565,6 +607,7 @@ export default function DashboardPage() {
             loading={articlesLoading}
             saving={articlesSaving}
             onCreate={createArticle}
+            onCreateStart={startCreate}
             onUpdate={updateArticle}
             onDelete={deleteArticle}
             onSelect={(item) => setActiveArticle(item)}
@@ -583,79 +626,111 @@ export default function DashboardPage() {
         </aside>
 
         <main className="app-main">
-          <div className="main-header">
-            <div className="content-container header-container">
-              <HeroSection
-                onExtract={onExtract}
-                onReset={onReset}
-                showCloze={showCloze}
-                onReadAll={readFullText}
-                readingAll={readingAll}
-                autoPlayCount={autoPlayCount}
-                setAutoPlayCount={setAutoPlayCount}
-                prefetchAudio={prefetchAudio}
-                prefetching={prefetching}
-                prefetchProgress={prefetchProgress}
-                prefetchChinese={prefetchChinese}
-                prefetchingCn={prefetchingCn}
-                prefetchProgressCn={prefetchProgressCn}
-                prefetchImages={prefetchImages}
-                imagePrefetching={imagePrefetching}
-                imagePrefetchProgress={imagePrefetchProgress}
-                autoCarousel={autoCarousel}
-                blurWords={blurWords}
-                accentCheck={accentCheck}
-                setAutoCarousel={setAutoCarousel}
-                setBlurWords={setBlurWords}
-                setAccentCheck={setAccentCheck}
-              />
+          {!creating && (
+            <div className="main-header">
+              <div className="content-container header-container">
+                <HeroSection
+                  onExtract={onExtract}
+                  onReset={onReset}
+                  showCloze={showCloze}
+                  onReadAll={readFullText}
+                  readingAll={readingAll}
+                  autoPlayCount={autoPlayCount}
+                  setAutoPlayCount={setAutoPlayCount}
+                  prefetchAudio={prefetchAudio}
+                  prefetching={prefetching}
+                  prefetchProgress={prefetchProgress}
+                  prefetchChinese={prefetchChinese}
+                  prefetchingCn={prefetchingCn}
+                  prefetchProgressCn={prefetchProgressCn}
+                  prefetchImages={prefetchImages}
+                  imagePrefetching={imagePrefetching}
+                  imagePrefetchProgress={imagePrefetchProgress}
+                  autoCarousel={autoCarousel}
+                  blurWords={blurWords}
+                  accentCheck={accentCheck}
+                  setAutoCarousel={setAutoCarousel}
+                  setBlurWords={setBlurWords}
+                  setAccentCheck={setAccentCheck}
+                />
+              </div>
             </div>
-          </div>
+          )}
 
           <div className="main-scroll-area">
             <div className="content-container">
-              <div className="article-panel">
-                <ExerciseBoard
-                  segments={segments}
-                  statuses={statuses}
-                  answers={answers}
-                  showCloze={showCloze}
-                  wordListOpen={wordListOpen}
-                  selectedWords={selectedWords}
-                  blurWords={blurWords}
-                  revealedIds={revealedIds}
-                  activeWordId={activeWordId}
-                  onToggleWordList={toggleWordList}
-                  onInputChange={handleChange}
-                  onInputKeyDown={handleKeyDown}
-                  onInputFocus={(item) => {
-                    triggerAutoPlay(item.value);
-                  }}
-                  onWordActivate={onWordActivate}
-                  onKeyNavigate={onKeyNavigate}
-                  imageMap={imageMap}
-                  fetchImages={fetchImages}
-                  onPlay={onPlay}
-                  loadingWord={loadingWord}
-                  renderMarkdown={renderMarkdown}
-                  onCopyArticle={copyArticle}
-                  registerInputRef={(id, el) => {
-                    if (el) inputRefs.current[id] = el;
-                  }}
-                  registerWordRef={(id, el) => {
-                    if (el) {
-                      wordRefs.current[id] = el;
-                    } else {
-                      delete wordRefs.current[id];
-                    }
-                  }}
-                  onPreview={(urls, idx) => {
-                    setPreviewList(urls);
-                    setPreviewIndex(idx);
-                    setPreviewSrc(urls[idx]);
-                  }}
-                />
-              </div>
+              {creating || (!activeArticle && !articles.length) ? (
+                <div className="article-panel">
+                  <div className="new-article-shell">
+                    <div className="new-article-form">
+                      <input
+                        className="new-article-title"
+                        placeholder="取个名字"
+                        value={newTitle}
+                        onChange={(e) => setNewTitle(e.target.value)}
+                      />
+                      <textarea
+                        className="new-article-content"
+                        placeholder="把你想背的词汇文章全贴进来"
+                        rows={12}
+                        value={newContent}
+                        onChange={(e) => setNewContent(e.target.value)}
+                      />
+                      <div className="new-article-actions">
+                        <Button onClick={cancelCreate} disabled={articlesSaving}>
+                          取消
+                        </Button>
+                        <Button type="primary" onClick={saveCreate} loading={articlesSaving}>
+                          保存
+                        </Button>
+                      </div>
+                    </div>
+                  </div>
+                </div>
+              ) : (
+                <div className="article-panel">
+                  <ExerciseBoard
+                    segments={segments}
+                    statuses={statuses}
+                    answers={answers}
+                    showCloze={showCloze}
+                    wordListOpen={wordListOpen}
+                    selectedWords={selectedWords}
+                    blurWords={blurWords}
+                    revealedIds={revealedIds}
+                    activeWordId={activeWordId}
+                    onToggleWordList={toggleWordList}
+                    onInputChange={handleChange}
+                    onInputKeyDown={handleKeyDown}
+                    onInputFocus={(item) => {
+                      triggerAutoPlay(item.value);
+                    }}
+                    onWordActivate={onWordActivate}
+                    onKeyNavigate={onKeyNavigate}
+                    imageMap={imageMap}
+                    fetchImages={fetchImages}
+                    onPlay={onPlay}
+                    loadingWord={loadingWord}
+                    renderMarkdown={renderMarkdown}
+                    onCopyArticle={copyArticle}
+                    registerInputRef={(id, el) => {
+                      if (el) inputRefs.current[id] = el;
+                    }}
+                    registerWordRef={(id, el) => {
+                      if (el) {
+                        wordRefs.current[id] = el;
+                      } else {
+                        delete wordRefs.current[id];
+                      }
+                    }}
+                    onPreview={(urls, idx) => {
+                      setPreviewList(urls);
+                      setPreviewIndex(idx);
+                      setPreviewSrc(urls[idx]);
+                    }}
+                  />
+                </div>
+              )}
             </div>
           </div>
         </main>

@@ -9,6 +9,7 @@ export default function ArticleList({
   loading,
   saving,
   onCreate,
+  onCreateStart = () => {},
   onUpdate,
   onDelete,
   onSelect,
@@ -29,6 +30,7 @@ export default function ArticleList({
   const [selectedIds, setSelectedIds] = useState(new Set());
 
   const openModal = (item = null) => {
+    if (!item) return;
     setEditing(item);
     setTitle(item?.title || '');
     setContent(item?.content || '');
@@ -118,7 +120,7 @@ export default function ArticleList({
           {!collapsed && (
             <Button type="text" size="small" icon={<DeleteOutlined />} onClick={handleBulkToggle} />
           )}
-          {!collapsed && <Button type="text" size="small" onClick={() => openModal()}>＋</Button>}
+          {!collapsed && <Button type="text" size="small" onClick={onCreateStart}>＋</Button>}
           <Button
             type="text"
             size="small"

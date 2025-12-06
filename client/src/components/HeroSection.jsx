@@ -33,11 +33,9 @@ export default function HeroSection({
   autoCarousel,
   blurWords,
   accentCheck,
-  foreignLineBreak,
   setAutoCarousel,
   setBlurWords,
   setAccentCheck,
-  setForeignLineBreak,
 }) {
   const menuItems = [
     {
@@ -77,15 +75,6 @@ export default function HeroSection({
         <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
           <Text>重音检查</Text>
           <Switch size="small" checked={accentCheck} onChange={setAccentCheck} />
-        </div>
-      ),
-    },
-    {
-      key: 'linebreak',
-      label: (
-        <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-          <Text>外语换行</Text>
-          <Switch size="small" checked={foreignLineBreak} onChange={setForeignLineBreak} />
         </div>
       ),
     },

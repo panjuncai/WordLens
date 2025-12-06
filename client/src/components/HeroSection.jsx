@@ -18,13 +18,9 @@ export default function HeroSection({
   autoCarousel,
   blurWords,
   accentCheck,
-  autoPlayEnabled,
-  autoPlayDelay,
   setAutoCarousel,
   setBlurWords,
   setAccentCheck,
-  setAutoPlayEnabled,
-  setAutoPlayDelay,
 }) {
   return (
     <div className="hero-header">
@@ -67,20 +63,6 @@ export default function HeroSection({
           <Space size="small" align="center">
             <Text type="secondary">重音检查</Text>
             <Switch size="small" checked={accentCheck} onChange={setAccentCheck} />
-          </Space>
-          <Space size="small" align="center">
-            <Text type="secondary">自动切下一个</Text>
-            <Switch size="small" checked={autoPlayEnabled} onChange={setAutoPlayEnabled} />
-            <InputNumber
-              size="small"
-              min={1}
-              max={60}
-              value={autoPlayDelay}
-              onChange={(v) => setAutoPlayDelay(Math.min(60, Math.max(1, v || 1)))}
-              disabled={!autoPlayEnabled}
-              style={{ width: 80 }}
-            />
-            <Text type="secondary">秒</Text>
           </Space>
           {imagePrefetching && (
             <Text type="secondary">

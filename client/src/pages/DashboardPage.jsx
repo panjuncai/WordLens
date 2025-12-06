@@ -13,13 +13,7 @@ import useExerciseStore from '../stores/useExerciseStore';
 import useConfigStore from '../stores/useConfigStore';
 import useAuthStore from '../stores/useAuthStore';
 import api from '../api';
-import useAutoPlay from '../hooks/useAutoPlay';
-import {
-  CAROUSEL_INTERVAL,
-  MAX_AUTOPLAY_COUNT,
-  MAX_AUTOPLAY_DELAY,
-  MIN_AUTOPLAY_DELAY,
-} from '../constants/config';
+import { CAROUSEL_INTERVAL, MAX_AUTOPLAY_COUNT } from '../constants/config';
 
 const { Text } = Typography;
 
@@ -96,8 +90,6 @@ export default function DashboardPage() {
   const autoCarousel = useConfigStore((state) => state.autoCarousel);
   const blurWords = useConfigStore((state) => state.blurWords);
   const accentCheck = useConfigStore((state) => state.accentCheck);
-  const autoPlayEnabled = useConfigStore((state) => state.autoPlayEnabled);
-  const autoPlayDelay = useConfigStore((state) => state.autoPlayDelay);
   const autoPlayCount = useConfigStore((state) => state.autoPlayCount);
   const azureKey = useConfigStore((state) => state.azureKey);
   const azureRegion = useConfigStore((state) => state.azureRegion);
@@ -105,8 +97,6 @@ export default function DashboardPage() {
   const setAutoCarousel = useConfigStore((state) => state.setAutoCarousel);
   const setBlurWords = useConfigStore((state) => state.setBlurWords);
   const setAccentCheck = useConfigStore((state) => state.setAccentCheck);
-  const setAutoPlayEnabled = useConfigStore((state) => state.setAutoPlayEnabled);
-  const setAutoPlayDelay = useConfigStore((state) => state.setAutoPlayDelay);
   const setAutoPlayCount = useConfigStore((state) => state.setAutoPlayCount);
   const setAzureKey = useConfigStore((state) => state.setAzureKey);
   const setAzureRegion = useConfigStore((state) => state.setAzureRegion);
@@ -137,7 +127,6 @@ export default function DashboardPage() {
 
   const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
   const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
-  const clampedDelay = Math.min(MAX_AUTOPLAY_DELAY, Math.max(MIN_AUTOPLAY_DELAY, autoPlayDelay || MIN_AUTOPLAY_DELAY));
 
   const renderMarkdown = (value) => (
     <span className="markdown-text">
@@ -230,7 +219,7 @@ export default function DashboardPage() {
   }, [blurWords]);
 
   useEffect(() => {
-    if (!carouselState.visible || carouselState.urls.length <= 1 || autoPlayEnabled) return () => {};
+    if (!carouselState.visible || carouselState.urls.length <= 1) return () => {};
     const timer = setInterval(() => {
       setCarouselState((prev) => ({
         ...prev,
@@ -238,7 +227,7 @@ export default function DashboardPage() {
       }));
     }, CAROUSEL_INTERVAL);
     return () => clearInterval(timer);
-  }, [carouselState.visible, carouselState.urls, autoPlayEnabled]);
+  }, [carouselState.visible, carouselState.urls]);
 
   useEffect(() => {
     if (!previewSrc) return () => {};
@@ -309,16 +298,7 @@ export default function DashboardPage() {
         if (el?.focus) el.focus();
       }, 0);
     }
-  }, [activeWordId, autoPlayEnabled, blanks, openImagesForWord, showCloze, triggerAutoPlay]);
-
-  useAutoPlay({
-    activeWordId,
-    blanks,
-    enabled: autoPlayEnabled,
-    delay: clampedDelay,
-    showCloze,
-    moveActive,
-  });
+  }, [activeWordId, blanks, openImagesForWord, showCloze, triggerAutoPlay]);
 
   const onExtract = () => {
     const count = extractWords();
@@ -334,9 +314,7 @@ export default function DashboardPage() {
     const first = blanks[0];
     if (first) {
       setActiveWordId(first.id);
-      if (!autoPlayEnabled) {
-        triggerAutoPlay(first.value);
-      }
+      triggerAutoPlay(first.value);
     }
     message.info('已恢复为原文');
   };
@@ -405,9 +383,7 @@ export default function DashboardPage() {
       const current = blanks.find((b) => b.id === activeWordId) || blanks[0];
       if (current) {
         setActiveWordId(current.id);
-        if (!autoPlayEnabled) {
-          triggerAutoPlay(current.value);
-        }
+        triggerAutoPlay(current.value);
       }
     }
   };
@@ -497,7 +473,7 @@ export default function DashboardPage() {
   const onWordActivate = (item) => {
     setActiveWordId(item.id);
     triggerAutoPlay(item.value);
-    openImagesForWord(item.value, item.id);
+    openImagesForWord(item.value);
     if (blurWords) {
       setRevealedIds((prev) => {
         const next = new Set(prev);
@@ -572,13 +548,9 @@ export default function DashboardPage() {
               autoCarousel={autoCarousel}
               blurWords={blurWords}
               accentCheck={accentCheck}
-              autoPlayEnabled={autoPlayEnabled}
-              autoPlayDelay={autoPlayDelay}
               setAutoCarousel={setAutoCarousel}
               setBlurWords={setBlurWords}
               setAccentCheck={setAccentCheck}
-              setAutoPlayEnabled={setAutoPlayEnabled}
-              setAutoPlayDelay={setAutoPlayDelay}
             />
           </Card>
           <Card
@@ -599,9 +571,7 @@ export default function DashboardPage() {
               onInputChange={handleChange}
               onInputKeyDown={handleKeyDown}
               onInputFocus={(item) => {
-                if (!autoPlayEnabled) {
-                  triggerAutoPlay(item.value);
-                }
+                triggerAutoPlay(item.value);
               }}
               onWordActivate={onWordActivate}
               onKeyNavigate={onKeyNavigate}

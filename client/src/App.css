@@ -124,16 +124,15 @@ body[data-theme='dark'] {
 
 .sidebar-card {
   height: 100%;
-  overflow: hidden;
   display: flex;
   flex-direction: column;
 }
 
 .sidebar-scroll {
-  height: calc(100% - 48px);
-  overflow: auto;
-  padding-right: 6px;
   flex: 1;
+  overflow-y: auto;
+  padding-right: 6px;
+  margin-bottom: 12px;
 }
 
 .chat-main {
@@ -185,6 +184,11 @@ body[data-theme='dark'] {
   padding: 10px 12px;
   border-top: 1px solid rgba(0, 0, 0, 0.06);
   cursor: pointer;
+  margin-top: auto;
+  position: sticky;
+  bottom: 0;
+  background: var(--card);
+  box-shadow: 0 -6px 12px rgba(0, 0, 0, 0.06);
 }
 
 .sidebar-footer:hover {
@@ -213,6 +217,13 @@ body[data-theme='dark'] {
 
 .sidebar-card.collapsed .sidebar-footer {
   justify-content: center;
+}
+
+.sidebar-card .ant-card-body {
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+  min-height: 0;
 }
 
 .user-bar {

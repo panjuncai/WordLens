@@ -187,7 +187,6 @@ export default function ArticleList({
           {!collapsed && (
             <div className="sidebar-footer-text">
               <Text strong>{userEmail || '未登录'}</Text>
-              <Text type="secondary" style={{ fontSize: 12 }}>设置</Text>
             </div>
           )}
         </div>

@@ -63,10 +63,17 @@ export default function DashboardPage() {
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [readingAll, setReadingAll] = useState(false);
-  const [carouselPos, setCarouselPos] = useState({
-    x: (typeof window !== 'undefined' ? window.innerWidth / 2 - 260 : 200),
-    y: 20,
-  });
+  const computeDefaultCarouselPos = () => {
+    const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
+    const h = typeof window !== 'undefined' ? window.innerHeight : 800;
+    const cardW = 520;
+    const cardH = 260;
+    return {
+      x: Math.max(20, w - 100 - cardW),
+      y: Math.max(20, h / 2 - cardH / 2),
+    };
+  };
+  const [carouselPos, setCarouselPos] = useState(() => computeDefaultCarouselPos());
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const draggingRef = useRef(false);
   const [carouselState, setCarouselState] = useState({
@@ -524,12 +531,27 @@ export default function DashboardPage() {
     }
   };
 
-  // const cancelCreate = () => {
-  //   setCreating(false);
-  //   if (articles.length) {
-  //     setActiveArticle(articles[0]);
-  //   }
-  // };
+  const handleDeleteArticle = async (id) => {
+    await deleteArticle(id);
+    const remaining = articles.filter((a) => a.id !== id);
+    if (remaining.length) {
+      setActiveArticle(remaining[0]);
+      setCreating(false);
+    } else {
+      setActiveArticle(null);
+      setCreating(true);
+    }
+  };
+
+  const cancelCreate = () => {
+    if (articles.length) {
+      setCreating(false);
+      setActiveArticle(articles[0]);
+    } else {
+      setCreating(true);
+      setActiveArticle(null);
+    }
+  };
 
   const nextSlide = () => {
     setCarouselState((prev) => {
@@ -566,6 +588,12 @@ export default function DashboardPage() {
     dragOffsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
     draggingRef.current = true;
   };
+
+  useEffect(() => {
+    if (!autoCarousel) {
+      setCarouselPos(computeDefaultCarouselPos());
+    }
+  }, [autoCarousel]);
 
   const loadConfig = async () => {
     try {
@@ -644,7 +672,7 @@ export default function DashboardPage() {
             onCreate={createArticle}
             onCreateStart={startCreate}
             onUpdate={updateArticle}
-            onDelete={deleteArticle}
+            onDelete={handleDeleteArticle}
             onSelect={(item) => setActiveArticle(item)}
             activeId={activeArticle?.id}
             collapsed={sidebarCollapsed}

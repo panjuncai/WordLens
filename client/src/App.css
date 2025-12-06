@@ -682,9 +682,8 @@ body,
 
 .carousel-overlay {
   position: fixed;
-  top: 10px;
-  left: 50%;
-  transform: translateX(-50%);
+  top: 0;
+  left: 0;
   display: inline-flex;
   align-items: flex-start;
   gap: 8px;
@@ -696,6 +695,7 @@ body,
   backdrop-filter: blur(8px);
   z-index: 1200;
   cursor: move;
+  user-select: none;
 }
 
 .carousel-slide {

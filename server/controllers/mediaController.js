@@ -16,8 +16,8 @@ async function getImages(req, res, next) {
 
 async function tts(req, res, next) {
   const sanitize = (val) => {
-    const kept = (val || '').match(/[\u4e00-\u9fff0-9]+/g);
-    return kept ? kept.join('') : '';
+    const kept = (val || '').match(/[A-Za-zÀ-ÖØ-öø-ÿ\u4e00-\u9fff0-9]+/g);
+    return kept ? kept.join(' ') : '';
   };
   const { text, voice } = req.body || {};
   const cleanText = sanitize(text);

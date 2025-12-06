@@ -6,6 +6,7 @@ const { Text } = Typography;
 export default function ImageCarousel({
   visible,
   state,
+  position,
   onClose,
   onNext,
   onPrev,
@@ -13,11 +14,18 @@ export default function ImageCarousel({
   onWheel,
   onPreview,
   innerRef,
+  onDragStart,
 }) {
   if (!visible) return null;
   const { urls = [], index = 0, loading, word } = state || {};
   return (
-    <div className="carousel-overlay" onWheel={onWheel} ref={innerRef}>
+    <div
+      className="carousel-overlay"
+      onWheel={onWheel}
+      ref={innerRef}
+      onMouseDown={onDragStart}
+      style={{ top: position?.y ?? 20, left: position?.x ?? 200 }}
+    >
       <Button size="small" type="text" icon={<CloseOutlined />} className="carousel-close" onClick={onClose} />
       <div className="carousel-slide">
         {loading && <Text type="secondary">图片加载中...</Text>}

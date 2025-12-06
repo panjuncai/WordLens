@@ -63,6 +63,12 @@ export default function DashboardPage() {
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
   const [readingAll, setReadingAll] = useState(false);
+  const [carouselPos, setCarouselPos] = useState({
+    x: (typeof window !== 'undefined' ? window.innerWidth / 2 - 260 : 200),
+    y: 20,
+  });
+  const dragOffsetRef = useRef({ x: 0, y: 0 });
+  const draggingRef = useRef(false);
   const [carouselState, setCarouselState] = useState({
     word: '',
     urls: [],
@@ -244,6 +250,25 @@ export default function DashboardPage() {
     }, CAROUSEL_INTERVAL);
     return () => clearInterval(timer);
   }, [carouselState.visible, carouselState.urls]);
+
+  useEffect(() => {
+    const handleMove = (e) => {
+      if (!draggingRef.current) return;
+      setCarouselPos({
+        x: e.clientX - dragOffsetRef.current.x,
+        y: e.clientY - dragOffsetRef.current.y,
+      });
+    };
+    const handleUp = () => {
+      draggingRef.current = false;
+    };
+    window.addEventListener('mousemove', handleMove);
+    window.addEventListener('mouseup', handleUp);
+    return () => {
+      window.removeEventListener('mousemove', handleMove);
+      window.removeEventListener('mouseup', handleUp);
+    };
+  }, []);
 
   useEffect(() => {
     if (!previewSrc) return () => {};
@@ -535,6 +560,13 @@ export default function DashboardPage() {
     await prefetchImagesAll(words);
   };
 
+  const handleCarouselDragStart = (e) => {
+    if (e.target.closest('button') || e.target.tagName === 'IMG') return;
+    const rect = e.currentTarget.getBoundingClientRect();
+    dragOffsetRef.current = { x: e.clientX - rect.left, y: e.clientY - rect.top };
+    draggingRef.current = true;
+  };
+
   const loadConfig = async () => {
     try {
       const { data } = await api.get('/api/user/config');
@@ -585,6 +617,7 @@ export default function DashboardPage() {
       <ImageCarousel
         visible={autoCarousel && carouselState.visible}
         state={carouselState}
+        position={carouselPos}
         onClose={() => setCarouselState((prev) => ({ ...prev, visible: false }))}
         onNext={nextSlide}
         onPrev={prevSlide}
@@ -596,6 +629,7 @@ export default function DashboardPage() {
           setPreviewSrc(urls[idx]);
         }}
         innerRef={carouselRef}
+        onDragStart={handleCarouselDragStart}
       />
 
       <div className="app-layout">

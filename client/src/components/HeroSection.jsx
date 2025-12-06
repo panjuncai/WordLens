@@ -67,22 +67,25 @@ export default function HeroSection({
   return (
     <div className="hero-header">
       <div className="hero-toolbar">
-        <Space size="middle" className="hero-center" wrap>
-          <Button type="primary" onClick={onExtract}>
-            填空练习
-          </Button>
-          <Button icon={<UndoOutlined />} onClick={onReset}>
-            恢复原文
-          </Button>
-          <Space size="small" align="center">
-            <Text type="secondary">自动轮播</Text>
-            <Switch size="small" checked={autoCarousel} onChange={setAutoCarousel} />
-          </Space>
-          <Space size="small" align="center">
-            <Text type="secondary">高斯模糊</Text>
-            <Switch size="small" checked={blurWords} onChange={setBlurWords} />
-          </Space>
-          <div className="hero-progress">
+        <div className="hero-section hero-section-start" />
+
+        <div className="hero-section hero-section-center">
+          <Space size="middle" wrap align="center">
+            <Button type="primary" onClick={onExtract}>
+              填空练习
+            </Button>
+            <Button icon={<UndoOutlined />} onClick={onReset}>
+              恢复原文
+            </Button>
+            <Space size="small" align="center">
+              <Text type="secondary">自动轮播</Text>
+              <Switch size="small" checked={autoCarousel} onChange={setAutoCarousel} />
+            </Space>
+            <Space size="small" align="center">
+              <Text type="secondary">高斯模糊</Text>
+              <Switch size="small" checked={blurWords} onChange={setBlurWords} />
+            </Space>
+            <div className="hero-progress">
             {prefetching && (
               <Text type="secondary" style={{ marginRight: 12 }}>
                 声音 {prefetchProgress.done}/{prefetchProgress.total}
@@ -94,12 +97,16 @@ export default function HeroSection({
               </Text>
             )}
           </div>
-        </Space>
+          </Space>
+        </div>
 
-        <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']} placement="bottomRight">
-          <Button icon={<EllipsisOutlined />} />
-        </Dropdown>
+        <div className="hero-section hero-section-end">
+          <Dropdown menu={{ items: menuItems, onClick: handleMenuClick }} trigger={['click']} placement="bottomRight">
+            <Button icon={<EllipsisOutlined />} />
+          </Dropdown>
+        </div>
       </div>
+
       
     </div>
   );

@@ -128,6 +128,8 @@ body,
 .header-container {
   padding-top: 16px;
   padding-bottom: 12px;
+  max-width: none;
+  width: 100%;
 }
 
 .page {
@@ -182,15 +184,35 @@ body,
   align-items: center;
   justify-content: space-between;
   gap: 12px;
-}
-
-.hero-center {
-  justify-content: center;
+  width: 100%;
 }
 
 .hero-progress {
   min-height: 18px;
   color: var(--muted);
+}
+
+.hero-section {
+  display: flex;
+  align-items: center;
+}
+
+.hero-section-start,
+.hero-section-end {
+  flex: 1;
+}
+
+.hero-section-start {
+  justify-content: flex-start;
+}
+
+.hero-section-center {
+  flex: 0 0 auto;
+  justify-content: center;
+}
+
+.hero-section-end {
+  justify-content: flex-end;
 }
 
 .workspace-side {

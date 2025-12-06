@@ -533,8 +533,8 @@ export default function DashboardPage() {
         </aside>
 
         <main className="app-main">
-          <div className="content-container">
-            <div className="main-toolbar">
+          <div className="main-header">
+            <div className="content-container header-container">
               <HeroSection
                 onExtract={onExtract}
                 onReset={onReset}
@@ -558,54 +558,58 @@ export default function DashboardPage() {
                 setAccentCheck={setAccentCheck}
               />
             </div>
+          </div>
 
-            <div className="article-panel">
-              <div className="article-panel-head">
-                <div className="article-title-text">
-                  {activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
+          <div className="main-scroll-area">
+            <div className="content-container">
+              <div className="article-panel">
+                <div className="article-panel-head">
+                  <div className="article-title-text">
+                    {activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
+                  </div>
+                  <Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>
                 </div>
-                <Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>
+                <ExerciseBoard
+                  segments={segments}
+                  statuses={statuses}
+                  answers={answers}
+                  showCloze={showCloze}
+                  wordListOpen={wordListOpen}
+                  selectedWords={selectedWords}
+                  blurWords={blurWords}
+                  revealedIds={revealedIds}
+                  activeWordId={activeWordId}
+                  onToggleWordList={toggleWordList}
+                  onInputChange={handleChange}
+                  onInputKeyDown={handleKeyDown}
+                  onInputFocus={(item) => {
+                    triggerAutoPlay(item.value);
+                  }}
+                  onWordActivate={onWordActivate}
+                  onKeyNavigate={onKeyNavigate}
+                  imageMap={imageMap}
+                  fetchImages={fetchImages}
+                  onPlay={onPlay}
+                  loadingWord={loadingWord}
+                  renderMarkdown={renderMarkdown}
+                  onCopyArticle={copyArticle}
+                  registerInputRef={(id, el) => {
+                    if (el) inputRefs.current[id] = el;
+                  }}
+                  registerWordRef={(id, el) => {
+                    if (el) {
+                      wordRefs.current[id] = el;
+                    } else {
+                      delete wordRefs.current[id];
+                    }
+                  }}
+                  onPreview={(urls, idx) => {
+                    setPreviewList(urls);
+                    setPreviewIndex(idx);
+                    setPreviewSrc(urls[idx]);
+                  }}
+                />
               </div>
-              <ExerciseBoard
-                segments={segments}
-                statuses={statuses}
-                answers={answers}
-                showCloze={showCloze}
-                wordListOpen={wordListOpen}
-                selectedWords={selectedWords}
-                blurWords={blurWords}
-                revealedIds={revealedIds}
-                activeWordId={activeWordId}
-                onToggleWordList={toggleWordList}
-                onInputChange={handleChange}
-                onInputKeyDown={handleKeyDown}
-                onInputFocus={(item) => {
-                  triggerAutoPlay(item.value);
-                }}
-                onWordActivate={onWordActivate}
-                onKeyNavigate={onKeyNavigate}
-                imageMap={imageMap}
-                fetchImages={fetchImages}
-                onPlay={onPlay}
-                loadingWord={loadingWord}
-                renderMarkdown={renderMarkdown}
-                onCopyArticle={copyArticle}
-                registerInputRef={(id, el) => {
-                  if (el) inputRefs.current[id] = el;
-                }}
-                registerWordRef={(id, el) => {
-                  if (el) {
-                    wordRefs.current[id] = el;
-                  } else {
-                    delete wordRefs.current[id];
-                  }
-                }}
-                onPreview={(urls, idx) => {
-                  setPreviewList(urls);
-                  setPreviewIndex(idx);
-                  setPreviewSrc(urls[idx]);
-                }}
-              />
             </div>
           </div>
         </main>

@@ -55,7 +55,6 @@ export default function ImageCarousel({
                 onRefresh(word);
               }}
             >
-              换一组
             </Button>
             <div className="carousel-dots">
               {urls.map((_, i) => (

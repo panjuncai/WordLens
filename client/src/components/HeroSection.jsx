@@ -1,5 +1,15 @@
 import { Button, Dropdown, InputNumber, Space, Switch, Typography } from 'antd';
-import { EllipsisOutlined, ReloadOutlined, SoundOutlined, UndoOutlined } from '@ant-design/icons';
+import {
+  EllipsisOutlined,
+  ReloadOutlined,
+  PoweroffOutlined,
+  SoundOutlined,
+  EyeOutlined,
+  EyeInvisibleOutlined,
+  FormOutlined,
+  RedoOutlined,
+  RetweetOutlined
+} from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -87,9 +97,6 @@ export default function HeroSection({
     if (key === 'image') prefetchImages();
   };
 
-  const primaryLabel = showCloze ? '恢复原文' : '填空练习';
-  const handlePrimary = showCloze ? onReset : onExtract;
-
   return (
     <div className="hero-header">
       <div className="hero-toolbar">
@@ -97,16 +104,38 @@ export default function HeroSection({
 
         <div className="hero-section hero-section-center">
           <Space size="middle" wrap align="center">
-            <Button type="primary" onClick={handlePrimary}>
-              {primaryLabel}
-            </Button>
             <Space size="small" align="center">
-              <Text type="secondary">自动轮播</Text>
-              <Switch size="small" checked={autoCarousel} onChange={setAutoCarousel} />
+              <Switch
+                size="large"
+                checked={showCloze}
+                title="练习模式"
+                onChange={(checked) => {
+                  if (checked) onExtract();
+                  else onReset();
+                }}
+                checkedChildren={<FormOutlined />}
+                unCheckedChildren={<RedoOutlined />}
+              />
             </Space>
             <Space size="small" align="center">
-              <Text type="secondary">高斯模糊</Text>
-              <Switch size="small" checked={blurWords} onChange={setBlurWords} />
+              <Switch
+                size="large"
+                title="自动轮播"
+                checked={autoCarousel}
+                onChange={setAutoCarousel}
+                checkedChildren={<RetweetOutlined />}
+                unCheckedChildren={<PoweroffOutlined  />}
+              />
+            </Space>
+            <Space size="small" align="center">
+              <Switch
+                size="large"
+                title="高斯模糊"
+                checked={blurWords}
+                onChange={setBlurWords}
+                checkedChildren={<EyeInvisibleOutlined />}
+                unCheckedChildren={<EyeOutlined />}
+              />
             </Space>
             <Button icon={<SoundOutlined />} onClick={onReadAll} loading={readingAll}>
               全文朗读

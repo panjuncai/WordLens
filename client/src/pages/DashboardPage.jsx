@@ -354,7 +354,7 @@ export default function DashboardPage() {
       message.warning('未找到可挖空的法语候选词，请检查文本');
       return;
     }
-    message.success(`已提取 ${count} 个候选词并完成挖空`);
+    // message.success(`已提取 ${count} 个候选词并完成挖空`);
   };
 
   const onReset = () => {
@@ -364,7 +364,7 @@ export default function DashboardPage() {
       setActiveWordId(first.id);
       triggerAutoPlay(first.value);
     }
-    message.info('已恢复为原文');
+    // message.info('已恢复为原文');
   };
 
   const onPlay = async (word) => {

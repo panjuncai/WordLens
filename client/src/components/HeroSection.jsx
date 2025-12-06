@@ -6,6 +6,7 @@ const { Text } = Typography;
 export default function HeroSection({
   onExtract,
   onReset,
+  showCloze,
   autoPlayCount,
   setAutoPlayCount,
   prefetchAudio,
@@ -64,6 +65,9 @@ export default function HeroSection({
     if (key === 'image') prefetchImages();
   };
 
+  const primaryLabel = showCloze ? '恢复原文' : '填空练习';
+  const handlePrimary = showCloze ? onReset : onExtract;
+
   return (
     <div className="hero-header">
       <div className="hero-toolbar">
@@ -71,11 +75,8 @@ export default function HeroSection({
 
         <div className="hero-section hero-section-center">
           <Space size="middle" wrap align="center">
-            <Button type="primary" onClick={onExtract}>
-              填空练习
-            </Button>
-            <Button icon={<UndoOutlined />} onClick={onReset}>
-              恢复原文
+            <Button type="primary" onClick={handlePrimary} icon={showCloze ? <UndoOutlined /> : undefined}>
+              {primaryLabel}
             </Button>
             <Space size="small" align="center">
               <Text type="secondary">自动轮播</Text>

@@ -536,6 +536,7 @@ export default function DashboardPage() {
               <HeroSection
                 onExtract={onExtract}
                 onReset={onReset}
+                showCloze={showCloze}
                 autoPlayCount={autoPlayCount}
                 setAutoPlayCount={setAutoPlayCount}
                 prefetchAudio={prefetchAudio}

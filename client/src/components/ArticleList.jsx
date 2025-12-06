@@ -1,5 +1,5 @@
 import { useState } from 'react';
-import { Button, Card, Dropdown, Input, Modal, Space, Typography, Popconfirm, Switch, Avatar, Tooltip } from 'antd';
+import { Button, Card, Dropdown, Input, Modal, Space, Typography, Popconfirm, Switch, Avatar, Tooltip, Checkbox, message } from 'antd';
 import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -25,6 +25,8 @@ export default function ArticleList({
   const [editing, setEditing] = useState(null);
   const [title, setTitle] = useState('');
   const [content, setContent] = useState('');
+  const [bulkMode, setBulkMode] = useState(false);
+  const [selectedIds, setSelectedIds] = useState(new Set());
 
   const openModal = (item = null) => {
     setEditing(item);
@@ -65,6 +67,47 @@ export default function ArticleList({
     if (key === 'logout') onLogout();
   };
 
+  const startBulk = () => {
+    setBulkMode(true);
+    setSelectedIds(new Set(items.map((i) => i.id)));
+  };
+
+  const handleBulkToggle = async () => {
+    if (!bulkMode) {
+      startBulk();
+      return;
+    }
+    const ids = Array.from(selectedIds);
+    if (!ids.length) {
+      setBulkMode(false);
+      return;
+    }
+    Modal.confirm({
+      title: '确认删除选中的文章？',
+      okText: '删除',
+      okType: 'danger',
+      cancelText: '取消',
+      onOk: async () => {
+        for (let i = 0; i < ids.length; i += 1) {
+          // eslint-disable-next-line no-await-in-loop
+          await onDelete(ids[i]);
+        }
+        message.success('批量删除完成');
+        setBulkMode(false);
+        setSelectedIds(new Set());
+      },
+    });
+  };
+
+  const toggleOne = (id, checked) => {
+    setSelectedIds((prev) => {
+      const next = new Set(prev);
+      if (checked) next.add(id);
+      else next.delete(id);
+      return next;
+    });
+  };
+
   return (
     <Card
       className={`sidebar-card ${collapsed ? 'collapsed' : ''}`}
@@ -72,6 +115,9 @@ export default function ArticleList({
       variant="outlined"
       extra={(
         <Space size="small">
+          {!collapsed && (
+            <Button type="text" size="small" icon={<DeleteOutlined />} onClick={handleBulkToggle} />
+          )}
           {!collapsed && <Button type="text" size="small" onClick={() => openModal()}>＋</Button>}
           <Button
             type="text"
@@ -93,6 +139,15 @@ export default function ArticleList({
                 className={`article-row ${activeId === item.id ? 'active' : ''}`}
                 onClick={() => onSelect(item)}
               >
+                {bulkMode && (
+                  <Checkbox
+                    checked={selectedIds.has(item.id)}
+                    onChange={(e) => {
+                      e.stopPropagation();
+                      toggleOne(item.id, e.target.checked);
+                    }}
+                  />
+                )}
                 <Text className="article-title" ellipsis={{ tooltip: item.title }}>{item.title}</Text>
                 <Space size={2} className="article-actions">
                   <Tooltip title="编辑">

@@ -505,8 +505,11 @@ export default function DashboardPage() {
         innerRef={carouselRef}
       />
 
-      <div className="chat-layout bare-layout">
-        <div className={`workspace-side sidebar-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
+      <div className="app-layout">
+        <aside
+          className="app-sidebar"
+          style={{ width: sidebarCollapsed ? 72 : 280, minWidth: sidebarCollapsed ? 72 : 240 }}
+        >
           <ArticleList
             items={articles}
             loading={articlesLoading}
@@ -527,81 +530,85 @@ export default function DashboardPage() {
             }}
             onLogout={logout}
           />
-        </div>
-        <div className="workspace-main chat-main">
-          <div className="op-panel bare-panel">
-            <HeroSection
-              onExtract={onExtract}
-              onReset={onReset}
-              onOpenConfig={() => {
-                setConfigOpen(true);
-                loadConfig();
-              }}
-              autoPlayCount={autoPlayCount}
-              setAutoPlayCount={setAutoPlayCount}
-              prefetchAudio={prefetchAudio}
-              prefetching={prefetching}
-              prefetchProgress={prefetchProgress}
-              prefetchImages={prefetchImages}
-              imagePrefetching={imagePrefetching}
-              imagePrefetchProgress={imagePrefetchProgress}
-              autoCarousel={autoCarousel}
-              blurWords={blurWords}
-              accentCheck={accentCheck}
-              setAutoCarousel={setAutoCarousel}
-              setBlurWords={setBlurWords}
-              setAccentCheck={setAccentCheck}
-            />
-          </div>
-          <div className="article-panel bare-panel">
-            <div className="article-panel-head">
-              <div className="article-title-text">
-                {activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
-              </div>
-              <Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>
+        </aside>
+
+        <main className="app-main">
+          <div className="content-container">
+            <div className="main-toolbar">
+              <HeroSection
+                onExtract={onExtract}
+                onReset={onReset}
+                onOpenConfig={() => {
+                  setConfigOpen(true);
+                  loadConfig();
+                }}
+                autoPlayCount={autoPlayCount}
+                setAutoPlayCount={setAutoPlayCount}
+                prefetchAudio={prefetchAudio}
+                prefetching={prefetching}
+                prefetchProgress={prefetchProgress}
+                prefetchImages={prefetchImages}
+                imagePrefetching={imagePrefetching}
+                imagePrefetchProgress={imagePrefetchProgress}
+                autoCarousel={autoCarousel}
+                blurWords={blurWords}
+                accentCheck={accentCheck}
+                setAutoCarousel={setAutoCarousel}
+                setBlurWords={setBlurWords}
+                setAccentCheck={setAccentCheck}
+              />
             </div>
-            <ExerciseBoard
-              segments={segments}
-              statuses={statuses}
-              answers={answers}
-              showCloze={showCloze}
-              wordListOpen={wordListOpen}
-              selectedWords={selectedWords}
-              blurWords={blurWords}
-              revealedIds={revealedIds}
-              activeWordId={activeWordId}
-              onToggleWordList={toggleWordList}
-              onInputChange={handleChange}
-              onInputKeyDown={handleKeyDown}
-              onInputFocus={(item) => {
-                triggerAutoPlay(item.value);
-              }}
-              onWordActivate={onWordActivate}
-              onKeyNavigate={onKeyNavigate}
-              imageMap={imageMap}
-              fetchImages={fetchImages}
-              onPlay={onPlay}
-              loadingWord={loadingWord}
-              renderMarkdown={renderMarkdown}
-              onCopyArticle={copyArticle}
-              registerInputRef={(id, el) => {
-                if (el) inputRefs.current[id] = el;
-              }}
-              registerWordRef={(id, el) => {
-                if (el) {
-                  wordRefs.current[id] = el;
-                } else {
-                  delete wordRefs.current[id];
-                }
-              }}
-              onPreview={(urls, idx) => {
-                setPreviewList(urls);
-                setPreviewIndex(idx);
-                setPreviewSrc(urls[idx]);
-              }}
-            />
+
+            <div className="article-panel">
+              <div className="article-panel-head">
+                <div className="article-title-text">
+                  {activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
+                </div>
+                <Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>
+              </div>
+              <ExerciseBoard
+                segments={segments}
+                statuses={statuses}
+                answers={answers}
+                showCloze={showCloze}
+                wordListOpen={wordListOpen}
+                selectedWords={selectedWords}
+                blurWords={blurWords}
+                revealedIds={revealedIds}
+                activeWordId={activeWordId}
+                onToggleWordList={toggleWordList}
+                onInputChange={handleChange}
+                onInputKeyDown={handleKeyDown}
+                onInputFocus={(item) => {
+                  triggerAutoPlay(item.value);
+                }}
+                onWordActivate={onWordActivate}
+                onKeyNavigate={onKeyNavigate}
+                imageMap={imageMap}
+                fetchImages={fetchImages}
+                onPlay={onPlay}
+                loadingWord={loadingWord}
+                renderMarkdown={renderMarkdown}
+                onCopyArticle={copyArticle}
+                registerInputRef={(id, el) => {
+                  if (el) inputRefs.current[id] = el;
+                }}
+                registerWordRef={(id, el) => {
+                  if (el) {
+                    wordRefs.current[id] = el;
+                  } else {
+                    delete wordRefs.current[id];
+                  }
+                }}
+                onPreview={(urls, idx) => {
+                  setPreviewList(urls);
+                  setPreviewIndex(idx);
+                  setPreviewSrc(urls[idx]);
+                }}
+              />
+            </div>
           </div>
-        </div>
+        </main>
       </div>
 
       <ConfigModal

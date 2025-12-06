@@ -6,6 +6,7 @@
   --accent: #2563eb;
   --text: #0f172a;
   --muted: #475569;
+  --toolbar-height: 64px;
 }
 
 [data-theme='dark'] {
@@ -90,6 +91,9 @@ body,
   z-index: 10;
   background: #f9fafb;
   padding: 8px 0 12px;
+  min-height: var(--toolbar-height);
+  display: flex;
+  align-items: center;
 }
 
 .article-panel {
@@ -99,7 +103,7 @@ body,
 
 .article-panel-head {
   position: sticky;
-  top: 0;
+  top: var(--toolbar-height);
   z-index: 5;
   display: flex;
   align-items: center;

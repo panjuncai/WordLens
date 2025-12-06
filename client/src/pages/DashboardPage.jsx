@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Card, Modal, Typography, message } from 'antd';
+import { Card, Modal, message } from 'antd';
 import ReactMarkdown from 'react-markdown';
 import HeroSection from '../components/HeroSection';
 import ArticleList from '../components/ArticleList';
@@ -14,8 +14,6 @@ import useConfigStore from '../stores/useConfigStore';
 import useAuthStore from '../stores/useAuthStore';
 import api from '../api';
 import { CAROUSEL_INTERVAL, MAX_AUTOPLAY_COUNT } from '../constants/config';
-
-const { Text } = Typography;
 
 const markdownComponents = {
   p: ({ children, ...props }) => <span {...props}>{children}</span>,
@@ -563,12 +561,6 @@ export default function DashboardPage() {
           <div className="main-scroll-area">
             <div className="content-container">
               <div className="article-panel">
-                <div className="article-panel-head">
-                  <div className="article-title-text">
-                    {activeArticle ? `挖空听写稿 · ${activeArticle.title}` : '挖空听写稿'}
-                  </div>
-                  <Text type="secondary">{showCloze ? '挖空模式' : '原文模式'}</Text>
-                </div>
                 <ExerciseBoard
                   segments={segments}
                   statuses={statuses}

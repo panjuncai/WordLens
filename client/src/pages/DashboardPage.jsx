@@ -122,6 +122,10 @@ export default function DashboardPage() {
     prefetching: imagePrefetching,
     prefetchProgress: imagePrefetchProgress,
   } = useImageSearch();
+  const imageMapRef = useRef({});
+  useEffect(() => {
+    imageMapRef.current = imageMap;
+  }, [imageMap]);
   const {
     items: articles,
     loading: articlesLoading,
@@ -145,7 +149,7 @@ export default function DashboardPage() {
     try {
       await navigator.clipboard.writeText(sceneText || '');
       message.success('挖空稿已复制');
-    } catch (err) {
+    } catch {
       message.error('复制失败，请检查浏览器权限');
     }
   };
@@ -226,7 +230,7 @@ export default function DashboardPage() {
   }, [blurWords]);
 
   useEffect(() => {
-    if (!carouselState.visible || carouselState.urls.length <= 1) return () => {};
+    if (!carouselState.visible || carouselState.urls.length <= 1 || autoPlayEnabled) return () => {};
     const timer = setInterval(() => {
       setCarouselState((prev) => ({
         ...prev,
@@ -234,7 +238,7 @@ export default function DashboardPage() {
       }));
     }, CAROUSEL_INTERVAL);
     return () => clearInterval(timer);
-  }, [carouselState.visible, carouselState.urls]);
+  }, [carouselState.visible, carouselState.urls, autoPlayEnabled]);
 
   useEffect(() => {
     if (!previewSrc) return () => {};
@@ -263,33 +267,42 @@ export default function DashboardPage() {
     }
   }, [clampedCount, playWord]);
 
-  const openImagesForWord = useCallback((word, id = null) => {
-    if (showCloze) return;
+  const openImagesForWord = useCallback((word) => {
+    if (showCloze || !autoCarousel) return;
     const key = word.toLowerCase();
-    const entry = imageMap[key];
-    setCarouselState({
-      word,
-      urls: entry?.urls || [],
-      index: 0,
-      visible: autoCarousel,
-      loading: !entry?.urls?.length,
+    const entry = imageMapRef.current[key];
+    setCarouselState((prev) => {
+      const sameWord = prev.word?.toLowerCase() === key;
+      const hasUrls = entry?.urls?.length;
+      if (sameWord && prev.visible && hasUrls) {
+        return prev;
+      }
+      return {
+        word,
+        urls: entry?.urls || [],
+        index: 0,
+        visible: true,
+        loading: !entry?.urls?.length,
+      };
     });
-    fetchImages(word);
-    if (id !== null && id !== activeWordId) {
-      setActiveWordId(id);
+    if (!entry?.urls?.length) {
+      fetchImages(word);
     }
-  }, [activeWordId, autoCarousel, fetchImages, imageMap, showCloze]);
+  }, [autoCarousel, fetchImages, showCloze]);
 
-  const moveActive = useCallback((delta) => {
+  const moveActive = useCallback((delta, options = {}) => {
+    const { skipPlay = false } = options;
     if (!blanks.length) return;
     const idx = blanks.findIndex((b) => b.id === activeWordId);
     const nextIdx = idx === -1 ? 0 : Math.max(0, Math.min(blanks.length - 1, idx + delta));
     const target = blanks[nextIdx];
     if (target) {
       setActiveWordId(target.id);
-      triggerAutoPlay(target.value);
+      if (!skipPlay) {
+        triggerAutoPlay(target.value);
+      }
       if (!showCloze) {
-        openImagesForWord(target.value, target.id);
+        openImagesForWord(target.value);
       }
       setTimeout(() => {
         const el = wordRefs.current[target.id];
@@ -304,6 +317,7 @@ export default function DashboardPage() {
     enabled: autoPlayEnabled,
     delay: clampedDelay,
     showCloze,
+    triggerAutoPlay,
     moveActive,
   });
 

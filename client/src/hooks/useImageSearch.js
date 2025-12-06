@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useCallback } from 'react';
 import { message } from 'antd';
 import { fetchImages } from '../services/mediaService';
 import { IMAGE_PREFETCH_CONCURRENCY } from '../constants/config';
@@ -18,16 +18,21 @@ export default function useImageSearch() {
     ),
   );
 
-  const loadImages = async (word, refresh = false) => {
+  const loadImages = useCallback(async (word, refresh = false) => {
     const key = word.toLowerCase();
-    const current = imageMap[key] || {};
-    if (current.loading) return;
+    let current = {};
+    setImageMap((prev) => {
+      current = prev[key] || {};
+      const nextPage = refresh ? (current.page || 0) + 1 : current.page || 0;
+      if (current.loading) return prev;
+      if (!refresh && current.urls) return prev;
+      return {
+        ...prev,
+        [key]: { ...current, loading: true, error: null, page: nextPage },
+      };
+    });
     const nextPage = refresh ? (current.page || 0) + 1 : current.page || 0;
-    if (!refresh && current.urls) return;
-    setImageMap((prev) => ({
-      ...prev,
-      [key]: { ...prev[key], loading: true, error: null, page: nextPage },
-    }));
+    if (current.loading || (!refresh && current.urls)) return current.urls;
     try {
       const { data } = await fetchImages(word, nextPage * 5);
       const urls = data?.urls || [];
@@ -49,7 +54,7 @@ export default function useImageSearch() {
       }));
       throw error;
     }
-  };
+  }, []);
 
   const prefetchImages = async (words) => {
     if (!words.length) {

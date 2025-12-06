@@ -6,6 +6,7 @@ export default function useAutoPlay({
   enabled,
   delay,
   showCloze,
+  triggerAutoPlay,
   moveActive,
 }) {
   const timerRef = useRef(null);
@@ -19,9 +20,18 @@ export default function useAutoPlay({
     const current = blanks.find((b) => b.id === activeWordId) || blanks[0];
     if (!current) return () => {};
     let cancelled = false;
-    timerRef.current = setTimeout(() => {
-      if (!cancelled) moveActive(1);
-    }, (delay || 1) * 1000);
+    const run = async () => {
+      try {
+        await triggerAutoPlay(current.value);
+      } catch {
+        // ignore play errors for auto flow
+      }
+      if (cancelled) return;
+      timerRef.current = setTimeout(() => {
+        if (!cancelled) moveActive(1, { skipPlay: true });
+      }, (delay || 1) * 1000);
+    };
+    run();
     return () => {
       cancelled = true;
       if (timerRef.current) {
@@ -29,7 +39,7 @@ export default function useAutoPlay({
         timerRef.current = null;
       }
     };
-  }, [activeWordId, enabled, showCloze, blanks, delay, moveActive]);
+  }, [activeWordId, enabled, showCloze, blanks, delay, moveActive, triggerAutoPlay]);
 
   return { timerRef };
 }

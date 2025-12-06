@@ -1,5 +1,5 @@
 import { Button, Divider, Input, Popover, Space, Tag, Typography } from 'antd';
-import { PictureOutlined, ReloadOutlined, SoundOutlined } from '@ant-design/icons';
+import { PictureOutlined, ReloadOutlined, SoundOutlined, CopyOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -14,6 +14,7 @@ export default function ExerciseBoard({
   revealedIds,
   activeWordId,
   onToggleWordList,
+  onCopyArticle,
   onInputChange,
   onInputKeyDown,
   onInputFocus,
@@ -136,6 +137,7 @@ export default function ExerciseBoard({
       </div>
       <Divider />
       <Space size="small" wrap align="center">
+        <Button size="small" type="text" icon={<CopyOutlined />} onClick={onCopyArticle} />
         <Text strong>当前挖空词：</Text>
         <Button type="link" size="small" onClick={onToggleWordList}>
           {wordListOpen ? '折叠' : '展开'}

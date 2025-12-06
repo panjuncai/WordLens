@@ -141,6 +141,15 @@ export default function DashboardPage() {
     </span>
   );
 
+  const copyArticle = async () => {
+    try {
+      await navigator.clipboard.writeText(sceneText || '');
+      message.success('挖空稿已复制');
+    } catch (err) {
+      message.error('复制失败，请检查浏览器权限');
+    }
+  };
+
   const fetchImages = useCallback(async (word, refresh = false) => {
     const key = word.toLowerCase();
     const current = imageMap[key] || {};
@@ -266,10 +275,10 @@ export default function DashboardPage() {
       loading: !entry?.urls?.length,
     });
     fetchImages(word);
-    if (id !== null) {
+    if (id !== null && id !== activeWordId) {
       setActiveWordId(id);
     }
-  }, [autoCarousel, fetchImages, imageMap, showCloze]);
+  }, [activeWordId, autoCarousel, fetchImages, imageMap, showCloze]);
 
   const moveActive = useCallback((delta) => {
     if (!blanks.length) return;
@@ -278,9 +287,7 @@ export default function DashboardPage() {
     const target = blanks[nextIdx];
     if (target) {
       setActiveWordId(target.id);
-      if (!autoPlayEnabled) {
-        triggerAutoPlay(target.value);
-      }
+      triggerAutoPlay(target.value);
       if (!showCloze) {
         openImagesForWord(target.value, target.id);
       }
@@ -297,8 +304,6 @@ export default function DashboardPage() {
     enabled: autoPlayEnabled,
     delay: clampedDelay,
     showCloze,
-    playCount: clampedCount,
-    triggerAutoPlay,
     moveActive,
   });
 
@@ -478,9 +483,7 @@ export default function DashboardPage() {
 
   const onWordActivate = (item) => {
     setActiveWordId(item.id);
-    if (!autoPlayEnabled) {
-      triggerAutoPlay(item.value);
-    }
+    triggerAutoPlay(item.value);
     openImagesForWord(item.value, item.id);
     if (blurWords) {
       setRevealedIds((prev) => {
@@ -537,7 +540,7 @@ export default function DashboardPage() {
           />
         </div>
         <div className="workspace-main chat-main">
-          <Card className="op-panel" bordered>
+          <Card className="op-panel" variant="outlined">
             <HeroSection
               onExtract={onExtract}
               onReset={onReset}
@@ -594,6 +597,7 @@ export default function DashboardPage() {
               onPlay={onPlay}
               loadingWord={loadingWord}
               renderMarkdown={renderMarkdown}
+              onCopyArticle={copyArticle}
               registerInputRef={(id, el) => {
                 if (el) inputRefs.current[id] = el;
               }}

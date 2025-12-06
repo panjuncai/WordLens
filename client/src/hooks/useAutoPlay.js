@@ -6,8 +6,6 @@ export default function useAutoPlay({
   enabled,
   delay,
   showCloze,
-  playCount,
-  triggerAutoPlay,
   moveActive,
 }) {
   const timerRef = useRef(null);
@@ -17,22 +15,13 @@ export default function useAutoPlay({
       clearTimeout(timerRef.current);
       timerRef.current = null;
     }
-    if (!enabled || showCloze || !blanks.length || !playCount) return () => {};
+    if (!enabled || showCloze || !blanks.length) return () => {};
     const current = blanks.find((b) => b.id === activeWordId) || blanks[0];
     if (!current) return () => {};
     let cancelled = false;
-    const run = async () => {
-      try {
-        await triggerAutoPlay(current.value);
-      } catch {
-        // ignore
-      }
-      if (cancelled) return;
-      timerRef.current = setTimeout(() => {
-        moveActive(1);
-      }, (delay || 1) * 1000);
-    };
-    run();
+    timerRef.current = setTimeout(() => {
+      if (!cancelled) moveActive(1);
+    }, (delay || 1) * 1000);
     return () => {
       cancelled = true;
       if (timerRef.current) {
@@ -40,7 +29,7 @@ export default function useAutoPlay({
         timerRef.current = null;
       }
     };
-  }, [activeWordId, enabled, showCloze, blanks, playCount, delay, triggerAutoPlay, moveActive]);
+  }, [activeWordId, enabled, showCloze, blanks, delay, moveActive]);
 
   return { timerRef };
 }

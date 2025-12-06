@@ -69,6 +69,7 @@ export default function ArticleList({
     <Card
       className={`sidebar-card ${collapsed ? 'collapsed' : ''}`}
       title={collapsed ? null : '文章'}
+      variant="outlined"
       extra={(
         <Space size="small">
           {!collapsed && <Button type="text" size="small" onClick={() => openModal()}>＋</Button>}
@@ -81,7 +82,6 @@ export default function ArticleList({
         </Space>
       )}
       loading={loading}
-      bordered
     >
       {!collapsed && (
         <div className="sidebar-scroll">

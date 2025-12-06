@@ -1,4 +1,5 @@
-export const wordPattern = /[A-Za-zÀ-ÖØ-öø-ÿ'’\-]+/g;
+// 连续的非中文、非结构性符号片段：允许字母/重音符、空格、连字符、撇号以及句内逗号句号感叹问号
+export const wordPattern = /[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ'’\-]|[\s.,?!])*/g;
 
 export const articleSet = new Set([
   'un',
@@ -33,61 +34,23 @@ export const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 
 export function extractCandidates(text) {
   const matches = [...(text.matchAll(wordPattern) || [])];
-  const tokens = matches.map((m) => m[0]);
   const seen = new Set();
-  const combos = [];
+  const results = [];
 
-  for (let i = 0; i < tokens.length - 1; i += 1) {
-    const cur = tokens[i];
-    const next = tokens[i + 1];
-    if (!cur || !next) continue;
-    const lowerCur = cur.toLowerCase();
-    const lowerNext = next.toLowerCase();
-    const comboPair = `${lowerCur} ${lowerNext}`;
-    if (fixedCombos.includes(comboPair)) {
-      if (!seen.has(comboPair)) {
-        combos.push(`${cur} ${next}`);
-        seen.add(comboPair);
-      }
-      continue;
-    }
-    if (articleSet.has(lowerCur) || reflexiveSet.has(lowerCur)) {
-      const combo = `${cur} ${next}`;
-      const key = combo.toLowerCase();
-      if (!seen.has(key)) {
-        combos.push(combo);
-        seen.add(key);
-      }
-    }
-  }
-
-  for (let i = 0; i < tokens.length - 2; i += 1) {
-    const a = tokens[i];
-    const b = tokens[i + 1];
-    const c = tokens[i + 2];
-    if (!a || !b || !c) continue;
-    const lowerB = b.toLowerCase();
-    if (articleSet.has(lowerB) || reflexiveSet.has(lowerB)) {
-      const combo3 = `${a} ${b} ${c}`;
-      const key3 = combo3.toLowerCase();
-      if (!seen.has(key3)) {
-        combos.push(combo3);
-        seen.add(key3);
-      }
-    }
-  }
-
-  const singles = [];
-  tokens.forEach((word) => {
-    const cleaned = word.replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ]+|[^A-Za-zÀ-ÖØ-öø-ÿ]+$/g, '');
+  matches.forEach((m) => {
+    const raw = m[0] || '';
+    const cleaned = raw
+      .replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ]+|[^A-Za-zÀ-ÖØ-öø-ÿ]+$/g, '')
+      .replace(/\s+/g, ' ')
+      .trim();
     if (!cleaned || cleaned.length < 2) return;
     const key = cleaned.toLowerCase();
-    if (seen.has(key) || reflexiveSet.has(key) || fixedComboFirsts.has(key)) return;
+    if (seen.has(key)) return;
     seen.add(key);
-    singles.push(cleaned);
+    results.push(cleaned);
   });
 
-  return [...combos, ...singles];
+  return results;
 }
 
 export function buildSegments(text, targets) {

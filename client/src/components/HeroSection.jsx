@@ -75,7 +75,7 @@ export default function HeroSection({
 
         <div className="hero-section hero-section-center">
           <Space size="middle" wrap align="center">
-            <Button type="primary" onClick={handlePrimary} icon={showCloze ? <UndoOutlined /> : undefined}>
+            <Button type="primary" onClick={handlePrimary}>
               {primaryLabel}
             </Button>
             <Space size="small" align="center">

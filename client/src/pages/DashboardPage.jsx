@@ -317,7 +317,6 @@ export default function DashboardPage() {
     enabled: autoPlayEnabled,
     delay: clampedDelay,
     showCloze,
-    triggerAutoPlay,
     moveActive,
   });
 

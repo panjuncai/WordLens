@@ -69,7 +69,7 @@ export default function HeroSection({
             <Switch size="small" checked={accentCheck} onChange={setAccentCheck} />
           </Space>
           <Space size="small" align="center">
-            <Text type="secondary">自动播放</Text>
+            <Text type="secondary">自动切下一个</Text>
             <Switch size="small" checked={autoPlayEnabled} onChange={setAutoPlayEnabled} />
             <InputNumber
               size="small"

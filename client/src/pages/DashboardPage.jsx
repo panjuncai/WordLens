@@ -485,11 +485,12 @@ export default function DashboardPage() {
   };
 
   const saveCreate = async () => {
-    if (!newTitle.trim() || !newContent.trim()) {
-      message.warning('请填写标题和内容');
+    if (!newContent.trim()) {
+      message.warning('请填写内容');
       return;
     }
-    const created = await createArticle(newTitle, newContent);
+    const computedTitle = newContent.trim().split(/\s+/)[0] || '未命名';
+    const created = await createArticle(computedTitle, newContent);
     if (created) {
       setActiveArticle(created);
       setCreating(false);
@@ -498,12 +499,12 @@ export default function DashboardPage() {
     }
   };
 
-  const cancelCreate = () => {
-    setCreating(false);
-    if (articles.length) {
-      setActiveArticle(articles[0]);
-    }
-  };
+  // const cancelCreate = () => {
+  //   setCreating(false);
+  //   if (articles.length) {
+  //     setActiveArticle(articles[0]);
+  //   }
+  // };
 
   const nextSlide = () => {
     setCarouselState((prev) => {
@@ -662,29 +663,40 @@ export default function DashboardPage() {
               {creating || (!activeArticle && !articles.length) ? (
                 <div className="article-panel">
                   <div className="new-article-shell">
-                    <div className="new-article-form">
-                      <input
-                        className="new-article-title"
-                        placeholder="取个名字"
-                        value={newTitle}
-                        onChange={(e) => setNewTitle(e.target.value)}
-                      />
-                      <textarea
-                        className="new-article-content"
-                        placeholder="把你想背的词汇文章全贴进来"
-                        rows={12}
-                        value={newContent}
-                        onChange={(e) => setNewContent(e.target.value)}
-                      />
-                      <div className="new-article-actions">
-                        <Button onClick={cancelCreate} disabled={articlesSaving}>
-                          取消
-                        </Button>
-                        <Button type="primary" onClick={saveCreate} loading={articlesSaving}>
-                          保存
-                        </Button>
+                    <form
+                      className="new-article-form bubble-form"
+                      onSubmit={(e) => {
+                        e.preventDefault();
+                        saveCreate();
+                      }}
+                    >
+                      <div className="bubble-heading">想场景化背单词吗？</div>
+                      <div className="bubble-body">
+                        <textarea
+                          className="bubble-input body-input"
+                          placeholder="输入场景文章..."
+                          rows={10}
+                          value={newContent}
+                          onChange={(e) => setNewContent(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === 'Enter' && (e.metaKey || e.ctrlKey)) {
+                              e.preventDefault();
+                              saveCreate();
+                            }
+                          }}
+                        />
+                        <div className="bubble-actions">
+                          <Button
+                            className="bubble-send"
+                            htmlType="submit"
+                            type="primary"
+                            shape="circle"
+                            icon={<span style={{ fontWeight: 700 }}>{'>'}</span>}
+                            loading={articlesSaving}
+                          />
+                        </div>
                       </div>
-                    </div>
+                    </form>
                   </div>
                 </div>
               ) : (

@@ -116,7 +116,7 @@ body[data-theme='dark'] {
 .sidebar-shell {
   position: sticky;
   top: 0;
-  height: 100vh;
+  height: calc(100vh - 24px); /* compensate for top/bottom padding */
   background: #eef1f5;
   border-right: 1px solid rgba(0, 0, 0, 0.04);
   padding: 12px 10px;

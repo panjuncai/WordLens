@@ -61,6 +61,7 @@ body,
   border-right: 1px solid var(--border);
   padding: 0;
   flex-shrink: 0;
+  transition: width 180ms ease, min-width 180ms ease;
 }
 
 .app-sidebar.collapsed {
@@ -385,6 +386,7 @@ body,
   box-shadow: none;
   background: var(--sidebar);
   padding: 0;
+  transition: width 180ms ease, min-width 180ms ease;
 }
 
 .sidebar-card .ant-card-head {
@@ -523,6 +525,7 @@ body,
 .sidebar-card.collapsed .ant-card-head {
   padding: 6px 0;
   justify-content: center;
+  transition: padding 180ms ease;
 }
 
 .sidebar-card.collapsed .ant-card-head-wrapper {
@@ -536,6 +539,7 @@ body,
   border-top: none;
   position: static;
   width: 100%;
+  transition: padding 180ms ease;
 }
 
 .sidebar-card .ant-card-body {
@@ -562,6 +566,20 @@ body,
 .sidebar-card.collapsed .ant-card-head {
   display: flex;
   align-items: center;
+}
+
+.collapse-logo {
+  height: 20px;
+  width: 20px;
+  object-fit: contain;
+}
+
+.collapse-btn {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  width: 32px;
+  height: 32px;
 }
 
 .user-bar {

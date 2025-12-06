@@ -31,6 +31,7 @@ export default function ArticleList({
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
   const [detailLoading, setDetailLoading] = useState(false);
+  const [collapseHover, setCollapseHover] = useState(false);
 
   const openModal = async (item = null) => {
     if (!item) return;
@@ -144,8 +145,13 @@ export default function ArticleList({
           <Button
             type="text"
             size="small"
-            icon={collapsed ? <MenuUnfoldOutlined /> : <MenuFoldOutlined />}
+            className="collapse-btn"
+            icon={collapsed ? (
+              collapseHover ? <MenuUnfoldOutlined /> : <img src="/Sola.svg" alt="logo" className="collapse-logo" />
+            ) : <MenuFoldOutlined />}
             onClick={onToggleCollapse}
+            onMouseEnter={() => setCollapseHover(true)}
+            onMouseLeave={() => setCollapseHover(false)}
           />
         </Space>
       )}

@@ -15,11 +15,16 @@ async function getImages(req, res, next) {
 }
 
 async function tts(req, res, next) {
+  const sanitize = (val) => {
+    const kept = (val || '').match(/[\u4e00-\u9fff0-9]+/g);
+    return kept ? kept.join('') : '';
+  };
   const { text, voice } = req.body || {};
-  if (!text || !text.trim()) return res.status(400).json({ error: 'Text is required' });
+  const cleanText = sanitize(text);
+  if (!cleanText) return res.status(400).json({ error: 'Text is required' });
   try {
     const user = await userModel.findById(req.user.id);
-    const data = await ttsService.synthesize(text, {
+    const data = await ttsService.synthesize(cleanText, {
       voice,
       azureKey: user?.azure_key,
       azureRegion: user?.azure_region,

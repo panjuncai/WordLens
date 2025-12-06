@@ -106,7 +106,7 @@ export default function DashboardPage() {
   const themeMode = useConfigStore((state) => state.themeMode);
   const setThemeMode = useConfigStore((state) => state.setThemeMode);
 
-  const { playWord, ensureAudio } = useTtsAudio();
+  const { playWord, ensureAudio, audioCache } = useTtsAudio();
   const {
     imageMap,
     loadImages,
@@ -393,18 +393,20 @@ export default function DashboardPage() {
   const prefetchAudio = async () => {
     const blankWords = segments.filter((seg) => seg.type === 'blank');
     const uniqueWords = Array.from(new Set(blankWords.map((b) => b.value)));
-    if (!uniqueWords.length) {
+    const pending = uniqueWords.filter((w) => !audioCache[`${azureVoice || ''}:${w.toLowerCase()}`]);
+    if (!pending.length) {
+      message.info('外语音频已全部缓存');
       message.info('暂无可缓存的挖空词');
       return;
     }
     setPrefetching(true);
-    setPrefetchProgress({ done: 0, total: uniqueWords.length });
+    setPrefetchProgress({ done: 0, total: pending.length });
     try {
-      for (let i = 0; i < uniqueWords.length; i += 1) {
-        const word = uniqueWords[i];
+      for (let i = 0; i < pending.length; i += 1) {
+        const word = pending[i];
         // eslint-disable-next-line no-await-in-loop
-        await ensureAudio(word);
-        setPrefetchProgress({ done: i + 1, total: uniqueWords.length });
+        await ensureAudio(word, azureVoice);
+        setPrefetchProgress({ done: i + 1, total: pending.length });
       }
       message.success('音频已缓存完成');
     } catch (error) {
@@ -418,18 +420,20 @@ export default function DashboardPage() {
   const prefetchChinese = async () => {
     const segs = segmentByLanguage(sceneText || '').filter((s) => s.type !== 'fr').map((s) => s.value.trim()).filter(Boolean);
     const unique = Array.from(new Set(segs));
-    if (!unique.length) {
+    const pending = unique.filter((t) => !audioCache[`${DEFAULT_CN_VOICE}:${t.toLowerCase()}`]);
+    if (!pending.length) {
+      message.info('中文音频已全部缓存');
       message.info('暂无可缓存的中文片段');
       return;
     }
     setPrefetchingCn(true);
-    setPrefetchProgressCn({ done: 0, total: unique.length });
+    setPrefetchProgressCn({ done: 0, total: pending.length });
     try {
-      for (let i = 0; i < unique.length; i += 1) {
-        const text = unique[i];
+      for (let i = 0; i < pending.length; i += 1) {
+        const text = pending[i];
         // eslint-disable-next-line no-await-in-loop
         await ensureAudio(text, DEFAULT_CN_VOICE);
-        setPrefetchProgressCn({ done: i + 1, total: unique.length });
+        setPrefetchProgressCn({ done: i + 1, total: pending.length });
       }
       message.success('中文片段已缓存完成');
     } catch (error) {
@@ -452,7 +456,7 @@ export default function DashboardPage() {
         // eslint-disable-next-line no-await-in-loop
         await playWord(text, 1, voice);
       }
-    } catch (error) {
+    } catch {
       // message handled in playWord/ensureAudio
     } finally {
       setReadingAll(false);

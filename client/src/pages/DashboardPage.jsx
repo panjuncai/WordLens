@@ -14,7 +14,6 @@ import useConfigStore from '../stores/useConfigStore';
 import useAuthStore from '../stores/useAuthStore';
 import api from '../api';
 import { CAROUSEL_INTERVAL, DEFAULT_CN_VOICE, MAX_AUTOPLAY_COUNT } from '../constants/config';
-import { segmentByLanguage } from '../utils/textProcessor';
 
 const markdownComponents = {
   p: ({ children, ...props }) => <span {...props}>{children}</span>,
@@ -58,12 +57,13 @@ export default function DashboardPage() {
   const [creating, setCreating] = useState(false);
   const [newContent, setNewContent] = useState('');
   const [contentError, setContentError] = useState('');
-  const [activeWordId, setActiveWordId] = useState(null);
+  const [activeIndex, setActiveIndex] = useState(-1);
+  const [isPlaying, setIsPlaying] = useState(false);
+  const [isPaused, setIsPaused] = useState(false);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
-  const [readingAll, setReadingAll] = useState(false);
   const computeDefaultCarouselPos = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const h = typeof window !== 'undefined' ? window.innerHeight : 800;
@@ -98,8 +98,22 @@ export default function DashboardPage() {
     loading: false,
   });
   const inputRefs = useRef({});
-  const wordRefs = useRef({});
   const carouselRef = useRef(null);
+  const playbackRef = useRef({ cancelled: false });
+  const { playWord, ensureAudio, audioCache, stop: stopAudio } = useTtsAudio();
+
+  const cancelCurrentPlayback = useCallback((preserveActive = false) => {
+    if (playbackRef.current) {
+      playbackRef.current.cancelled = true;
+      playbackRef.current.paused = false;
+    }
+    stopAudio();
+    setIsPlaying(false);
+    setIsPaused(false);
+    if (!preserveActive) {
+      setActiveIndex(-1);
+    }
+  }, [stopAudio]);
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const params = new URLSearchParams(window.location.search);
@@ -108,6 +122,8 @@ export default function DashboardPage() {
       setPendingArticleId(id);
     }
   }, []);
+
+  useEffect(() => () => cancelCurrentPlayback(), [cancelCurrentPlayback]);
 
   // fine-grained subscriptions to避免 getSnapshot警告
   const sceneText = useExerciseStore((state) => state.sceneText);
@@ -144,7 +160,6 @@ export default function DashboardPage() {
   const themeMode = useConfigStore((state) => state.themeMode);
   const setThemeMode = useConfigStore((state) => state.setThemeMode);
 
-  const { playWord, ensureAudio, audioCache } = useTtsAudio();
   const {
     imageMap,
     loadImages,
@@ -166,7 +181,7 @@ export default function DashboardPage() {
     fetchItem,
   } = useArticles(!!user);
 
-  const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
+  const blanks = useMemo(() => segments.filter((seg) => seg.role === 'blank'), [segments]);
   const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
 
   const renderMarkdown = (value) => (
@@ -244,12 +259,11 @@ export default function DashboardPage() {
 
   useEffect(() => {
     inputRefs.current = {};
-    wordRefs.current = {};
-    setActiveWordId(null);
+    cancelCurrentPlayback();
     setPreviewList([]);
     setPreviewIndex(0);
     setCarouselState((prev) => ({ ...prev, visible: false, word: '', urls: [], loading: false }));
-  }, [sceneText, selectedWords]);
+  }, [sceneText, selectedWords, cancelCurrentPlayback]);
 
   useEffect(() => {
     if (!articles.length) {
@@ -338,15 +352,6 @@ export default function DashboardPage() {
     };
   }, [previewSrc, previewList]);
 
-  const triggerAutoPlay = useCallback(async (word) => {
-    if (!clampedCount) return;
-    try {
-      await playWord(word, clampedCount);
-    } catch (error) {
-      console.error('Auto play failed', error);
-    }
-  }, [clampedCount, playWord]);
-
   const openImagesForWord = useCallback((word) => {
     if (showCloze || !autoCarousel) return;
     const key = word.toLowerCase();
@@ -370,26 +375,114 @@ export default function DashboardPage() {
     }
   }, [autoCarousel, fetchImages, showCloze]);
 
-  const moveActive = useCallback((delta, options = {}) => {
-    const { skipPlay = false } = options;
-    if (!blanks.length) return;
-    const idx = blanks.findIndex((b) => b.id === activeWordId);
-    const nextIdx = idx === -1 ? 0 : Math.max(0, Math.min(blanks.length - 1, idx + delta));
-    const target = blanks[nextIdx];
-    if (target) {
-      setActiveWordId(target.id);
-      if (!skipPlay) {
-        triggerAutoPlay(target.value);
-      }
-      if (!showCloze) {
-        openImagesForWord(target.value);
-      }
-      setTimeout(() => {
-        const el = wordRefs.current[target.id];
-        if (el?.focus) el.focus();
-      }, 0);
+  const handleChunkPlay = useCallback(async (targetIndex, options = {}) => {
+    if (!segments.length) return;
+    const startIdx = segments.findIndex((seg) => seg.index === targetIndex);
+    if (startIdx === -1) return;
+    const {
+      continuous = false,
+      repeat,
+      triggerPreview = true,
+      triggerReveal = true,
+    } = options;
+    cancelCurrentPlayback(true);
+    const controller = { cancelled: false, paused: false };
+    playbackRef.current = controller;
+    if (continuous) {
+      setIsPlaying(true);
+      setIsPaused(false);
     }
-  }, [activeWordId, blanks, openImagesForWord, showCloze, triggerAutoPlay]);
+    let idx = startIdx;
+    while (idx < segments.length) {
+      if (controller.cancelled) break;
+      if (controller.paused) break;
+      const chunk = segments[idx];
+      if (!chunk) break;
+      setActiveIndex(chunk.index);
+      const textValue = (chunk.value || '').trim();
+      const playable = textValue && chunk.type !== 'punct';
+      if (playable) {
+        const playTimes = typeof repeat === 'number'
+          ? repeat
+          : continuous
+            ? 1
+            : chunk.role === 'blank'
+              ? Math.max(1, clampedCount)
+              : 1;
+        const voice = chunk.type === 'fr' ? azureVoice : DEFAULT_CN_VOICE;
+        try {
+          // eslint-disable-next-line no-await-in-loop
+          await playWord(textValue, playTimes, voice);
+        } catch (error) {
+          controller.cancelled = true;
+          break;
+        }
+        if (controller.paused || controller.cancelled) break;
+        if (!continuous && triggerPreview && !showCloze && chunk.type === 'fr') {
+          openImagesForWord(textValue);
+        }
+        if (!continuous && triggerReveal && blurWords && !showCloze && chunk.role === 'blank') {
+          setRevealedIds((prev) => {
+            const next = new Set(prev);
+            if (next.has(chunk.id)) {
+              next.delete(chunk.id);
+            } else {
+              next.add(chunk.id);
+            }
+            return next;
+          });
+        }
+      }
+      if (!continuous) break;
+      idx += 1;
+    }
+    if (controller.paused) return;
+    if (controller.cancelled) return;
+    if (continuous) {
+      setIsPlaying(false);
+      setIsPaused(false);
+    }
+    setActiveIndex(-1);
+  }, [
+    segments,
+    cancelCurrentPlayback,
+    clampedCount,
+    azureVoice,
+    playWord,
+    showCloze,
+    openImagesForWord,
+    blurWords,
+    setRevealedIds,
+  ]);
+
+  const moveActive = useCallback((delta) => {
+    if (!segments.length) return;
+    const currentIdx = segments.findIndex((seg) => seg.index === activeIndex);
+    const targetIdx = currentIdx === -1
+      ? (delta > 0 ? 0 : segments.length - 1)
+      : Math.max(0, Math.min(segments.length - 1, currentIdx + delta));
+    const target = segments[targetIdx];
+    if (target) {
+      handleChunkPlay(target.index, { triggerPreview: true, triggerReveal: true });
+    }
+  }, [activeIndex, handleChunkPlay, segments]);
+  const togglePausePlayback = useCallback(() => {
+    if (!isPlaying || !playbackRef.current) return;
+    const controller = playbackRef.current;
+    if (!isPaused) {
+      controller.paused = true;
+      controller.resumeIndex = activeIndex;
+      stopAudio();
+      setIsPaused(true);
+      return;
+    }
+    const resumeIndex = (typeof activeIndex === 'number' && activeIndex >= 0)
+      ? activeIndex
+      : controller.resumeIndex ?? segments[0]?.index;
+    if (typeof resumeIndex !== 'number') return;
+    setIsPaused(false);
+    handleChunkPlay(resumeIndex, { continuous: true, triggerPreview: false, triggerReveal: false });
+  }, [activeIndex, handleChunkPlay, isPaused, isPlaying, segments, stopAudio]);
 
   const onExtract = () => {
     const count = extractWords();
@@ -404,8 +497,7 @@ export default function DashboardPage() {
     resetCloze();
     const first = blanks[0];
     if (first) {
-      setActiveWordId(first.id);
-      triggerAutoPlay(first.value);
+      handleChunkPlay(first.index, { repeat: clampedCount, triggerPreview: true, triggerReveal: true });
     }
     // message.info('已恢复为原文');
   };
@@ -459,7 +551,7 @@ export default function DashboardPage() {
   };
 
   const onKeyNavigate = (e) => {
-    if (showCloze) return;
+    if (showCloze || !segments.length || (isPlaying && !isPaused)) return;
     if (['ArrowRight', 'ArrowDown'].includes(e.key)) {
       e.preventDefault();
       moveActive(1);
@@ -471,16 +563,15 @@ export default function DashboardPage() {
       moveActive(e.shiftKey ? -1 : 1);
     } else if (e.key === 'Enter') {
       e.preventDefault();
-      const current = blanks.find((b) => b.id === activeWordId) || blanks[0];
+      const current = segments.find((seg) => seg.index === activeIndex) || segments[0];
       if (current) {
-        setActiveWordId(current.id);
-        triggerAutoPlay(current.value);
+        handleChunkPlay(current.index, { triggerPreview: true, triggerReveal: true });
       }
     }
   };
 
   const prefetchAudio = async () => {
-    const blankWords = segments.filter((seg) => seg.type === 'blank');
+    const blankWords = segments.filter((seg) => seg.role === 'blank');
     const uniqueWords = Array.from(new Set(blankWords.map((b) => b.value)));
     const pending = uniqueWords.filter((w) => !audioCache.current?.[`${azureVoice || ''}:${w.toLowerCase()}`]);
     if (!pending.length) {
@@ -507,7 +598,10 @@ export default function DashboardPage() {
   };
 
   const prefetchChinese = async () => {
-    const segs = segmentByLanguage(sceneText || '').filter((s) => s.type !== 'fr').map((s) => s.value.trim()).filter(Boolean);
+    const segs = segments
+      .filter((seg) => seg.type === 'cn')
+      .map((seg) => (seg.value || '').trim())
+      .filter(Boolean);
     const unique = Array.from(new Set(segs));
     const pending = unique.filter((t) => !audioCache.current?.[`${DEFAULT_CN_VOICE}:${t.toLowerCase()}`]);
     if (!pending.length) {
@@ -533,24 +627,14 @@ export default function DashboardPage() {
     }
   };
 
-  const readFullText = async () => {
-    if (!sceneText) return;
-    const segs = segmentByLanguage(sceneText);
-    setReadingAll(true);
-    try {
-      for (const seg of segs) {
-        const text = seg.value.trim();
-        if (!text) continue;
-        const voice = seg.type === 'fr' ? azureVoice : DEFAULT_CN_VOICE;
-        // eslint-disable-next-line no-await-in-loop
-        await playWord(text, 1, voice);
-      }
-    } catch {
-      // message handled in playWord/ensureAudio
-    } finally {
-      setReadingAll(false);
-    }
-  };
+  const readFullText = useCallback(() => {
+    if (!segments.length) return;
+    const startIndex = typeof activeIndex === 'number' && activeIndex >= 0
+      ? activeIndex
+      : segments[0]?.index;
+    if (typeof startIndex !== 'number') return;
+    handleChunkPlay(startIndex, { continuous: true, triggerPreview: false, triggerReveal: false });
+  }, [activeIndex, handleChunkPlay, segments]);
 
   const startCreate = () => {
     setCreating(true);
@@ -666,23 +750,6 @@ export default function DashboardPage() {
     }
   };
 
-  const onWordActivate = (item) => {
-    setActiveWordId(item.id);
-    triggerAutoPlay(item.value);
-    openImagesForWord(item.value);
-    if (blurWords) {
-      setRevealedIds((prev) => {
-        const next = new Set(prev);
-        if (next.has(item.id)) {
-          next.delete(item.id);
-        } else {
-          next.add(item.id);
-        }
-        return next;
-      });
-    }
-  };
-
   return (
     <>
       <ImageCarousel
@@ -746,7 +813,10 @@ export default function DashboardPage() {
                   onReset={onReset}
                   showCloze={showCloze}
                   onReadAll={readFullText}
-                  readingAll={readingAll}
+                  readingAll={isPlaying && !isPaused}
+                  onTogglePause={togglePausePlayback}
+                  isPlaying={isPlaying}
+                  isPaused={isPaused}
                   autoPlayCount={autoPlayCount}
                   setAutoPlayCount={setAutoPlayCount}
                   prefetchAudio={prefetchAudio}
@@ -826,35 +896,38 @@ export default function DashboardPage() {
                     answers={answers}
                     showCloze={showCloze}
                     wordListOpen={wordListOpen}
-                    selectedWords={selectedWords}
-                    blurWords={blurWords}
-                    revealedIds={revealedIds}
-                    activeWordId={activeWordId}
-                    onToggleWordList={toggleWordList}
-                    onInputChange={handleChange}
-                    onInputKeyDown={handleKeyDown}
-                    onInputFocus={(item) => {
-                      triggerAutoPlay(item.value);
-                    }}
-                    onWordActivate={onWordActivate}
-                    onKeyNavigate={onKeyNavigate}
-                    imageMap={imageMap}
-                    fetchImages={fetchImages}
-                    onPlay={onPlay}
-                    loadingWord={loadingWord}
-                    renderMarkdown={renderMarkdown}
-                    onCopyArticle={copyArticle}
-                    registerInputRef={(id, el) => {
-                      if (el) inputRefs.current[id] = el;
-                    }}
-                    registerWordRef={(id, el) => {
-                      if (el) {
-                        wordRefs.current[id] = el;
-                      } else {
-                        delete wordRefs.current[id];
-                      }
-                    }}
-                    onPreview={(urls, idx) => {
+                  selectedWords={selectedWords}
+                  blurWords={blurWords}
+                  revealedIds={revealedIds}
+                  activeIndex={activeIndex}
+                  onToggleWordList={toggleWordList}
+                  onInputChange={handleChange}
+                  onInputKeyDown={handleKeyDown}
+                  onInputFocus={(item) => {
+                    handleChunkPlay(item.index, {
+                      repeat: clampedCount,
+                      triggerPreview: false,
+                      triggerReveal: false,
+                    });
+                  }}
+                  onChunkActivate={(segment) => {
+                    handleChunkPlay(segment.index, { triggerPreview: true, triggerReveal: true });
+                  }}
+                  onKeyNavigate={onKeyNavigate}
+                  imageMap={imageMap}
+                  fetchImages={fetchImages}
+                  onPlay={onPlay}
+                  loadingWord={loadingWord}
+                  renderMarkdown={renderMarkdown}
+                  onCopyArticle={copyArticle}
+                  registerInputRef={(id, el) => {
+                    if (el) {
+                      inputRefs.current[id] = el;
+                    } else {
+                      delete inputRefs.current[id];
+                    }
+                  }}
+                  onPreview={(urls, idx) => {
                       setPreviewList(urls);
                       setPreviewIndex(idx);
                       setPreviewSrc(urls[idx]);

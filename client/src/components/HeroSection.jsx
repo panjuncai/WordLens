@@ -4,6 +4,7 @@ import {
   ReloadOutlined,
   PoweroffOutlined,
   SoundOutlined,
+  PauseOutlined,
   EyeOutlined,
   EyeInvisibleOutlined,
   FormOutlined,
@@ -19,6 +20,9 @@ export default function HeroSection({
   showCloze,
   onReadAll,
   readingAll,
+  onTogglePause,
+  isPlaying,
+  isPaused,
   autoPlayCount,
   setAutoPlayCount,
   prefetchAudio,
@@ -97,6 +101,9 @@ export default function HeroSection({
               <Tooltip title="全文朗读">
                 <Button type="text" icon={<SoundOutlined />} onClick={onReadAll} loading={readingAll}>
                 </Button>
+              </Tooltip>
+              <Tooltip title={isPaused ? '继续' : '暂停'}>
+                <Button type="text" icon={<PauseOutlined />} onClick={onTogglePause} disabled={!isPlaying} />
               </Tooltip>
             </Space>
             <Space size="small" align="center">

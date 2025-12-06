@@ -74,18 +74,63 @@ export function extractCandidates(text) {
   return results;
 }
 
-export function buildSegments(text, targets) {
-  if (!targets.length) return [{ type: 'text', value: text }];
-  const escaped = targets.map((w) => escapeRegex(w)).join('|');
-  const regex = new RegExp(`(${escaped})`, 'gi');
-  const parts = text.split(regex);
-  let counter = 0;
-  return parts.map((part) => {
-    const match = targets.find((w) => w.localeCompare(part, undefined, { sensitivity: 'accent', usage: 'search' }) === 0);
-    if (match) {
-      counter += 1;
-      return { type: 'blank', value: match, id: counter };
+const CHINESE_CHAR = /[\u4E00-\u9FFF]/;
+const LATIN_CHAR = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
+
+const detectChunkType = (value) => {
+  if (!value) return 'punct';
+  if (CHINESE_CHAR.test(value)) return 'cn';
+  if (LATIN_CHAR.test(value)) return 'fr';
+  return 'punct';
+};
+
+const normalizeSegments = (parts) => {
+  let textId = 0;
+  let order = 0;
+  return parts.flatMap((part) => {
+    if (part.type === 'blank') {
+      order += 1;
+      return [{
+        index: order - 1,
+        id: part.id,
+        role: 'blank',
+        type: 'fr',
+        value: part.value,
+      }];
     }
-    return { type: 'text', value: part };
+    textId += 1;
+    order += 1;
+    return [{
+      index: order - 1,
+      id: `chunk-${textId}`,
+      role: 'text',
+      type: detectChunkType(part.value),
+      value: part.value,
+    }];
   });
+};
+
+export function buildSegments(text, targets) {
+  const safeTargets = (targets || []).filter(Boolean);
+  if (!safeTargets.length) {
+    return normalizeSegments([{ type: 'text', value: text }]);
+  }
+  const escaped = safeTargets.map((w) => escapeRegex(w)).join('|');
+  const regex = new RegExp(`(${escaped})`, 'gi');
+  const parts = [];
+  let lastIndex = 0;
+  let blankId = 0;
+  text.replace(regex, (match, _p, offset) => {
+    if (offset > lastIndex) {
+      parts.push({ type: 'text', value: text.slice(lastIndex, offset) });
+    }
+    blankId += 1;
+    parts.push({ type: 'blank', value: match, id: blankId });
+    lastIndex = offset + match.length;
+    return match;
+  });
+  if (lastIndex < text.length) {
+    parts.push({ type: 'text', value: text.slice(lastIndex) });
+  }
+  return normalizeSegments(parts);
 }

@@ -12,13 +12,13 @@ export default function ExerciseBoard({
   selectedWords,
   blurWords,
   revealedIds,
-  activeWordId,
+  activeIndex,
   onToggleWordList,
   onCopyArticle,
   onInputChange,
   onInputKeyDown,
   onInputFocus,
-  onWordActivate,
+  onChunkActivate,
   onKeyNavigate,
   imageMap,
   fetchImages,
@@ -26,22 +26,46 @@ export default function ExerciseBoard({
   loadingWord,
   renderMarkdown,
   registerInputRef,
-  registerWordRef,
   onPreview,
 }) {
+  const handleChunkKey = (e, segment) => {
+    if (e.key === 'Enter' || e.key === ' ') {
+      e.preventDefault();
+      onChunkActivate(segment);
+    }
+  };
+
   return (
     <>
       <div className="cloze" tabIndex={0} onKeyDown={onKeyNavigate}>
-        {segments.map((item, idx) => {
-          if (item.type === 'text') {
+        {segments.map((segment, idx) => {
+          const key = `${segment.id}-${segment.index}-${idx}`;
+          const isBlank = segment.role === 'blank';
+          const status = isBlank ? statuses[segment.id] : undefined;
+          const entry = isBlank ? imageMap[segment.value.toLowerCase()] : null;
+          const isActive = segment.index === activeIndex;
+          const chunkClass = [
+            'chunk-item',
+            isBlank ? 'blank chunk-blank' : 'chunk-text',
+            `chunk-${segment.type}`,
+            isActive ? 'chunk-active' : '',
+          ].filter(Boolean).join(' ');
+
+          if (!isBlank) {
             return (
-              <span key={`t-${idx}`} className="cloze-text">
-                {renderMarkdown(item.value)}
+              <span
+                key={key}
+                className={chunkClass}
+                onClick={() => onChunkActivate(segment)}
+                onKeyDown={(e) => handleChunkKey(e, segment)}
+                role="button"
+                tabIndex={0}
+              >
+                <span className="cloze-text">{renderMarkdown(segment.value)}</span>
               </span>
             );
           }
-          const status = statuses[item.id];
-          const entry = imageMap[item.value.toLowerCase()];
+
           const imageContent = (
             <div className="image-grid">
               {entry?.loading && <Text type="secondary">加载中...</Text>}
@@ -53,7 +77,7 @@ export default function ExerciseBoard({
                     <img
                       key={src || i}
                       src={src}
-                      alt={item.value}
+                      alt={segment.value}
                       className="image-thumb"
                       onClick={() => onPreview(entry.urls, i)}
                     />
@@ -68,7 +92,7 @@ export default function ExerciseBoard({
                   onClick={(e) => {
                     e.preventDefault();
                     e.stopPropagation();
-                    fetchImages(item.value, true);
+                    fetchImages(segment.value, true);
                   }}
                 >
                   换一组
@@ -77,57 +101,55 @@ export default function ExerciseBoard({
             </div>
           );
           return (
-            <span key={`b-${idx}`} className="blank">
+            <span
+              key={key}
+              className={chunkClass}
+              onClick={() => onChunkActivate(segment)}
+              onKeyDown={(e) => handleChunkKey(e, segment)}
+              role="button"
+              tabIndex={showCloze ? -1 : 0}
+            >
               {showCloze ? (
                 <Input
                   size="small"
                   className={`blank-input ${status || ''}`}
                   placeholder="____"
-                  value={answers[item.id] || ''}
-                  onChange={(e) => onInputChange(item.id, e.target.value)}
-                  onKeyDown={(e) => onInputKeyDown(e, item)}
-                  onFocus={() => onInputFocus(item)}
+                  value={answers[segment.id] || ''}
+                  onChange={(e) => onInputChange(segment.id, e.target.value)}
+                  onKeyDown={(e) => onInputKeyDown(e, segment)}
+                  onFocus={() => onInputFocus(segment)}
                   ref={(el) => {
-                    if (el) registerInputRef(item.id, el);
+                    registerInputRef(segment.id, el);
                   }}
                 />
               ) : (
                 <span
-                  className={`word-audio ${activeWordId === item.id ? 'active' : ''} ${
-                    blurWords && !revealedIds.has(item.id) ? 'blurred' : ''
-                  }`}
-                  onClick={() => onWordActivate(item)}
-                  role="button"
-                  tabIndex={0}
-                  ref={(el) => {
-                    if (el) {
-                      registerWordRef(item.id, el);
-                    } else {
-                      registerWordRef(item.id, null);
-                    }
-                  }}
-                  onKeyDown={(e) => {
-                    if (e.key === 'Enter' || e.key === ' ') {
-                      onWordActivate(item);
-                    }
-                  }}
+                  className={`word-audio ${blurWords && !revealedIds.has(segment.id) ? 'blurred' : ''}`}
                 >
-                  {item.value}
+                  {segment.value}
                 </span>
               )}
               {showCloze && (
-                <Popover trigger="hover" content={imageContent} onOpenChange={(open) => open && fetchImages(item.value)}>
-                  <Button size="small" type="text" icon={<PictureOutlined />} />
+                <Popover trigger="hover" content={imageContent} onOpenChange={(open) => open && fetchImages(segment.value)}>
+                  <Button
+                    size="small"
+                    type="text"
+                    icon={<PictureOutlined />}
+                    onClick={(e) => e.stopPropagation()}
+                  />
                 </Popover>
               )}
               {showCloze && (
-                <Popover content={item.value} trigger="click">
+                <Popover content={segment.value} trigger="click">
                   <Button
                     size="small"
                     type="text"
                     icon={<QuestionCircleOutlined />}
-                    loading={loadingWord === item.value}
-                    onClick={() => onPlay(item.value)}
+                    loading={loadingWord === segment.value}
+                    onClick={(e) => {
+                      e.stopPropagation();
+                      onPlay(segment.value);
+                    }}
                   />
                 </Popover>
               )}

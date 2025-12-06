@@ -9,7 +9,6 @@ const useExerciseStore = create((set, get) => ({
   showCloze: false,
   answers: {},
   statuses: {},
-  activeWordId: null,
   wordListOpen: false,
   revealedIds: new Set(),
   setSceneText: (text) => set({ sceneText: text }),
@@ -22,7 +21,6 @@ const useExerciseStore = create((set, get) => ({
       showCloze: false,
       answers: {},
       statuses: {},
-      activeWordId: null,
       revealedIds: new Set(),
     });
   },
@@ -53,7 +51,6 @@ const useExerciseStore = create((set, get) => ({
   setStatus: (id, status) => set((state) => ({
     statuses: { ...state.statuses, [id]: status },
   })),
-  setActiveWordId: (id) => set({ activeWordId: id }),
   toggleWordList: () => set((state) => ({ wordListOpen: !state.wordListOpen })),
   setRevealedIds: (updater) => set((state) => {
     if (typeof updater === 'function') {

@@ -1,5 +1,5 @@
 import { Button, Dropdown, InputNumber, Space, Switch, Typography } from 'antd';
-import { EllipsisOutlined, ReloadOutlined, UndoOutlined } from '@ant-design/icons';
+import { EllipsisOutlined, ReloadOutlined, SoundOutlined, UndoOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -7,20 +7,27 @@ export default function HeroSection({
   onExtract,
   onReset,
   showCloze,
+  onReadAll,
+  readingAll,
   autoPlayCount,
   setAutoPlayCount,
   prefetchAudio,
   prefetching,
   prefetchProgress,
+  prefetchChinese,
+  prefetchingCn,
+  prefetchProgressCn,
   prefetchImages,
   imagePrefetching,
   imagePrefetchProgress,
   autoCarousel,
   blurWords,
   accentCheck,
+  foreignLineBreak,
   setAutoCarousel,
   setBlurWords,
   setAccentCheck,
+  setForeignLineBreak,
 }) {
   const menuItems = [
     {
@@ -41,8 +48,13 @@ export default function HeroSection({
     },
     {
       key: 'audio',
-      label: '拉取声音',
+      label: '拉取外语声音',
       disabled: prefetching,
+    },
+    {
+      key: 'audio-cn',
+      label: '拉取中文声音',
+      disabled: prefetchingCn,
     },
     {
       key: 'image',
@@ -58,10 +70,20 @@ export default function HeroSection({
         </div>
       ),
     },
+    {
+      key: 'linebreak',
+      label: (
+        <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+          <Text>外语换行</Text>
+          <Switch size="small" checked={foreignLineBreak} onChange={setForeignLineBreak} />
+        </div>
+      ),
+    },
   ];
 
   const handleMenuClick = ({ key }) => {
     if (key === 'audio') prefetchAudio();
+    if (key === 'audio-cn') prefetchChinese();
     if (key === 'image') prefetchImages();
   };
 
@@ -86,18 +108,26 @@ export default function HeroSection({
               <Text type="secondary">高斯模糊</Text>
               <Switch size="small" checked={blurWords} onChange={setBlurWords} />
             </Space>
+            <Button icon={<SoundOutlined />} onClick={onReadAll} loading={readingAll}>
+              全文朗读
+            </Button>
             <div className="hero-progress">
-            {prefetching && (
-              <Text type="secondary" style={{ marginRight: 12 }}>
-                声音 {prefetchProgress.done}/{prefetchProgress.total}
-              </Text>
-            )}
-            {imagePrefetching && (
-              <Text type="secondary">
-                图片 {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
-              </Text>
-            )}
-          </div>
+              {prefetching && (
+                <Text type="secondary" style={{ marginRight: 12 }}>
+                  外语 {prefetchProgress.done}/{prefetchProgress.total}
+                </Text>
+              )}
+              {prefetchingCn && (
+                <Text type="secondary" style={{ marginRight: 12 }}>
+                  中文 {prefetchProgressCn.done}/{prefetchProgressCn.total}
+                </Text>
+              )}
+              {imagePrefetching && (
+                <Text type="secondary">
+                  图片 {imagePrefetchProgress.done}/{imagePrefetchProgress.total}
+                </Text>
+              )}
+            </div>
           </Space>
         </div>
 

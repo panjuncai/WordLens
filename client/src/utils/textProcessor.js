@@ -32,6 +32,27 @@ export const fixedComboFirsts = new Set(fixedCombos.map((c) => c.split(' ')[0]))
 
 export const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+export function segmentByLanguage(text) {
+  const segments = [];
+  let lastIndex = 0;
+  for (const match of text.matchAll(wordPattern) || []) {
+    const start = match.index || 0;
+    const end = start + match[0].length;
+    if (start > lastIndex) {
+      const non = text.slice(lastIndex, start);
+      if (non.trim()) segments.push({ type: 'nonfr', value: non });
+    }
+    const fr = (match[0] || '').trim();
+    if (fr) segments.push({ type: 'fr', value: fr });
+    lastIndex = end;
+  }
+  if (lastIndex < text.length) {
+    const tail = text.slice(lastIndex);
+    if (tail.trim()) segments.push({ type: 'nonfr', value: tail });
+  }
+  return segments;
+}
+
 export function extractCandidates(text) {
   const matches = [...(text.matchAll(wordPattern) || [])];
   const seen = new Set();

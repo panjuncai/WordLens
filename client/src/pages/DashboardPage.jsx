@@ -13,7 +13,8 @@ import useExerciseStore from '../stores/useExerciseStore';
 import useConfigStore from '../stores/useConfigStore';
 import useAuthStore from '../stores/useAuthStore';
 import api from '../api';
-import { CAROUSEL_INTERVAL, MAX_AUTOPLAY_COUNT } from '../constants/config';
+import { CAROUSEL_INTERVAL, DEFAULT_CN_VOICE, MAX_AUTOPLAY_COUNT } from '../constants/config';
+import { segmentByLanguage } from '../utils/textProcessor';
 
 const markdownComponents = {
   p: ({ children, ...props }) => <span {...props}>{children}</span>,
@@ -50,12 +51,15 @@ export default function DashboardPage() {
   const [loadingWord, setLoadingWord] = useState('');
   const [prefetching, setPrefetching] = useState(false);
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
+  const [prefetchingCn, setPrefetchingCn] = useState(false);
+  const [prefetchProgressCn, setPrefetchProgressCn] = useState({ done: 0, total: 0 });
   const [activeArticle, setActiveArticle] = useState(null);
   const [activeWordId, setActiveWordId] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [readingAll, setReadingAll] = useState(false);
   const [carouselState, setCarouselState] = useState({
     word: '',
     urls: [],
@@ -411,6 +415,50 @@ export default function DashboardPage() {
     }
   };
 
+  const prefetchChinese = async () => {
+    const segs = segmentByLanguage(sceneText || '').filter((s) => s.type !== 'fr').map((s) => s.value.trim()).filter(Boolean);
+    const unique = Array.from(new Set(segs));
+    if (!unique.length) {
+      message.info('暂无可缓存的中文片段');
+      return;
+    }
+    setPrefetchingCn(true);
+    setPrefetchProgressCn({ done: 0, total: unique.length });
+    try {
+      for (let i = 0; i < unique.length; i += 1) {
+        const text = unique[i];
+        // eslint-disable-next-line no-await-in-loop
+        await ensureAudio(text, DEFAULT_CN_VOICE);
+        setPrefetchProgressCn({ done: i + 1, total: unique.length });
+      }
+      message.success('中文片段已缓存完成');
+    } catch (error) {
+      const detail = error.response?.data?.message || error.message;
+      message.error(`中文缓存失败：${detail}`);
+    } finally {
+      setPrefetchingCn(false);
+    }
+  };
+
+  const readFullText = async () => {
+    if (!sceneText) return;
+    const segs = segmentByLanguage(sceneText);
+    setReadingAll(true);
+    try {
+      for (const seg of segs) {
+        const text = seg.value.trim();
+        if (!text) continue;
+        const voice = seg.type === 'fr' ? azureVoice : DEFAULT_CN_VOICE;
+        // eslint-disable-next-line no-await-in-loop
+        await playWord(text, 1, voice);
+      }
+    } catch (error) {
+      // message handled in playWord/ensureAudio
+    } finally {
+      setReadingAll(false);
+    }
+  };
+
   const nextSlide = () => {
     setCarouselState((prev) => {
       if (!prev.urls.length) return prev;
@@ -537,11 +585,16 @@ export default function DashboardPage() {
                 onExtract={onExtract}
                 onReset={onReset}
                 showCloze={showCloze}
+                onReadAll={readFullText}
+                readingAll={readingAll}
                 autoPlayCount={autoPlayCount}
                 setAutoPlayCount={setAutoPlayCount}
                 prefetchAudio={prefetchAudio}
                 prefetching={prefetching}
                 prefetchProgress={prefetchProgress}
+                prefetchChinese={prefetchChinese}
+                prefetchingCn={prefetchingCn}
+                prefetchProgressCn={prefetchProgressCn}
                 prefetchImages={prefetchImages}
                 imagePrefetching={imagePrefetching}
                 imagePrefetchProgress={imagePrefetchProgress}

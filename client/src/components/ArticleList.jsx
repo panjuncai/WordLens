@@ -1,6 +1,6 @@
 import { useState } from 'react';
-import { Button, Card, Dropdown, Input, Modal, Space, Typography, Popconfirm, Switch, Avatar } from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined } from '@ant-design/icons';
+import { Button, Card, Dropdown, Input, Modal, Space, Typography, Popconfirm, Switch, Avatar, Tooltip } from 'antd';
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -90,21 +90,32 @@ export default function ArticleList({
             {items.map((item) => (
               <div
                 key={item.id}
-                className="article-row"
-                style={{ background: activeId === item.id ? 'rgba(37,99,235,0.08)' : 'transparent' }}
+                className={`article-row ${activeId === item.id ? 'active' : ''}`}
                 onClick={() => onSelect(item)}
               >
-                <div className="article-meta">
-                  <Text strong>{item.title}</Text>
-                  <Text type="secondary" style={{ fontSize: 12 }}>更新于 {item.updated_at || ''}</Text>
-                </div>
-                <Space size="small">
-                  <Button type="link" size="small" onClick={(e) => { e.stopPropagation(); openModal(item); }}>编辑</Button>
+                <Text className="article-title" ellipsis={{ tooltip: item.title }}>{item.title}</Text>
+                <Space size={2} className="article-actions">
+                  <Tooltip title="编辑">
+                    <Button
+                      type="text"
+                      size="small"
+                      icon={<EditOutlined />}
+                      onClick={(e) => { e.stopPropagation(); openModal(item); }}
+                    />
+                  </Tooltip>
                   <Popconfirm
                     title="确认删除？"
                     onConfirm={(e) => { e?.stopPropagation(); onDelete(item.id); }}
                   >
-                    <Button type="link" danger size="small" onClick={(e) => e.stopPropagation()}>删除</Button>
+                    <Tooltip title="删除">
+                      <Button
+                        type="text"
+                        size="small"
+                        danger
+                        icon={<DeleteOutlined />}
+                        onClick={(e) => e.stopPropagation()}
+                      />
+                    </Tooltip>
                   </Popconfirm>
                 </Space>
               </div>

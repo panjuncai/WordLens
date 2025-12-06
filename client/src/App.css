@@ -128,6 +128,14 @@ body[data-theme='dark'] {
   flex-direction: column;
 }
 
+.sidebar-card .ant-card-head {
+  padding: 8px 10px;
+}
+
+.sidebar-card .ant-card-body {
+  padding: 6px 8px 10px;
+}
+
 .sidebar-scroll {
   flex: 1;
   overflow-y: auto;
@@ -152,29 +160,43 @@ body[data-theme='dark'] {
 .article-list {
   display: flex;
   flex-direction: column;
-  gap: 8px;
+  gap: 4px;
 }
 
 .article-row {
   display: flex;
   align-items: center;
   justify-content: space-between;
-  padding: 8px 10px;
-  border-radius: 8px;
-  transition: background 120ms, border 120ms;
-  border: 1px solid rgba(15, 23, 42, 0.06);
+  padding: 6px 8px;
+  border-radius: 6px;
+  transition: background 120ms;
   cursor: pointer;
+  gap: 8px;
 }
 
 .article-row:hover {
-  background: rgba(37, 99, 235, 0.08);
-  border-color: rgba(37, 99, 235, 0.2);
+  background: rgba(15, 23, 42, 0.06);
 }
 
-.article-meta {
+.article-row.active {
+  background: rgba(37, 99, 235, 0.12);
+}
+
+.article-title {
+  flex: 1;
+  font-weight: 600;
+  color: var(--text);
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.article-actions .ant-btn {
   display: flex;
-  flex-direction: column;
-  gap: 2px;
+  align-items: center;
+  justify-content: center;
+  width: 28px;
+  height: 28px;
 }
 
 .sidebar-footer {

@@ -493,13 +493,14 @@ body,
   align-items: center;
   gap: 8px;
   padding: 10px 12px;
-  border-top: 1px solid var(--border);
+  border-top: 1px solid transparent;
   cursor: pointer;
   margin-top: auto;
   position: sticky;
   bottom: 0;
   background: var(--sidebar);
   box-shadow: none;
+  min-height: 48px;
 }
 
 .sidebar-footer:hover {
@@ -510,6 +511,10 @@ body,
   display: flex;
   flex-direction: column;
   line-height: 1.2;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  
 }
 
 .sidebar-card.collapsed {
@@ -537,7 +542,8 @@ body,
   justify-content: center;
   padding: 8px 0;
   border-top: none;
-  position: static;
+  position: sticky;
+  bottom: 0;
   width: 100%;
   transition: padding 180ms ease;
 }

@@ -506,7 +506,7 @@ export default function DashboardPage() {
       />
 
       <div className="chat-layout">
-        <div className="workspace-side sidebar-shell">
+        <div className={`workspace-side sidebar-shell ${sidebarCollapsed ? 'is-collapsed' : ''}`}>
           <ArticleList
             items={articles}
             loading={articlesLoading}

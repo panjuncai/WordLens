@@ -54,8 +54,8 @@ export default function DashboardPage() {
   const [prefetchingCn, setPrefetchingCn] = useState(false);
   const [prefetchProgressCn, setPrefetchProgressCn] = useState({ done: 0, total: 0 });
   const [activeArticle, setActiveArticle] = useState(null);
+  const [pendingArticleId, setPendingArticleId] = useState(null);
   const [creating, setCreating] = useState(false);
-  const [newTitle, setNewTitle] = useState('');
   const [newContent, setNewContent] = useState('');
   const [contentError, setContentError] = useState('');
   const [activeWordId, setActiveWordId] = useState(null);
@@ -77,6 +77,19 @@ export default function DashboardPage() {
   const [carouselPos, setCarouselPos] = useState(() => computeDefaultCarouselPos());
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const draggingRef = useRef(false);
+
+  const updateUrl = (articleId) => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    if (articleId) {
+      params.set('article', articleId);
+    } else {
+      params.delete('article');
+    }
+    const search = params.toString();
+    const next = `${window.location.pathname}${search ? `?${search}` : ''}`;
+    window.history.replaceState(null, '', next);
+  };
   const [carouselState, setCarouselState] = useState({
     word: '',
     urls: [],
@@ -87,6 +100,14 @@ export default function DashboardPage() {
   const inputRefs = useRef({});
   const wordRefs = useRef({});
   const carouselRef = useRef(null);
+  useEffect(() => {
+    if (typeof window === 'undefined') return;
+    const params = new URLSearchParams(window.location.search);
+    const id = params.get('article');
+    if (id) {
+      setPendingArticleId(id);
+    }
+  }, []);
 
   // fine-grained subscriptions to避免 getSnapshot警告
   const sceneText = useExerciseStore((state) => state.sceneText);
@@ -142,6 +163,7 @@ export default function DashboardPage() {
     createItem: createArticle,
     updateItem: updateArticle,
     deleteItem: deleteArticle,
+    fetchItem,
   } = useArticles(!!user);
 
   const blanks = useMemo(() => segments.filter((seg) => seg.type === 'blank'), [segments]);
@@ -205,10 +227,19 @@ export default function DashboardPage() {
   }, [user]);
 
   useEffect(() => {
-    if (activeArticle) {
+    if (!activeArticle) return;
+    if (activeArticle.content) {
       loadArticle(activeArticle.content);
       setCreating(false);
+      updateUrl(activeArticle.id);
+      return;
     }
+    (async () => {
+      const detail = await fetchItem(activeArticle.id);
+      if (detail) {
+        setActiveArticle(detail);
+      }
+    })();
   }, [activeArticle]);
 
   useEffect(() => {
@@ -221,14 +252,25 @@ export default function DashboardPage() {
   }, [sceneText, selectedWords]);
 
   useEffect(() => {
-    if (articles.length && !creating && !activeArticle) {
-      setActiveArticle(articles[0]);
-    }
     if (!articles.length) {
       setCreating(true);
       setActiveArticle(null);
+      updateUrl(null);
+      return;
     }
-  }, [articles, activeArticle, creating]);
+    if (pendingArticleId) {
+      const match = articles.find((a) => String(a.id) === String(pendingArticleId));
+      if (match) {
+        setActiveArticle(match);
+        setPendingArticleId(null);
+        return;
+      }
+      setPendingArticleId(null);
+    }
+    if (!creating && !activeArticle) {
+      setActiveArticle(articles[0]);
+    }
+  }, [articles, activeArticle, creating, pendingArticleId]);
 
   useEffect(() => {
     if (showCloze) {
@@ -440,7 +482,7 @@ export default function DashboardPage() {
   const prefetchAudio = async () => {
     const blankWords = segments.filter((seg) => seg.type === 'blank');
     const uniqueWords = Array.from(new Set(blankWords.map((b) => b.value)));
-    const pending = uniqueWords.filter((w) => !audioCache[`${azureVoice || ''}:${w.toLowerCase()}`]);
+    const pending = uniqueWords.filter((w) => !audioCache.current?.[`${azureVoice || ''}:${w.toLowerCase()}`]);
     if (!pending.length) {
       message.info('外语音频已全部缓存');
       message.info('暂无可缓存的挖空词');
@@ -467,7 +509,7 @@ export default function DashboardPage() {
   const prefetchChinese = async () => {
     const segs = segmentByLanguage(sceneText || '').filter((s) => s.type !== 'fr').map((s) => s.value.trim()).filter(Boolean);
     const unique = Array.from(new Set(segs));
-    const pending = unique.filter((t) => !audioCache[`${DEFAULT_CN_VOICE}:${t.toLowerCase()}`]);
+    const pending = unique.filter((t) => !audioCache.current?.[`${DEFAULT_CN_VOICE}:${t.toLowerCase()}`]);
     if (!pending.length) {
       message.info('中文音频已全部缓存');
       message.info('暂无可缓存的中文片段');
@@ -513,9 +555,10 @@ export default function DashboardPage() {
   const startCreate = () => {
     setCreating(true);
     setActiveArticle(null);
-    setNewTitle('');
     setNewContent('');
     setCarouselState((prev) => ({ ...prev, visible: false }));
+    setPendingArticleId(null);
+    updateUrl(null);
   };
 
   const saveCreate = async () => {
@@ -534,7 +577,6 @@ export default function DashboardPage() {
     if (created) {
       setActiveArticle(created);
       setCreating(false);
-      setNewTitle('');
       setNewContent('');
       setContentError('');
     }
@@ -546,19 +588,11 @@ export default function DashboardPage() {
     if (remaining.length) {
       setActiveArticle(remaining[0]);
       setCreating(false);
+      updateUrl(remaining[0].id);
     } else {
       setActiveArticle(null);
       setCreating(true);
-    }
-  };
-
-  const cancelCreate = () => {
-    if (articles.length) {
-      setCreating(false);
-      setActiveArticle(articles[0]);
-    } else {
-      setCreating(true);
-      setActiveArticle(null);
+      updateUrl(null);
     }
   };
 
@@ -682,7 +716,11 @@ export default function DashboardPage() {
             onCreateStart={startCreate}
             onUpdate={updateArticle}
             onDelete={handleDeleteArticle}
-            onSelect={(item) => setActiveArticle(item)}
+            onSelect={(item) => {
+              setCreating(false);
+              setActiveArticle(item);
+              updateUrl(item.id);
+            }}
             activeId={activeArticle?.id}
             collapsed={sidebarCollapsed}
             onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
@@ -694,6 +732,7 @@ export default function DashboardPage() {
               loadConfig();
             }}
             onLogout={logout}
+            fetchItem={fetchItem}
           />
         </aside>
 
@@ -750,8 +789,8 @@ export default function DashboardPage() {
                           value={newContent}
                           onChange={(e) => {
                             setNewContent(e.target.value);
-                            if (e.target.value.trim().length > 2000) {
-                              setContentError('不能超过2000个字符');
+                            if (e.target.value.trim().length > 20) {
+                              setContentError('不能超过20个字符');
                             } else {
                               setContentError('');
                             }

@@ -1,10 +1,14 @@
 const { get, run, db } = require('../db');
 
 const listByUser = (userId) => new Promise((resolve, reject) => {
-  db.all('SELECT * FROM user_articles WHERE user_id = ? ORDER BY updated_at DESC', [userId], (err, rows) => {
-    if (err) reject(err);
-    else resolve(rows);
-  });
+  db.all(
+    'SELECT id, title, updated_at FROM user_articles WHERE user_id = ? ORDER BY updated_at DESC',
+    [userId],
+    (err, rows) => {
+      if (err) reject(err);
+      else resolve(rows);
+    },
+  );
 });
 
 const findById = (id, userId) => get('SELECT * FROM user_articles WHERE id = ? AND user_id = ?', [id, userId]);

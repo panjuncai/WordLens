@@ -46,5 +46,5 @@ export default function useTtsAudio() {
     }
   };
 
-  return { playWord, ensureAudio, audioCache: audioCache.current };
+  return { playWord, ensureAudio, audioCache };
 }

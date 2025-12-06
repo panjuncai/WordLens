@@ -5,6 +5,7 @@ import {
   createArticle,
   updateArticle,
   deleteArticle,
+  getArticle,
 } from '../services/articleService';
 
 export default function useArticles(enabled = true) {
@@ -18,7 +19,7 @@ export default function useArticles(enabled = true) {
     try {
       const { data } = await listArticles();
       setItems(data.items || []);
-    } catch (error) {
+    } catch {
       message.error('加载文章失败');
     } finally {
       setLoading(false);
@@ -80,5 +81,14 @@ export default function useArticles(enabled = true) {
     createItem,
     updateItem,
     deleteItem,
+    fetchItem: async (id) => {
+      try {
+        const { data } = await getArticle(id);
+        return data.article;
+      } catch {
+        message.error('加载文章失败');
+        return null;
+      }
+    },
   };
 }

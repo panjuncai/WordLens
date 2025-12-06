@@ -1,5 +1,5 @@
 // 连续的非中文、非结构性符号片段：允许字母/重音符、空格、连字符、撇号以及句内逗号句号感叹问号
-export const wordPattern = /[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ'’\-]|[\s.,?!])*/g;
+export const wordPattern = /[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ'’-]|[\s.,?!])*/g;
 
 export const articleSet = new Set([
   'un',

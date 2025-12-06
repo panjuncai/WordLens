@@ -21,6 +21,7 @@ export default function ArticleList({
   onToggleTheme = () => {},
   onOpenConfig = () => {},
   onLogout = () => {},
+  fetchItem = null,
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -28,13 +29,27 @@ export default function ArticleList({
   const [content, setContent] = useState('');
   const [bulkMode, setBulkMode] = useState(false);
   const [selectedIds, setSelectedIds] = useState(new Set());
+  const [detailLoading, setDetailLoading] = useState(false);
 
-  const openModal = (item = null) => {
+  const openModal = async (item = null) => {
     if (!item) return;
     setEditing(item);
     setTitle(item?.title || '');
     setContent(item?.content || '');
     setModalOpen(true);
+    if (!item?.content && fetchItem) {
+      setDetailLoading(true);
+      try {
+        const detail = await fetchItem(item.id);
+        if (detail) {
+          setEditing(detail);
+          setTitle(detail.title || item.title || '');
+          setContent(detail.content || '');
+        }
+      } finally {
+        setDetailLoading(false);
+      }
+    }
   };
 
   const submit = async () => {
@@ -197,7 +212,7 @@ export default function ArticleList({
         open={modalOpen}
         onCancel={() => setModalOpen(false)}
         onOk={submit}
-        confirmLoading={saving}
+        confirmLoading={saving || detailLoading}
         destroyOnHidden
       >
         <Space direction="vertical" style={{ width: '100%' }}>

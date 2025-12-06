@@ -8,7 +8,8 @@
     "client": "npm --prefix client run dev -- --host",
     "build": "npm --prefix client run build",
     "start": "node server/server.js",
-    "test": "echo \"No automated tests configured\""
+    "test": "echo \"No automated tests configured\"",
+    "lint": "npm --prefix client run lint"
   },
   "keywords": [],
   "author": "",

@@ -457,6 +457,14 @@ body,
   display: block;
 }
 
+.logo-button {
+  border: none;
+  background: transparent;
+  padding: 0;
+  margin: 0;
+  cursor: pointer;
+}
+
 .article-title {
   flex: 1;
   font-weight: 600;

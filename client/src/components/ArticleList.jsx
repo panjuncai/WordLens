@@ -22,6 +22,7 @@ export default function ArticleList({
   onOpenConfig = () => {},
   onLogout = () => {},
   fetchItem = null,
+  onLogoClick = () => {},
 }) {
   const [modalOpen, setModalOpen] = useState(false);
   const [editing, setEditing] = useState(null);
@@ -128,7 +129,11 @@ export default function ArticleList({
   return (
     <Card
       className={`sidebar-card ${collapsed ? 'collapsed' : ''}`}
-      title={collapsed ? null : <img src="/Sola.svg" alt="logo" className="sidebar-logo" />}
+      title={collapsed ? null : (
+        <button type="button" className="logo-button" onClick={onLogoClick}>
+          <img src="/Sola.svg" alt="logo" className="sidebar-logo" />
+        </button>
+      )}
       variant="outlined"
       extra={(
         <Space size="small">

@@ -733,6 +733,7 @@ export default function DashboardPage() {
             }}
             onLogout={logout}
             fetchItem={fetchItem}
+            onLogoClick={startCreate}
           />
         </aside>
 

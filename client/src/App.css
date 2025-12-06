@@ -83,9 +83,9 @@ body,
 
 .main-header {
   flex-shrink: 0;
-  background: var(--surface);
+  background: var(--bg);
   z-index: 10;
-  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.04);
+  box-shadow: none;
 }
 
 .main-scroll-area {
@@ -103,11 +103,11 @@ body,
   width: 100%;
   max-width: 980px;
   margin: 0 auto;
-  background: var(--surface);
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 12px 14px;
-  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.04);
+  background: transparent;
+  border: none;
+  border-radius: 0;
+  padding: 12px 0;
+  box-shadow: none;
 }
 
 .article-panel-head {

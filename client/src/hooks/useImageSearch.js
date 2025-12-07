@@ -67,7 +67,6 @@ export default function useImageSearch() {
       let done = 0;
       for (let i = 0; i < words.length; i += IMAGE_PREFETCH_CONCURRENCY) {
         const chunk = words.slice(i, i + IMAGE_PREFETCH_CONCURRENCY);
-        // eslint-disable-next-line no-await-in-loop
         await Promise.all(chunk.map((w) => loadImages(w).catch(() => {})));
         done += chunk.length;
         setPrefetchProgress({ done: Math.min(done, words.length), total: words.length });

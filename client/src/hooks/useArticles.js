@@ -1,4 +1,4 @@
-import { useEffect, useState } from 'react';
+import { useCallback, useEffect, useState } from 'react';
 import { message } from 'antd';
 import {
   listArticles,
@@ -13,7 +13,7 @@ export default function useArticles(enabled = true) {
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
 
-  const load = async () => {
+  const load = useCallback(async () => {
     if (!enabled) return;
     setLoading(true);
     try {
@@ -24,11 +24,11 @@ export default function useArticles(enabled = true) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [enabled]);
 
   useEffect(() => {
     load();
-  }, [enabled]);
+  }, [load]);
 
   const createItem = async (title, content) => {
     setSaving(true);
@@ -73,6 +73,18 @@ export default function useArticles(enabled = true) {
     }
   };
 
+  const fetchItem = useCallback(async (id) => {
+    try {
+      const { data } = await getArticle(id);
+      return data.article;
+    } catch (error) {
+      if (error?.response?.status !== 404) {
+        message.error('加载文章失败');
+      }
+      return null;
+    }
+  }, []);
+
   return {
     items,
     loading,
@@ -81,14 +93,6 @@ export default function useArticles(enabled = true) {
     createItem,
     updateItem,
     deleteItem,
-    fetchItem: async (id) => {
-      try {
-        const { data } = await getArticle(id);
-        return data.article;
-      } catch {
-        message.error('加载文章失败');
-        return null;
-      }
-    },
+    fetchItem,
   };
 }

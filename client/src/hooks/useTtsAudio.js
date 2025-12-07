@@ -73,7 +73,6 @@ export default function useTtsAudio() {
       const url = await ensureAudio(normalized, voice);
       for (let i = 0; i < times; i += 1) {
         if (playbackTokenRef.current !== playbackToken) break;
-        // eslint-disable-next-line no-await-in-loop
         await playAudioUrl(url);
         if (playbackTokenRef.current !== playbackToken) break;
       }

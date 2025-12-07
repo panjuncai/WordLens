@@ -23,7 +23,7 @@ function App() {
 
   useEffect(() => {
     checkAuth();
-  }, []);
+  }, [checkAuth]);
 
   useEffect(() => {
     document.body.setAttribute('data-theme', themeMode);

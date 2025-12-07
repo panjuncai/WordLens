@@ -7,10 +7,8 @@ import {
   Modal,
   Space,
   Typography,
-  Popconfirm,
   Switch,
   Avatar,
-  Tooltip,
   Checkbox,
   message,
 } from 'antd';
@@ -22,6 +20,7 @@ import {
   DeleteOutlined,
   PlusOutlined,
   MoreOutlined,
+  RollbackOutlined,
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -129,13 +128,16 @@ export default function ArticleList({
       okType: 'danger',
       cancelText: '取消',
       onOk: async () => {
-        for (let i = 0; i < ids.length; i += 1) {
-          // eslint-disable-next-line no-await-in-loop
-          await onDelete(ids[i]);
-        }
+        await Promise.all(ids.map((id) => onDelete(id)));
         message.success('批量删除完成');
         setBulkMode(false);
         setSelectedIds(new Set());
+        const remaining = items.filter((item) => !ids.includes(item.id));
+        if (remaining.length) {
+          onSelect(remaining[0]);
+        } else {
+          onCreateStart();
+        }
       },
     });
   };
@@ -147,6 +149,14 @@ export default function ArticleList({
       else next.delete(id);
       return next;
     });
+  };
+
+  const handleToggleAll = (checked) => {
+    if (checked) {
+      setSelectedIds(new Set(items.map((item) => item.id)));
+    } else {
+      setSelectedIds(new Set());
+    }
   };
 
   return (
@@ -190,12 +200,25 @@ export default function ArticleList({
             <Button
               type="text"
               block
-              className={`quick-action-btn ${bulkMode ? 'danger' : ''}`}
-              icon={<DeleteOutlined />}
+              className={`quick-action-btn ${bulkMode ? (selectedIds.size ? 'danger' : 'cancel') : ''}`}
+              icon={bulkMode ? <RollbackOutlined /> : <DeleteOutlined />}
               onClick={handleBulkToggle}
             >
-              {bulkMode ? '完成批量删除' : '批量删除'}
+              {bulkMode
+                ? (selectedIds.size ? '完成批量删除' : '取消批量删除')
+                : '批量删除'}
             </Button>
+            {bulkMode && (
+              <div className="bulk-toggle-all">
+                <Checkbox
+                  checked={selectedIds.size === items.length && items.length > 0}
+                  indeterminate={selectedIds.size > 0 && selectedIds.size < items.length}
+                  onChange={(e) => handleToggleAll(e.target.checked)}
+                >
+                  全选
+                </Checkbox>
+              </div>
+            )}
           </div>
           <div className="sidebar-scroll" style={{ overflowX: 'hidden' }}>
             <div className="article-list">
@@ -219,39 +242,26 @@ export default function ArticleList({
                 <Dropdown
                   trigger={['click']}
                   placement="bottomRight"
-                  menu={{ items: [
-                    {
-                      key: 'edit',
-                      label: (
-                        <button type="button" className="dropdown-item-btn" onClick={(e) => { e.stopPropagation(); openModal(item); }}>
-                          <EditOutlined />
-                          <span>编辑</span>
-                        </button>
-                      ),
+                  menu={{
+                    items: [
+                      { key: 'edit', label: '编辑', icon: <EditOutlined /> },
+                      { key: 'delete', label: '删除', icon: <DeleteOutlined />, danger: true },
+                    ],
+                    onClick: ({ key, domEvent }) => {
+                      domEvent.stopPropagation();
+                      if (key === 'edit') {
+                        openModal(item);
+                      } else if (key === 'delete') {
+                        Modal.confirm({
+                          title: '确认删除？',
+                          okText: '删除',
+                          okType: 'danger',
+                          cancelText: '取消',
+                          onOk: () => onDelete(item.id),
+                        });
+                      }
                     },
-                    {
-                      key: 'delete',
-                      label: (
-                        <button
-                          type="button"
-                          className="dropdown-item-btn danger"
-                          onClick={(e) => {
-                            e.stopPropagation();
-                            Modal.confirm({
-                              title: '确认删除？',
-                              okText: '删除',
-                              okType: 'danger',
-                              cancelText: '取消',
-                              onOk: () => onDelete(item.id),
-                            });
-                          }}
-                        >
-                          <DeleteOutlined />
-                          <span>删除</span>
-                        </button>
-                      ),
-                    },
-                  ]}}
+                  }}
                 >
                   <Button
                     type="text"

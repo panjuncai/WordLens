@@ -421,6 +421,13 @@ body,
   padding: 6px 0 10px;
 }
 
+.bulk-toggle-all {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 4px 10px 0;
+}
+
 .quick-action-btn {
   display: flex !important;
   align-items: center;
@@ -438,6 +445,10 @@ body,
 
 .quick-action-btn.danger {
   color: #dc2626 !important;
+}
+
+.quick-action-btn.cancel {
+  color: #2563eb !important;
 }
 
 .chat-main {
@@ -493,22 +504,6 @@ body,
 .article-row:hover .article-more-btn,
 .article-row.active .article-more-btn {
   opacity: 1;
-}
-
-.dropdown-item-btn {
-  display: flex;
-  align-items: center;
-  gap: 8px;
-  background: transparent;
-  border: none;
-  padding: 4px 0;
-  width: 100%;
-  text-align: left;
-  color: var(--text);
-}
-
-.dropdown-item-btn.danger {
-  color: #dc2626;
 }
 
 .sidebar-logo {

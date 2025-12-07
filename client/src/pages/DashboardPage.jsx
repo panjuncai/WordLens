@@ -131,6 +131,17 @@ export default function DashboardPage() {
   const themeMode = useConfigStore((state) => state.themeMode);
   const setThemeMode = useConfigStore((state) => state.setThemeMode);
 
+  const loadConfig = useCallback(async () => {
+    try {
+      const { data } = await api.get('/api/user/config');
+      setAzureKey(data.azure_key || '');
+      setAzureRegion(data.azure_region || '');
+      setAzureVoice(data.azure_voice || '');
+    } catch {
+      message.error('加载配置失败');
+    }
+  }, [setAzureKey, setAzureRegion, setAzureVoice]);
+
   const {
     imageMap,
     loadImages,
@@ -204,7 +215,7 @@ export default function DashboardPage() {
       setAzureRegion('');
       setAzureVoice('');
     }
-  }, [user]);
+  }, [loadConfig, setAzureKey, setAzureRegion, setAzureVoice, user]);
 
   useEffect(() => {
     if (!activeArticle) return;
@@ -220,7 +231,7 @@ export default function DashboardPage() {
         setActiveArticle(detail);
       }
     })();
-  }, [activeArticle]);
+  }, [activeArticle, fetchItem, loadArticle]);
 
   useEffect(() => {
     inputRefs.current = {};
@@ -267,7 +278,7 @@ export default function DashboardPage() {
     if (!blurWords) {
       setRevealedIds(new Set());
     }
-  }, [blurWords]);
+  }, [blurWords, setRevealedIds]);
 
   useEffect(() => {
     if (!carouselState.visible || carouselState.urls.length <= 1) return () => {};
@@ -378,9 +389,8 @@ export default function DashboardPage() {
               : 1;
         const voice = chunk.type === 'fr' ? azureVoice : DEFAULT_CN_VOICE;
         try {
-          // eslint-disable-next-line no-await-in-loop
           await playWord(textValue, playTimes, voice);
-        } catch (error) {
+        } catch {
           controller.cancelled = true;
           break;
         }
@@ -579,7 +589,6 @@ export default function DashboardPage() {
     try {
       for (let i = 0; i < pending.length; i += 1) {
         const word = pending[i];
-        // eslint-disable-next-line no-await-in-loop
         await ensureAudio(word, azureVoice);
         setPrefetchProgress({ done: i + 1, total: pending.length });
       }
@@ -609,7 +618,6 @@ export default function DashboardPage() {
     try {
       for (let i = 0; i < pending.length; i += 1) {
         const text = pending[i];
-        // eslint-disable-next-line no-await-in-loop
         await ensureAudio(text, DEFAULT_CN_VOICE);
         setPrefetchProgressCn({ done: i + 1, total: pending.length });
       }
@@ -716,17 +724,6 @@ export default function DashboardPage() {
       setCarouselPos(computeDefaultCarouselPos());
     }
   }, [autoCarousel]);
-
-  const loadConfig = async () => {
-    try {
-      const { data } = await api.get('/api/user/config');
-      setAzureKey(data.azure_key || '');
-      setAzureRegion(data.azure_region || '');
-      setAzureVoice(data.azure_voice || '');
-    } catch {
-      message.error('加载配置失败');
-    }
-  };
 
   const saveConfig = async () => {
     setConfigLoading(true);

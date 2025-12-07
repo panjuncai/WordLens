@@ -464,7 +464,8 @@ export default function DashboardPage() {
       target = moveActiveWithin(sorted, delta);
     }
     if (target) {
-      handleChunkPlay(target.index, { triggerPreview: true, triggerReveal: true });
+      setActiveIndex(target.index);
+      handleChunkPlay(target.index, { triggerPreview: true, triggerReveal: false });
     }
   }, [handleChunkPlay, moveActiveWithin, segments]);
   const togglePausePlayback = useCallback(() => {
@@ -498,7 +499,8 @@ export default function DashboardPage() {
     resetCloze();
     const first = blanks[0];
     if (first) {
-      handleChunkPlay(first.index, { repeat: clampedCount, triggerPreview: true, triggerReveal: true });
+      setActiveIndex(first.index);
+      handleChunkPlay(first.index, { repeat: clampedCount, triggerPreview: true, triggerReveal: false });
     }
     // message.info('已恢复为原文');
   };
@@ -572,7 +574,8 @@ export default function DashboardPage() {
       e.preventDefault();
       const current = segments.find((seg) => seg.index === activeIndex) || segments[0];
       if (current) {
-        handleChunkPlay(current.index, { triggerPreview: true, triggerReveal: true });
+        setActiveIndex(current.index);
+        handleChunkPlay(current.index, { triggerPreview: true, triggerReveal: false });
       }
     }
   };

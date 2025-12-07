@@ -485,6 +485,32 @@ body,
   background: rgba(37, 99, 235, 0.12);
 }
 
+.article-more-btn {
+  opacity: 0;
+  transition: opacity 120ms;
+}
+
+.article-row:hover .article-more-btn,
+.article-row.active .article-more-btn {
+  opacity: 1;
+}
+
+.dropdown-item-btn {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  background: transparent;
+  border: none;
+  padding: 4px 0;
+  width: 100%;
+  text-align: left;
+  color: var(--text);
+}
+
+.dropdown-item-btn.danger {
+  color: #dc2626;
+}
+
 .sidebar-logo {
   height: 20px;
   background: transparent;

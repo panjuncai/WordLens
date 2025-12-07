@@ -1,6 +1,28 @@
 import { useState } from 'react';
-import { Button, Card, Dropdown, Input, Modal, Space, Typography, Popconfirm, Switch, Avatar, Tooltip, Checkbox, message } from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
+import {
+  Button,
+  Card,
+  Dropdown,
+  Input,
+  Modal,
+  Space,
+  Typography,
+  Popconfirm,
+  Switch,
+  Avatar,
+  Tooltip,
+  Checkbox,
+  message,
+} from 'antd';
+import {
+  MenuFoldOutlined,
+  MenuUnfoldOutlined,
+  UserOutlined,
+  EditOutlined,
+  DeleteOutlined,
+  PlusOutlined,
+  MoreOutlined,
+} from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -194,30 +216,51 @@ export default function ArticleList({
                   />
                 )}
                 <Text className="article-title" ellipsis={{ tooltip: item.title }}>{item.title}</Text>
-                <Space size={2} className="article-actions">
-                  <Tooltip title="编辑">
-                    <Button
-                      type="text"
-                      size="small"
-                      icon={<EditOutlined />}
-                      onClick={(e) => { e.stopPropagation(); openModal(item); }}
-                    />
-                  </Tooltip>
-                  <Popconfirm
-                    title="确认删除？"
-                    onConfirm={(e) => { e?.stopPropagation(); onDelete(item.id); }}
-                  >
-                    <Tooltip title="删除">
-                      <Button
-                        type="text"
-                        size="small"
-                        danger
-                        icon={<DeleteOutlined />}
-                        onClick={(e) => e.stopPropagation()}
-                      />
-                    </Tooltip>
-                  </Popconfirm>
-                </Space>
+                <Dropdown
+                  trigger={['click']}
+                  placement="bottomRight"
+                  menu={{ items: [
+                    {
+                      key: 'edit',
+                      label: (
+                        <button type="button" className="dropdown-item-btn" onClick={(e) => { e.stopPropagation(); openModal(item); }}>
+                          <EditOutlined />
+                          <span>编辑</span>
+                        </button>
+                      ),
+                    },
+                    {
+                      key: 'delete',
+                      label: (
+                        <button
+                          type="button"
+                          className="dropdown-item-btn danger"
+                          onClick={(e) => {
+                            e.stopPropagation();
+                            Modal.confirm({
+                              title: '确认删除？',
+                              okText: '删除',
+                              okType: 'danger',
+                              cancelText: '取消',
+                              onOk: () => onDelete(item.id),
+                            });
+                          }}
+                        >
+                          <DeleteOutlined />
+                          <span>删除</span>
+                        </button>
+                      ),
+                    },
+                  ]}}
+                >
+                  <Button
+                    type="text"
+                    size="small"
+                    className="article-more-btn"
+                    icon={<MoreOutlined />}
+                    onClick={(e) => e.stopPropagation()}
+                  />
+                </Dropdown>
               </div>
             ))}
           </div>

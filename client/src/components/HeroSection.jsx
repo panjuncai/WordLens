@@ -216,6 +216,19 @@ export default function HeroSection({
     else onMenuConfig(null);
   }, [isMobile, menuProps, onMenuConfig]);
 
+  const isActivePlaying = isPlaying && !isPaused;
+  const handlePrimaryAction = useCallback(() => {
+    if (isActivePlaying) {
+      onTogglePause();
+      return;
+    }
+    if (isPaused) {
+      onTogglePause();
+      return;
+    }
+    onReadAll();
+  }, [isActivePlaying, isPaused, onReadAll, onTogglePause]);
+
   const switchBlock = isMobile ? null : (
     <Space size="small" wrap align="center" className="hero-switches">
       <Tooltip title="练习模式(听写/原文)">
@@ -261,12 +274,13 @@ export default function HeroSection({
             className="hero-control-space"
           >
             <Space size="small" wrap align="center" className="hero-control-buttons">
-              <Tooltip title="全文朗读">
-                <Button size={controlSize} type="text" icon={<PlayCircleOutlined />} onClick={onReadAll} loading={readingAll}>
-                </Button>
-              </Tooltip>
-              <Tooltip title={isPaused ? '继续' : '暂停'}>
-                <Button size={controlSize} type="text" icon={<PauseOutlined />} onClick={onTogglePause} disabled={!isPlaying} />
+              <Tooltip title={isActivePlaying ? '暂停' : (isPaused ? '继续' : '全文朗读')}>
+                <Button
+                  size={controlSize}
+                  type="text"
+                  icon={isActivePlaying ? <PauseOutlined /> : <PlayCircleOutlined />}
+                  onClick={handlePrimaryAction}
+                />
               </Tooltip>
               <Tooltip title="上一个外语词块(快捷键:↑)">
                 <Button size={controlSize} type="text" icon={<ArrowUpOutlined />} onClick={() => onMoveShortcut(-1, 'blank')} />

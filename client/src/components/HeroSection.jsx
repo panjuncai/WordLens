@@ -251,11 +251,12 @@ export default function HeroSection({
   return (
     <div className={`hero-header ${isMobile ? 'hero-mobile' : ''}`}>
       <div className="hero-toolbar">
+        {!isMobile && <div className="hero-section hero-section-start" />}
         <div className="hero-section hero-section-center">
           <Space
-            size={isMobile ? 'middle' : 'large'}
-            wrap
-            direction={isMobile ? 'vertical' : 'horizontal'}
+            size={isMobile ? 'large' : 'large'}
+            wrap={!isMobile}
+            direction="horizontal"
             align="center"
             className="hero-control-space"
           >

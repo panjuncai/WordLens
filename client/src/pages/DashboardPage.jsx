@@ -811,6 +811,7 @@ export default function DashboardPage() {
                   onTogglePause={togglePausePlayback}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
+                  onMoveShortcut={(delta, scope) => moveActive(delta, { scope })}
                   autoPlayCount={autoPlayCount}
                   setAutoPlayCount={setAutoPlayCount}
                   prefetchAudio={prefetchAudio}

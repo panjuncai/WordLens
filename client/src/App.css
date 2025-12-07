@@ -342,7 +342,11 @@ body,
 
 .hero-switches {
   align-items: center;
-  gap: 8px;
+  gap: 16px;
+}
+
+.hero-switches .ant-switch {
+  transform: scale(1.15);
 }
 
 .hero-header.hero-mobile {

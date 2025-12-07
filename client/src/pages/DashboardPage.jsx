@@ -358,12 +358,14 @@ export default function DashboardPage() {
       setIsPaused(false);
     }
     let idx = startIdx;
+    let lastPlayedIndex = null;
     while (idx < segments.length) {
       if (controller.cancelled) break;
       if (controller.paused) break;
       const chunk = segments[idx];
       if (!chunk) break;
       setActiveIndex(chunk.index);
+      lastPlayedIndex = chunk.index;
       const textValue = (chunk.value || '').trim();
       const playable = textValue && chunk.type !== 'punct';
       if (playable) {
@@ -402,12 +404,19 @@ export default function DashboardPage() {
       idx += 1;
     }
     if (controller.paused) return;
-    if (controller.cancelled) return;
+    if (controller.cancelled) {
+      if (!continuous && typeof lastPlayedIndex === 'number') {
+        setActiveIndex(lastPlayedIndex);
+      }
+      return;
+    }
     if (continuous) {
       setIsPlaying(false);
       setIsPaused(false);
+      setActiveIndex(-1);
+    } else if (typeof lastPlayedIndex === 'number') {
+      setActiveIndex(lastPlayedIndex);
     }
-    setActiveIndex(-1);
   }, [
     segments,
     cancelCurrentPlayback,
@@ -420,17 +429,32 @@ export default function DashboardPage() {
     setRevealedIds,
   ]);
 
-  const moveActive = useCallback((delta) => {
-    if (!segments.length) return;
-    const currentIdx = segments.findIndex((seg) => seg.index === activeIndex);
+  const moveActiveWithin = useCallback((list, delta) => {
+    if (!list.length) return null;
+    const order = list.map((seg) => seg.index);
+    const currentIdx = order.indexOf(activeIndex);
     const targetIdx = currentIdx === -1
-      ? (delta > 0 ? 0 : segments.length - 1)
-      : Math.max(0, Math.min(segments.length - 1, currentIdx + delta));
-    const target = segments[targetIdx];
+      ? (delta > 0 ? 0 : order.length - 1)
+      : Math.max(0, Math.min(order.length - 1, currentIdx + delta));
+    return list.find((seg) => seg.index === order[targetIdx]) || null;
+  }, [activeIndex]);
+
+  const moveActive = useCallback((delta, options = {}) => {
+    const { scope = 'all' } = options;
+    if (!segments.length) return;
+    let target = null;
+    if (scope === 'blank') {
+      const blanksOnly = segments.filter((seg) => seg.role === 'blank');
+      target = moveActiveWithin(blanksOnly, delta);
+    }
+    if (!target) {
+      const sorted = [...segments].sort((a, b) => a.index - b.index);
+      target = moveActiveWithin(sorted, delta);
+    }
     if (target) {
       handleChunkPlay(target.index, { triggerPreview: true, triggerReveal: true });
     }
-  }, [activeIndex, handleChunkPlay, segments]);
+  }, [handleChunkPlay, moveActiveWithin, segments]);
   const togglePausePlayback = useCallback(() => {
     if (!isPlaying || !playbackRef.current) return;
     const controller = playbackRef.current;
@@ -517,15 +541,21 @@ export default function DashboardPage() {
 
   const onKeyNavigate = (e) => {
     if (showCloze || !segments.length || (isPlaying && !isPaused)) return;
-    if (['ArrowRight', 'ArrowDown'].includes(e.key)) {
+    if (['ArrowRight'].includes(e.key)) {
       e.preventDefault();
       moveActive(1);
-    } else if (['ArrowLeft', 'ArrowUp'].includes(e.key)) {
+    } else if (['ArrowLeft'].includes(e.key)) {
       e.preventDefault();
       moveActive(-1);
+    } else if (['ArrowUp'].includes(e.key)) {
+      e.preventDefault();
+      moveActive(-1, { scope: 'blank' });
+    } else if (['ArrowDown'].includes(e.key)) {
+      e.preventDefault();
+      moveActive(1, { scope: 'blank' });
     } else if (e.key === 'Tab') {
       e.preventDefault();
-      moveActive(e.shiftKey ? -1 : 1);
+      moveActive(e.shiftKey ? -1 : 1, { scope: 'blank' });
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const current = segments.find((seg) => seg.index === activeIndex) || segments[0];

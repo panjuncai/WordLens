@@ -1,6 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Modal, message,Button } from 'antd';
-import ReactMarkdown from 'react-markdown';
 import HeroSection from '../components/HeroSection';
 import ArticleList from '../components/ArticleList';
 import ExerciseBoard from '../components/ExerciseBoard';
@@ -14,34 +13,6 @@ import useConfigStore from '../stores/useConfigStore';
 import useAuthStore from '../stores/useAuthStore';
 import api from '../api';
 import { CAROUSEL_INTERVAL, DEFAULT_CN_VOICE, MAX_AUTOPLAY_COUNT } from '../constants/config';
-
-const markdownComponents = {
-  p: ({ children, ...props }) => <span {...props}>{children}</span>,
-  strong: ({ children, ...props }) => <strong {...props}>{children}</strong>,
-  em: ({ children, ...props }) => <em {...props}>{children}</em>,
-  code: ({ children, ...props }) => (
-    <code className="md-inline-code" {...props}>
-      {children}
-    </code>
-  ),
-  a: ({ children, href, ...props }) => (
-    <a href={href} target="_blank" rel="noreferrer" {...props}>
-      {children}
-    </a>
-  ),
-  ul: ({ children, ...props }) => (
-    <ul className="md-list" {...props}>
-      {children}
-    </ul>
-  ),
-  ol: ({ children, ...props }) => (
-    <ol className="md-list" {...props}>
-      {children}
-    </ol>
-  ),
-  li: ({ children, ...props }) => <li {...props}>{children}</li>,
-  br: () => <br />,
-};
 
 export default function DashboardPage() {
   const { user, logout } = useAuthStore();
@@ -183,12 +154,6 @@ export default function DashboardPage() {
 
   const blanks = useMemo(() => segments.filter((seg) => seg.role === 'blank'), [segments]);
   const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
-
-  const renderMarkdown = (value) => (
-    <span className="markdown-text">
-      <ReactMarkdown components={markdownComponents}>{value || ''}</ReactMarkdown>
-    </span>
-  );
 
   const copyArticle = async () => {
     try {
@@ -918,7 +883,6 @@ export default function DashboardPage() {
                   fetchImages={fetchImages}
                   onPlay={onPlay}
                   loadingWord={loadingWord}
-                  renderMarkdown={renderMarkdown}
                   onCopyArticle={copyArticle}
                   registerInputRef={(id, el) => {
                     if (el) {

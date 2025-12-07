@@ -24,7 +24,6 @@ export default function ExerciseBoard({
   fetchImages,
   onPlay,
   loadingWord,
-  renderMarkdown,
   registerInputRef,
   onPreview,
 }) {
@@ -61,7 +60,7 @@ export default function ExerciseBoard({
                 role="button"
                 tabIndex={0}
               >
-                <span className="cloze-text">{renderMarkdown(segment.value)}</span>
+                <span className="cloze-text">{segment.value}</span>
               </span>
             );
           }

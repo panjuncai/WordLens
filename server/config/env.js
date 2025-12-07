@@ -11,7 +11,7 @@ if (missing.length) {
 }
 
 module.exports = {
-  port: process.env.PORT || 4000,
+  port: process.env.PORT || 5001,
   defaultVoice: process.env.AZURE_VOICE || 'fr-FR-DeniseNeural',
   jwtSecret: process.env.JWT_SECRET,
   azureKey: process.env.AZURE_SPEECH_KEY,

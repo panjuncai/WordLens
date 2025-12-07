@@ -13,6 +13,7 @@ async function register(req, res, next) {
 
 async function login(req, res, next) {
   const { email, password } = req.body || {};
+  console.log('👉 收到登录请求！Body:', req.body);
   try {
     const data = await authService.login(email, password);
     res.json(data);

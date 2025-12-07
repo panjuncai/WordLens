@@ -540,7 +540,7 @@ export default function DashboardPage() {
   };
 
   const onKeyNavigate = (e) => {
-    if (showCloze || !segments.length || (isPlaying && !isPaused)) return;
+    if (showCloze || !segments.length) return;
     if (['ArrowRight'].includes(e.key)) {
       e.preventDefault();
       moveActive(1);

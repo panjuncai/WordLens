@@ -175,6 +175,12 @@ export default function ExerciseBoard({
           </>
         )}
       </Space>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
+      <br/>
     </>
   );
 }

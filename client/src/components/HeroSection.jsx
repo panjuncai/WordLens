@@ -1,3 +1,4 @@
+import { useCallback, useEffect, useMemo, useRef } from 'react';
 import { Button, Dropdown, InputNumber, Space, Switch, Typography, Tooltip } from 'antd';
 import {
   EllipsisOutlined,
@@ -45,99 +46,146 @@ export default function HeroSection({
   setBlurWords,
   setAccentCheck,
   isMobile = false,
+  onOpenConfig = () => {},
+  onToggleTheme = () => {},
+  onLogout = () => {},
+  themeMode = 'light',
+  onMenuConfig = null,
 }) {
+  const extractRef = useRef(onExtract);
+  const resetRef = useRef(onReset);
+  const prefetchAudioRef = useRef(prefetchAudio);
+  const prefetchChineseRef = useRef(prefetchChinese);
+  const prefetchImagesRef = useRef(prefetchImages);
+  const openConfigRef = useRef(onOpenConfig);
+  const toggleThemeRef = useRef(onToggleTheme);
+  const logoutRef = useRef(onLogout);
+
+  useEffect(() => { extractRef.current = onExtract; }, [onExtract]);
+  useEffect(() => { resetRef.current = onReset; }, [onReset]);
+  useEffect(() => { prefetchAudioRef.current = prefetchAudio; }, [prefetchAudio]);
+  useEffect(() => { prefetchChineseRef.current = prefetchChinese; }, [prefetchChinese]);
+  useEffect(() => { prefetchImagesRef.current = prefetchImages; }, [prefetchImages]);
+  useEffect(() => { openConfigRef.current = onOpenConfig; }, [onOpenConfig]);
+  useEffect(() => { toggleThemeRef.current = onToggleTheme; }, [onToggleTheme]);
+  useEffect(() => { logoutRef.current = onLogout; }, [onLogout]);
+
   const controlSize = isMobile ? 'middle' : 'large';
   const switchSize = isMobile ? 'default' : 'large';
-  const handleToggleMode = (checked) => {
-    if (checked) onExtract();
-    else onReset();
-  };
-  const menuItems = [
-    {
-      key: 'count',
-      label: (
-        <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-          <Text>自动发音次数</Text>
-          <InputNumber
-            size="small"
-            min={0}
-            max={20}
-            value={autoPlayCount}
-            onChange={(v) => setAutoPlayCount(v || 0)}
-            style={{ width: 80 }}
-          />
-        </div>
-      ),
-    },
-    {
-      key: 'audio',
-      label: '缓存外语音频',
-      disabled: prefetching,
-      tip: '缓存当前文章所有外语音频',
-    },
-    {
-      key: 'audio-cn',
-      label: '缓存中文音频',
-      disabled: prefetchingCn,
-      tip: '缓存当前文章所有中文音频',
-    },
-    {
-      key: 'image',
-      label: '缓存轮播图',
-      disabled: imagePrefetching,
-      tip: '缓存当前文章所有轮播图',
-    },
-    {
-      key: 'accent',
-      label: (
-        <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-          <Text>重音检查</Text>
-          <Switch size="small" checked={accentCheck} onChange={setAccentCheck} />
-        </div>
-      ),
-      tip: '用于控制填写练习是否检查法语重音符',
-    },
-  ];
-
-  if (isMobile) {
-    menuItems.unshift(
+  const handleToggleMode = useCallback((checked) => {
+    if (checked) extractRef.current();
+    else resetRef.current();
+  }, []);
+  const menuItems = useMemo(() => {
+    const base = [
       {
-        key: 'mode',
+        key: 'count',
         label: (
           <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-            <Text>练习模式</Text>
-            <Switch
+            <Text>自动发音次数</Text>
+            <InputNumber
               size="small"
-              checked={showCloze}
-              onChange={handleToggleMode}
-              checkedChildren={<FormOutlined />}
-              unCheckedChildren={<RedoOutlined />}
+              min={0}
+              max={20}
+              value={autoPlayCount}
+              onChange={(v) => setAutoPlayCount(v || 0)}
+              style={{ width: 80 }}
             />
           </div>
         ),
       },
       {
-        key: 'blur',
-        label: (
-          <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-            <Text>单词遮挡</Text>
-            <Switch size="small" checked={blurWords} onChange={setBlurWords} />
-          </div>
-        ),
+        key: 'audio',
+        label: '缓存外语音频',
+        disabled: prefetching,
+        tip: '缓存当前文章所有外语音频',
       },
       {
-        key: 'carousel',
+        key: 'audio-cn',
+        label: '缓存中文音频',
+        disabled: prefetchingCn,
+        tip: '缓存当前文章所有中文音频',
+      },
+      {
+        key: 'image',
+        label: '缓存轮播图',
+        disabled: imagePrefetching,
+        tip: '缓存当前文章所有轮播图',
+      },
+      {
+        key: 'accent',
         label: (
           <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-            <Text>图片轮播</Text>
-            <Switch size="small" checked={autoCarousel} onChange={setAutoCarousel} />
+            <Text>重音检查</Text>
+            <Switch size="small" checked={accentCheck} onChange={setAccentCheck} />
           </div>
         ),
+        tip: '用于控制填写练习是否检查法语重音符',
       },
-    );
-  }
+    ];
+    if (isMobile) {
+      base.unshift(
+        {
+          key: 'mode',
+          label: (
+            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+              <Text>练习模式</Text>
+              <Switch
+                size="small"
+                checked={showCloze}
+                onChange={handleToggleMode}
+                checkedChildren={<FormOutlined />}
+                unCheckedChildren={<RedoOutlined />}
+              />
+            </div>
+          ),
+        },
+        {
+          key: 'blur',
+          label: (
+            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+              <Text>单词遮挡</Text>
+              <Switch size="small" checked={blurWords} onChange={setBlurWords} />
+            </div>
+          ),
+        },
+        {
+          key: 'carousel',
+          label: (
+            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+              <Text>图片轮播</Text>
+              <Switch size="small" checked={autoCarousel} onChange={setAutoCarousel} />
+            </div>
+          ),
+        },
+      );
+      base.push(
+        { type: 'divider' },
+        { key: 'config', label: 'TTS 配置' },
+        { key: 'theme', label: themeMode === 'dark' ? '切换到亮色' : '切换到暗色' },
+        { key: 'logout', label: '退出登录' },
+      );
+    }
+    return base;
+  }, [
+    accentCheck,
+    autoCarousel,
+    autoPlayCount,
+    blurWords,
+    handleToggleMode,
+    imagePrefetching,
+    isMobile,
+    prefetching,
+    prefetchingCn,
+    setAccentCheck,
+    setAutoCarousel,
+    setAutoPlayCount,
+    setBlurWords,
+    showCloze,
+    themeMode,
+  ]);
 
-  const wrappedMenuItems = menuItems.map((item) => {
+  const wrappedMenuItems = useMemo(() => menuItems.map((item) => {
     if (!item.tip) return item;
     return {
       ...item,
@@ -147,13 +195,27 @@ export default function HeroSection({
         </Tooltip>
       ),
     };
-  });
+  }), [menuItems]);
 
-  const handleMenuClick = ({ key }) => {
-    if (key === 'audio') prefetchAudio();
-    if (key === 'audio-cn') prefetchChinese();
-    if (key === 'image') prefetchImages();
-  };
+  const handleMenuClick = useCallback(({ key }) => {
+    if (key === 'audio') prefetchAudioRef.current();
+    if (key === 'audio-cn') prefetchChineseRef.current();
+    if (key === 'image') prefetchImagesRef.current();
+    if (key === 'config') openConfigRef.current();
+    if (key === 'theme') toggleThemeRef.current();
+    if (key === 'logout') logoutRef.current();
+  }, []);
+  const menuProps = useMemo(() => ({
+    items: wrappedMenuItems,
+    onClick: handleMenuClick,
+  }), [handleMenuClick, wrappedMenuItems]);
+
+  useEffect(() => {
+    if (!onMenuConfig) return;
+    if (isMobile) onMenuConfig(menuProps);
+    else onMenuConfig(null);
+  }, [isMobile, menuProps, onMenuConfig]);
+
   const switchBlock = isMobile ? null : (
     <Space size="small" wrap align="center" className="hero-switches">
       <Tooltip title="练习模式(听写/原文)">
@@ -239,11 +301,13 @@ export default function HeroSection({
           </Space>
         </div>
 
-        <div className="hero-section hero-section-end">
-          <Dropdown menu={{ items: wrappedMenuItems, onClick: handleMenuClick }} trigger={['click']} placement="bottomRight">
-            <Button type="text" icon={<EllipsisOutlined />} />
-          </Dropdown>
-        </div>
+        {!isMobile && (
+          <div className="hero-section hero-section-end">
+            <Dropdown menu={menuProps} trigger={['click']} placement="bottomRight">
+              <Button type="text" icon={<EllipsisOutlined />} />
+            </Dropdown>
+          </div>
+        )}
       </div>
     </div>
   );

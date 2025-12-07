@@ -39,6 +39,7 @@ export default function DashboardPage() {
   const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [typedIntro] = useState('今天想背点什么？');
+  const [mobileMenuProps, setMobileMenuProps] = useState(null);
   const computeDefaultCarouselPos = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const h = typeof window !== 'undefined' ? window.innerHeight : 800;
@@ -186,12 +187,6 @@ export default function DashboardPage() {
 
   const blanks = useMemo(() => segments.filter((seg) => seg.role === 'blank'), [segments]);
   const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
-  const mobileMenuItems = useMemo(() => ([
-    { key: 'config', label: 'TTS 配置' },
-    { key: 'theme', label: themeMode === 'dark' ? '切换到亮色' : '切换到暗色' },
-    { type: 'divider' },
-    { key: 'logout', label: '退出登录' },
-  ]), [themeMode]);
 
   const copyArticle = async () => {
     try {
@@ -781,17 +776,6 @@ export default function DashboardPage() {
     }
   };
 
-  const handleMobileMenuClick = ({ key }) => {
-    if (key === 'config') {
-      setConfigOpen(true);
-      loadConfig();
-    } else if (key === 'theme') {
-      setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
-    } else if (key === 'logout') {
-      logout();
-    }
-  };
-
   return (
     <>
       <ImageCarousel
@@ -894,9 +878,11 @@ export default function DashboardPage() {
                 onClick={() => setMobileSidebarOpen(true)}
               />
               <div className="mobile-top-title">{activeArticle?.title || 'WordLens'}</div>
-              <Dropdown menu={{ items: mobileMenuItems, onClick: handleMobileMenuClick }} trigger={['click']} placement="bottomRight">
-                <Button type="text" icon={<MoreOutlined />} />
-              </Dropdown>
+              {mobileMenuProps && (
+                <Dropdown menu={mobileMenuProps} trigger={['click']} placement="bottomRight">
+                  <Button type="text" icon={<MoreOutlined />} />
+                </Dropdown>
+              )}
             </div>
           )}
 
@@ -931,6 +917,14 @@ export default function DashboardPage() {
                   setBlurWords={setBlurWords}
                   setAccentCheck={setAccentCheck}
                   isMobile
+                  onOpenConfig={() => {
+                    setConfigOpen(true);
+                    loadConfig();
+                  }}
+                  onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+                  onLogout={logout}
+                  themeMode={themeMode}
+                  onMenuConfig={setMobileMenuProps}
                 />
               </div>
             ) : (
@@ -963,6 +957,13 @@ export default function DashboardPage() {
                     setAutoCarousel={setAutoCarousel}
                     setBlurWords={setBlurWords}
                     setAccentCheck={setAccentCheck}
+                    onOpenConfig={() => {
+                      setConfigOpen(true);
+                      loadConfig();
+                    }}
+                    onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+                    onLogout={logout}
+                    themeMode={themeMode}
                   />
                 </div>
               </div>

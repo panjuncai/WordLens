@@ -1,6 +1,6 @@
 import { useState } from 'react';
 import { Button, Card, Dropdown, Input, Modal, Space, Typography, Popconfirm, Switch, Avatar, Tooltip, Checkbox, message } from 'antd';
-import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, EditOutlined, DeleteOutlined } from '@ant-design/icons';
+import { MenuFoldOutlined, MenuUnfoldOutlined, UserOutlined, EditOutlined, DeleteOutlined, PlusOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -138,10 +138,6 @@ export default function ArticleList({
       variant="outlined"
       extra={(
         <Space size="small">
-          {!collapsed && (
-            <Button type="text" size="small" icon={<DeleteOutlined />} onClick={handleBulkToggle} />
-          )}
-          {!collapsed && <Button type="text" size="small" onClick={onCreateStart}>＋</Button>}
           <Button
             type="text"
             size="small"
@@ -158,13 +154,34 @@ export default function ArticleList({
       loading={loading}
     >
       {!collapsed && (
-        <div className="sidebar-scroll" style={{ overflowX: 'hidden' }}>
-          <div className="article-list">
-            {items.length === 0 && <Text type="secondary">暂无文章，点击新增创建</Text>}
-            {items.map((item) => (
-              <div
-                key={item.id}
-                className={`article-row ${activeId === item.id ? 'active' : ''}`}
+        <>
+          <div className="sidebar-quick-actions">
+            <Button
+              type="text"
+              block
+              className="quick-action-btn"
+              icon={<PlusOutlined />}
+              onClick={onCreateStart}
+            >
+              新增文章
+            </Button>
+            <Button
+              type="text"
+              block
+              className={`quick-action-btn ${bulkMode ? 'danger' : ''}`}
+              icon={<DeleteOutlined />}
+              onClick={handleBulkToggle}
+            >
+              {bulkMode ? '完成批量删除' : '批量删除'}
+            </Button>
+          </div>
+          <div className="sidebar-scroll" style={{ overflowX: 'hidden' }}>
+            <div className="article-list">
+              {items.length === 0 && <Text type="secondary">暂无文章，点击新增创建</Text>}
+              {items.map((item) => (
+                <div
+                  key={item.id}
+                  className={`article-row ${activeId === item.id ? 'active' : ''}`}
                 onClick={() => onSelect(item)}
               >
                 {bulkMode && (
@@ -204,7 +221,8 @@ export default function ArticleList({
               </div>
             ))}
           </div>
-        </div>
+          </div>
+        </>
       )}
 
       <Dropdown menu={{ items: userMenuItems, onClick: handleMenuClick }} placement="topLeft" trigger={['click']}>

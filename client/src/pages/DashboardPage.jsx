@@ -35,6 +35,7 @@ export default function DashboardPage() {
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [typedIntro] = useState('今天想背点什么？');
   const computeDefaultCarouselPos = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const h = typeof window !== 'undefined' ? window.innerHeight : 800;
@@ -95,6 +96,7 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => () => cancelCurrentPlayback(), [cancelCurrentPlayback]);
+
 
   // fine-grained subscriptions to避免 getSnapshot警告
   const sceneText = useExerciseStore((state) => state.sceneText);
@@ -843,7 +845,7 @@ export default function DashboardPage() {
                         saveCreate();
                       }}
                     >
-                      <div className="bubble-heading">想场景化背单词吗？</div>
+                      <div className="bubble-heading typing-text">{typedIntro || '\u00a0'}</div>
                       <div className="bubble-body">
                         <textarea
                           className={`bubble-input body-input ${contentError ? 'input-error' : ''}`}

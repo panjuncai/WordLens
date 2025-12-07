@@ -1,4 +1,4 @@
-import { Button, Dropdown, InputNumber, Space, Switch, Typography,Tooltip } from 'antd';
+import { Button, Dropdown, InputNumber, Space, Switch, Typography, Tooltip } from 'antd';
 import {
   EllipsisOutlined,
   PoweroffOutlined,
@@ -44,7 +44,14 @@ export default function HeroSection({
   setAutoCarousel,
   setBlurWords,
   setAccentCheck,
+  isMobile = false,
 }) {
+  const controlSize = isMobile ? 'middle' : 'large';
+  const switchSize = isMobile ? 'default' : 'large';
+  const handleToggleMode = (checked) => {
+    if (checked) onExtract();
+    else onReset();
+  };
   const menuItems = [
     {
       key: 'count',
@@ -92,6 +99,44 @@ export default function HeroSection({
     },
   ];
 
+  if (isMobile) {
+    menuItems.unshift(
+      {
+        key: 'mode',
+        label: (
+          <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+            <Text>练习模式</Text>
+            <Switch
+              size="small"
+              checked={showCloze}
+              onChange={handleToggleMode}
+              checkedChildren={<FormOutlined />}
+              unCheckedChildren={<RedoOutlined />}
+            />
+          </div>
+        ),
+      },
+      {
+        key: 'blur',
+        label: (
+          <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+            <Text>单词遮挡</Text>
+            <Switch size="small" checked={blurWords} onChange={setBlurWords} />
+          </div>
+        ),
+      },
+      {
+        key: 'carousel',
+        label: (
+          <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+            <Text>图片轮播</Text>
+            <Switch size="small" checked={autoCarousel} onChange={setAutoCarousel} />
+          </div>
+        ),
+      },
+    );
+  }
+
   const wrappedMenuItems = menuItems.map((item) => {
     if (!item.tip) return item;
     return {
@@ -109,72 +154,71 @@ export default function HeroSection({
     if (key === 'audio-cn') prefetchChinese();
     if (key === 'image') prefetchImages();
   };
+  const switchBlock = isMobile ? null : (
+    <Space size="small" wrap align="center" className="hero-switches">
+      <Tooltip title="练习模式(听写/原文)">
+        <Switch
+          size={switchSize}
+          checked={showCloze}
+          onChange={handleToggleMode}
+          checkedChildren={<FormOutlined />}
+          unCheckedChildren={<RedoOutlined />}
+        />
+      </Tooltip>
+      <Tooltip title="图片轮播">
+        <Switch
+          size={switchSize}
+          checked={autoCarousel}
+          onChange={setAutoCarousel}
+          checkedChildren={<RetweetOutlined />}
+          unCheckedChildren={<PoweroffOutlined />}
+        />
+      </Tooltip>
+      <Tooltip title="单词遮挡">
+        <Switch
+          size={switchSize}
+          checked={blurWords}
+          onChange={setBlurWords}
+          checkedChildren={<EyeInvisibleOutlined />}
+          unCheckedChildren={<EyeOutlined />}
+        />
+      </Tooltip>
+    </Space>
+  );
 
   return (
-    <div className="hero-header">
+    <div className={`hero-header ${isMobile ? 'hero-mobile' : ''}`}>
       <div className="hero-toolbar">
-        <div className="hero-section hero-section-start" />
-
         <div className="hero-section hero-section-center">
-          <Space size="middle" wrap align="center">
-            <Space size="small" align="center">
+          <Space
+            size={isMobile ? 'middle' : 'large'}
+            wrap
+            direction={isMobile ? 'vertical' : 'horizontal'}
+            align="center"
+            className="hero-control-space"
+          >
+            <Space size="small" wrap align="center" className="hero-control-buttons">
               <Tooltip title="全文朗读">
-                <Button size="large" type="text" icon={<PlayCircleOutlined />} onClick={onReadAll} loading={readingAll}>
+                <Button size={controlSize} type="text" icon={<PlayCircleOutlined />} onClick={onReadAll} loading={readingAll}>
                 </Button>
               </Tooltip>
               <Tooltip title={isPaused ? '继续' : '暂停'}>
-                <Button size="large" type="text" icon={<PauseOutlined />} onClick={onTogglePause} disabled={!isPlaying} />
+                <Button size={controlSize} type="text" icon={<PauseOutlined />} onClick={onTogglePause} disabled={!isPlaying} />
               </Tooltip>
               <Tooltip title="上一个外语词块(快捷键:↑)">
-                <Button size="large" type="text" icon={<ArrowUpOutlined />} onClick={() => onMoveShortcut(-1, 'blank')} />
+                <Button size={controlSize} type="text" icon={<ArrowUpOutlined />} onClick={() => onMoveShortcut(-1, 'blank')} />
               </Tooltip>
               <Tooltip title="下一个外语词块(快捷键:↓)">
-                <Button size="large" type="text" icon={<ArrowDownOutlined />} onClick={() => onMoveShortcut(1, 'blank')} />
+                <Button size={controlSize} type="text" icon={<ArrowDownOutlined />} onClick={() => onMoveShortcut(1, 'blank')} />
               </Tooltip>
               <Tooltip title="上一个词块(快捷键:←)">
-                <Button size="large" type="text" icon={<ArrowLeftOutlined />} onClick={() => onMoveShortcut(-1, 'all')} />
+                <Button size={controlSize} type="text" icon={<ArrowLeftOutlined />} onClick={() => onMoveShortcut(-1, 'all')} />
               </Tooltip>
               <Tooltip title="下一个词块(快捷键:→)">
-                <Button size="large" type="text" icon={<ArrowRightOutlined />} onClick={() => onMoveShortcut(1, 'all')} />
+                <Button size={controlSize} type="text" icon={<ArrowRightOutlined />} onClick={() => onMoveShortcut(1, 'all')} />
               </Tooltip>
             </Space>
-            <Space size="small" align="center">
-              <Tooltip title="练习模式(听写/原文)">
-                <Switch
-                  size="large"
-                  checked={showCloze}
-                  onChange={(checked) => {
-                    if (checked) onExtract();
-                    else onReset();
-                  }}
-                  checkedChildren={<FormOutlined />}
-                  unCheckedChildren={<RedoOutlined />}
-                />
-              </Tooltip>
-            </Space>
-            <Space size="small" align="center">
-              <Tooltip title="图片轮播">
-                <Switch
-                  size="large"
-                  checked={autoCarousel}
-                  onChange={setAutoCarousel}
-                  checkedChildren={<RetweetOutlined />}
-                  unCheckedChildren={<PoweroffOutlined  />}
-                />
-              </Tooltip>
-            </Space>
-            <Space size="small" align="center">
-              <Tooltip title="单词遮挡">
-                <Switch
-                  size="large"
-                  checked={blurWords}
-                  onChange={setBlurWords}
-                  checkedChildren={<EyeInvisibleOutlined />}
-                  unCheckedChildren={<EyeOutlined />}
-                />
-              </Tooltip>
-            </Space>
-            
+            {switchBlock}
             <div className="hero-progress">
               {prefetching && (
                 <Text type="secondary" style={{ marginRight: 12 }}>
@@ -201,8 +245,6 @@ export default function HeroSection({
           </Dropdown>
         </div>
       </div>
-
-      
     </div>
   );
 }

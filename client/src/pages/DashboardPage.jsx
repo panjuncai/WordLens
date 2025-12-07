@@ -1,5 +1,6 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Modal, message,Button } from 'antd';
+import { Button, Drawer, Dropdown, Modal, message } from 'antd';
+import { MenuOutlined, MoreOutlined } from '@ant-design/icons';
 import HeroSection from '../components/HeroSection';
 import ArticleList from '../components/ArticleList';
 import ExerciseBoard from '../components/ExerciseBoard';
@@ -35,6 +36,8 @@ export default function DashboardPage() {
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
   const [previewIndex, setPreviewIndex] = useState(0);
+  const [isMobile, setIsMobile] = useState(() => (typeof window !== 'undefined' ? window.innerWidth <= 768 : false));
+  const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [typedIntro] = useState('今天想背点什么？');
   const computeDefaultCarouselPos = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
@@ -49,6 +52,22 @@ export default function DashboardPage() {
   const [carouselPos, setCarouselPos] = useState(() => computeDefaultCarouselPos());
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const draggingRef = useRef(false);
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    const mq = window.matchMedia('(max-width: 768px)');
+    const handleChange = (event) => {
+      setIsMobile(event.matches);
+    };
+    handleChange(mq);
+    mq.addEventListener('change', handleChange);
+    return () => mq.removeEventListener('change', handleChange);
+  }, []);
+
+  useEffect(() => {
+    if (!isMobile) {
+      setMobileSidebarOpen(false);
+    }
+  }, [isMobile]);
 
   const updateUrl = (articleId) => {
     if (typeof window === 'undefined') return;
@@ -167,6 +186,12 @@ export default function DashboardPage() {
 
   const blanks = useMemo(() => segments.filter((seg) => seg.role === 'blank'), [segments]);
   const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
+  const mobileMenuItems = useMemo(() => ([
+    { key: 'config', label: 'TTS 配置' },
+    { key: 'theme', label: themeMode === 'dark' ? '切换到亮色' : '切换到暗色' },
+    { type: 'divider' },
+    { key: 'logout', label: '退出登录' },
+  ]), [themeMode]);
 
   const copyArticle = async () => {
     try {
@@ -747,6 +772,26 @@ export default function DashboardPage() {
     }
   };
 
+  const handleArticleSelect = (item) => {
+    setCreating(false);
+    setActiveArticle(item);
+    updateUrl(item.id);
+    if (isMobile) {
+      setMobileSidebarOpen(false);
+    }
+  };
+
+  const handleMobileMenuClick = ({ key }) => {
+    if (key === 'config') {
+      setConfigOpen(true);
+      loadConfig();
+    } else if (key === 'theme') {
+      setThemeMode(themeMode === 'dark' ? 'light' : 'dark');
+    } else if (key === 'logout') {
+      logout();
+    }
+  };
+
   return (
     <>
       <ImageCarousel
@@ -768,43 +813,96 @@ export default function DashboardPage() {
       />
 
       <div className="app-layout">
-        <aside
-          className={`app-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}
-          style={{ width: sidebarCollapsed ? 60 : 280, minWidth: sidebarCollapsed ? 60 : 240 }}
-        >
-          <ArticleList
-            items={articles}
-            loading={articlesLoading}
-            saving={articlesSaving}
-            onCreate={createArticle}
-            onCreateStart={startCreate}
-            onUpdate={updateArticle}
-            onDelete={handleDeleteArticle}
-            onSelect={(item) => {
-              setCreating(false);
-              setActiveArticle(item);
-              updateUrl(item.id);
-            }}
-            activeId={activeArticle?.id}
-            collapsed={sidebarCollapsed}
-            onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
-            userEmail={user?.email || ''}
-            themeMode={themeMode}
-            onToggleTheme={setThemeMode}
-            onOpenConfig={() => {
-              setConfigOpen(true);
-              loadConfig();
-            }}
-            onLogout={logout}
-            fetchItem={fetchItem}
-            onLogoClick={startCreate}
-          />
-        </aside>
+        {!isMobile && (
+          <aside
+            className={`app-sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}
+            style={{ width: sidebarCollapsed ? 60 : 280, minWidth: sidebarCollapsed ? 60 : 240 }}
+          >
+            <ArticleList
+              items={articles}
+              loading={articlesLoading}
+              saving={articlesSaving}
+              onCreate={createArticle}
+              onCreateStart={startCreate}
+              onUpdate={updateArticle}
+              onDelete={handleDeleteArticle}
+              onSelect={handleArticleSelect}
+              activeId={activeArticle?.id}
+              collapsed={sidebarCollapsed}
+              onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+              userEmail={user?.email || ''}
+              themeMode={themeMode}
+              onToggleTheme={setThemeMode}
+              onOpenConfig={() => {
+                setConfigOpen(true);
+                loadConfig();
+              }}
+              onLogout={logout}
+              fetchItem={fetchItem}
+              onLogoClick={startCreate}
+            />
+          </aside>
+        )}
+
+        {isMobile && (
+          <Drawer
+            placement="left"
+            width="84%"
+            open={mobileSidebarOpen}
+            maskClosable
+            onClose={() => setMobileSidebarOpen(false)}
+            className="mobile-sidebar-drawer"
+          >
+            <ArticleList
+              items={articles}
+              loading={articlesLoading}
+              saving={articlesSaving}
+              onCreate={createArticle}
+              onCreateStart={() => {
+                startCreate();
+                setMobileSidebarOpen(false);
+              }}
+              onUpdate={updateArticle}
+              onDelete={handleDeleteArticle}
+              onSelect={handleArticleSelect}
+              activeId={activeArticle?.id}
+              collapsed={false}
+              onToggleCollapse={() => setSidebarCollapsed((v) => !v)}
+              userEmail={user?.email || ''}
+              themeMode={themeMode}
+              onToggleTheme={setThemeMode}
+              onOpenConfig={() => {
+                setConfigOpen(true);
+                loadConfig();
+              }}
+              onLogout={logout}
+              fetchItem={fetchItem}
+              onLogoClick={() => {
+                startCreate();
+                setMobileSidebarOpen(false);
+              }}
+            />
+          </Drawer>
+        )}
 
         <main className="app-main">
+          {isMobile && (
+            <div className="mobile-top-bar">
+              <Button
+                type="text"
+                icon={<MenuOutlined />}
+                onClick={() => setMobileSidebarOpen(true)}
+              />
+              <div className="mobile-top-title">{activeArticle?.title || 'WordLens'}</div>
+              <Dropdown menu={{ items: mobileMenuItems, onClick: handleMobileMenuClick }} trigger={['click']} placement="bottomRight">
+                <Button type="text" icon={<MoreOutlined />} />
+              </Dropdown>
+            </div>
+          )}
+
           {!creating && (
-            <div className="main-header">
-              <div className="content-container header-container">
+            isMobile ? (
+              <div className="mobile-toolbar-shell">
                 <HeroSection
                   onExtract={onExtract}
                   onReset={onReset}
@@ -832,10 +930,43 @@ export default function DashboardPage() {
                   setAutoCarousel={setAutoCarousel}
                   setBlurWords={setBlurWords}
                   setAccentCheck={setAccentCheck}
+                  isMobile
                 />
               </div>
-            </div>
-            // <></>
+            ) : (
+              <div className="main-header">
+                <div className="content-container header-container">
+                  <HeroSection
+                    onExtract={onExtract}
+                    onReset={onReset}
+                    showCloze={showCloze}
+                    onReadAll={readFullText}
+                    readingAll={isPlaying && !isPaused}
+                    onTogglePause={togglePausePlayback}
+                    isPlaying={isPlaying}
+                    isPaused={isPaused}
+                    onMoveShortcut={(delta, scope) => moveActive(delta, { scope })}
+                    autoPlayCount={autoPlayCount}
+                    setAutoPlayCount={setAutoPlayCount}
+                    prefetchAudio={prefetchAudio}
+                    prefetching={prefetching}
+                    prefetchProgress={prefetchProgress}
+                    prefetchChinese={prefetchChinese}
+                    prefetchingCn={prefetchingCn}
+                    prefetchProgressCn={prefetchProgressCn}
+                    prefetchImages={prefetchImages}
+                    imagePrefetching={imagePrefetching}
+                    imagePrefetchProgress={imagePrefetchProgress}
+                    autoCarousel={autoCarousel}
+                    blurWords={blurWords}
+                    accentCheck={accentCheck}
+                    setAutoCarousel={setAutoCarousel}
+                    setBlurWords={setBlurWords}
+                    setAccentCheck={setAccentCheck}
+                  />
+                </div>
+              </div>
+            )
           )}
           <div className="main-scroll-area">
             <div className="content-container">

@@ -13,7 +13,7 @@ import useExerciseStore from '../stores/useExerciseStore';
 import useConfigStore from '../stores/useConfigStore';
 import useAuthStore from '../stores/useAuthStore';
 import api from '../api';
-import { CAROUSEL_INTERVAL, DEFAULT_CN_VOICE, MAX_AUTOPLAY_COUNT } from '../constants/config';
+import { CAROUSEL_INTERVAL, MAX_AUTOPLAY_COUNT } from '../constants/config';
 
 export default function DashboardPage() {
   const { user, logout } = useAuthStore();
@@ -413,7 +413,7 @@ export default function DashboardPage() {
             : chunk.role === 'blank'
               ? Math.max(1, clampedCount)
               : 1;
-        const voice = chunk.type === 'fr' ? azureVoice : DEFAULT_CN_VOICE;
+        const voice = azureVoice;
         try {
           await playWord(textValue, playTimes, voice);
         } catch {
@@ -638,7 +638,7 @@ export default function DashboardPage() {
       .map((seg) => (seg.value || '').trim())
       .filter(Boolean);
     const unique = Array.from(new Set(segs));
-    const pending = unique.filter((t) => !audioCache.current?.[`${DEFAULT_CN_VOICE}:${t.toLowerCase()}`]);
+    const pending = unique.filter((t) => !audioCache.current?.[`${azureVoice || ''}:${t.toLowerCase()}`]);
     if (!pending.length) {
       message.info('中文音频已全部缓存');
       message.info('暂无可缓存的中文片段');
@@ -649,7 +649,7 @@ export default function DashboardPage() {
     try {
       for (let i = 0; i < pending.length; i += 1) {
         const text = pending[i];
-        await ensureAudio(text, DEFAULT_CN_VOICE);
+        await ensureAudio(text, azureVoice);
         setPrefetchProgressCn({ done: i + 1, total: pending.length });
       }
       message.success('中文片段已缓存完成');

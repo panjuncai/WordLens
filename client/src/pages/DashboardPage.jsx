@@ -397,6 +397,10 @@ export default function DashboardPage() {
       if (controller.paused) break;
       const chunk = segments[idx];
       if (!chunk) break;
+      if (chunk.type === 'punct') {
+        idx += 1;
+        continue;
+      }
       setActiveIndex(chunk.index);
       lastPlayedIndex = chunk.index;
       const textValue = (chunk.value || '').trim();
@@ -480,7 +484,9 @@ export default function DashboardPage() {
       target = moveActiveWithin(blanksOnly, delta);
     }
     if (!target) {
-      const sorted = [...segments].sort((a, b) => a.index - b.index);
+      const sorted = segments
+        .filter((seg) => seg.type !== 'punct')
+        .sort((a, b) => a.index - b.index);
       target = moveActiveWithin(sorted, delta);
     }
     if (target) {

@@ -786,6 +786,10 @@ body,
   display: inline;
 }
 
+.chunk-item.chunk-punct {
+  cursor: default;
+}
+
 .chunk-item.chunk-blank {
   display: inline-flex;
   align-items: center;

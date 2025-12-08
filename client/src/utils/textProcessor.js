@@ -32,6 +32,19 @@ export const fixedComboFirsts = new Set(fixedCombos.map((c) => c.split(' ')[0]))
 
 export const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
+const CHINESE_CHAR = /[\u4E00-\u9FFF]/;
+const LATIN_CHAR = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
+// 拆出常见中文标点、空白和换行，保持分隔符本身
+const CN_PUNCT_SPLIT = /([，,。.;；;！？!?、：:\s\r\n]+)/;
+
+const splitChineseText = (value) => {
+  if (!value) return [];
+  if (!CHINESE_CHAR.test(value) && !LATIN_CHAR.test(value)) return [value];
+  return value
+    .split(CN_PUNCT_SPLIT)
+    .filter((part) => part !== '');
+};
+
 export function segmentByLanguage(text) {
   const segments = [];
   let lastIndex = 0;
@@ -40,7 +53,9 @@ export function segmentByLanguage(text) {
     const end = start + match[0].length;
     if (start > lastIndex) {
       const non = text.slice(lastIndex, start);
-      if (non.trim()) segments.push({ type: 'nonfr', value: non });
+      splitChineseText(non).forEach((part) => {
+        if (part) segments.push({ type: 'nonfr', value: part });
+      });
     }
     const fr = (match[0] || '').trim();
     if (fr) segments.push({ type: 'fr', value: fr });
@@ -48,7 +63,9 @@ export function segmentByLanguage(text) {
   }
   if (lastIndex < text.length) {
     const tail = text.slice(lastIndex);
-    if (tail.trim()) segments.push({ type: 'nonfr', value: tail });
+    splitChineseText(tail).forEach((part) => {
+      if (part) segments.push({ type: 'nonfr', value: part });
+    });
   }
   return segments;
 }
@@ -74,13 +91,11 @@ export function extractCandidates(text) {
   return results;
 }
 
-const CHINESE_CHAR = /[\u4E00-\u9FFF]/;
-const LATIN_CHAR = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
-
 const detectChunkType = (value) => {
   if (!value) return 'punct';
   if (CHINESE_CHAR.test(value)) return 'cn';
   if (LATIN_CHAR.test(value)) return 'fr';
+  // 标点、空白、数字等
   return 'punct';
 };
 
@@ -98,15 +113,17 @@ const normalizeSegments = (parts) => {
         value: part.value,
       }];
     }
-    textId += 1;
-    order += 1;
-    return [{
-      index: order - 1,
-      id: `chunk-${textId}`,
-      role: 'text',
-      type: detectChunkType(part.value),
-      value: part.value,
-    }];
+    return splitChineseText(part.value).map((textPart) => {
+      textId += 1;
+      order += 1;
+      return {
+        index: order - 1,
+        id: `chunk-${textId}`,
+        role: 'text',
+        type: detectChunkType(textPart),
+        value: textPart,
+      };
+    });
   });
 };
 

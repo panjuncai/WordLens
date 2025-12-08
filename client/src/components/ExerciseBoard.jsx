@@ -43,11 +43,13 @@ export default function ExerciseBoard({
           const status = isBlank ? statuses[segment.id] : undefined;
           const entry = isBlank ? imageMap[segment.value.toLowerCase()] : null;
           const isActive = segment.index === activeIndex;
+          const isPunct = segment.type === 'punct';
           const chunkClass = [
             'chunk-item',
             isBlank ? 'blank chunk-blank' : 'chunk-text',
             `chunk-${segment.type}`,
-            isActive ? 'chunk-active' : '',
+            isPunct ? 'chunk-punct' : '',
+            isActive && !isPunct ? 'chunk-active' : '',
           ].filter(Boolean).join(' ');
 
           if (!isBlank) {
@@ -55,10 +57,14 @@ export default function ExerciseBoard({
               <span
                 key={key}
                 className={chunkClass}
-                onClick={() => onChunkActivate(segment)}
-                onKeyDown={(e) => handleChunkKey(e, segment)}
-                role="button"
-                tabIndex={0}
+                onClick={() => {
+                  if (!isPunct) onChunkActivate(segment);
+                }}
+                onKeyDown={(e) => {
+                  if (!isPunct) handleChunkKey(e, segment);
+                }}
+                role={isPunct ? undefined : 'button'}
+                tabIndex={isPunct ? -1 : 0}
               >
                 <span className="cloze-text">{segment.value}</span>
               </span>

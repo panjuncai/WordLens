@@ -679,8 +679,8 @@ export default function DashboardPage() {
       setContentError('请填写内容');
       return;
     }
-    if (trimmed.length > 2000) {
-      setContentError('不能超过2000个字符');
+    if (trimmed.length > 20000) {
+      setContentError('不能超过20000个字符');
       return;
     }
     setContentError('');
@@ -990,8 +990,8 @@ export default function DashboardPage() {
                           value={newContent}
                           onChange={(e) => {
                             setNewContent(e.target.value);
-                            if (e.target.value.trim().length > 2000) {
-                              setContentError('不能超过2000个字符');
+                            if (e.target.value.trim().length > 20000) {
+                              setContentError('不能超过20000个字符');
                             } else {
                               setContentError('');
                             }

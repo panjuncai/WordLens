@@ -34,8 +34,8 @@ export const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 
 const CHINESE_CHAR = /[\u4E00-\u9FFF]/;
 const LATIN_CHAR = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
-// 拆出常见中文标点、空白和换行，保持分隔符本身
-const CN_PUNCT_SPLIT = /([，,。.;；;！？!?、：:\s\r\n]+)/;
+// 仅拆句号/感叹号/问号及换行，保持分隔符本身
+const CN_PUNCT_SPLIT = /([。｡.！？!?]|(?:\r?\n)+)/;
 
 const splitChineseText = (value) => {
   if (!value) return [];

@@ -1,5 +1,5 @@
-// 连续的非中文、非结构性符号片段：允许字母/重音符、空格、连字符、撇号以及句内逗号句号感叹问号
-export const wordPattern = /[A-Za-zÀ-ÖØ-öø-ÿ](?:[A-Za-zÀ-ÖØ-öø-ÿ'’-]|[\s.,?!])*/g;
+// 逻辑：匹配一个“单词”，后面可选跟上“空格+单词”的组合
+export const wordPattern = /[a-zA-Z\u00C0-\u00FF'’-]+(?:\s+[a-zA-Z\u00C0-\u00FF'’-]+)*/g;
 
 export const articleSet = new Set([
   'un',

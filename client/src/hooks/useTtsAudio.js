@@ -1,4 +1,4 @@
-import { useCallback, useRef } from 'react';
+import { useCallback, useEffect, useRef } from 'react';
 import { message } from 'antd';
 import { tts } from '../services/mediaService';
 
@@ -7,6 +7,7 @@ export default function useTtsAudio() {
   const audioRef = useRef(null);
   const pendingResolverRef = useRef(null);
   const playbackTokenRef = useRef(0);
+  const CACHE_KEY = 'wordlens-audio-cache';
 
   const sanitizeText = (text) => (text || '')
     .replace(/\u00a0/g, ' ') // nbsp -> space
@@ -35,6 +36,31 @@ export default function useTtsAudio() {
     }
   }, []);
 
+  const loadCache = useCallback(() => {
+    if (typeof window === 'undefined') return {};
+    try {
+      const raw = window.localStorage.getItem(CACHE_KEY);
+      if (!raw) return {};
+      const parsed = JSON.parse(raw);
+      return parsed && typeof parsed === 'object' ? parsed : {};
+    } catch {
+      return {};
+    }
+  }, [CACHE_KEY]);
+
+  const persistCache = useCallback((cache) => {
+    if (typeof window === 'undefined') return;
+    try {
+      window.localStorage.setItem(CACHE_KEY, JSON.stringify(cache));
+    } catch {
+      // ignore quota errors, keep in-memory cache
+    }
+  }, [CACHE_KEY]);
+
+  useEffect(() => {
+    audioCache.current = loadCache();
+  }, [loadCache]);
+
   const ensureAudio = async (word, voice) => {
     const normalized = sanitizeText(word);
     if (!normalized) throw new Error('文本为空，无法生成音频');
@@ -44,6 +70,7 @@ export default function useTtsAudio() {
     if (!data?.audioBase64) throw new Error('未收到音频，请检查 Azure 配置');
     const url = `data:${data.format || 'audio/mp3'};base64,${data.audioBase64}`;
     audioCache.current[key] = url;
+    persistCache(audioCache.current);
     return url;
   };
 

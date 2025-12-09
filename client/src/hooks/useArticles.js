@@ -12,6 +12,7 @@ export default function useArticles(enabled = true) {
   const [items, setItems] = useState([]);
   const [loading, setLoading] = useState(false);
   const [saving, setSaving] = useState(false);
+  const normalizeTitle = useCallback((title) => (title || '').slice(0, 20), []);
 
   const load = useCallback(async () => {
     if (!enabled) return;
@@ -33,7 +34,8 @@ export default function useArticles(enabled = true) {
   const createItem = async (title, content) => {
     setSaving(true);
     try {
-      const { data } = await createArticle(title, content);
+      const safeTitle = normalizeTitle(title);
+      const { data } = await createArticle(safeTitle, content);
       setItems((prev) => [data.article, ...prev]);
       message.success('创建成功');
       return data.article;
@@ -48,7 +50,8 @@ export default function useArticles(enabled = true) {
   const updateItem = async (id, title, content) => {
     setSaving(true);
     try {
-      const { data } = await updateArticle(id, title, content);
+      const safeTitle = normalizeTitle(title);
+      const { data } = await updateArticle(id, safeTitle, content);
       setItems((prev) => prev.map((it) => (it.id === id ? data.article : it)));
       message.success('更新成功');
       return data.article;

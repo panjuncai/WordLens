@@ -24,6 +24,8 @@ import {
 } from '@ant-design/icons';
 
 const { Text } = Typography;
+const MAX_TITLE_LEN = 20;
+const MAX_CONTENT_LEN = 20000;
 
 export default function ArticleList({
   items,
@@ -57,8 +59,8 @@ export default function ArticleList({
   const openModal = async (item = null) => {
     if (!item) return;
     setEditing(item);
-    setTitle(item?.title || '');
-    setContent(item?.content || '');
+    setTitle((item?.title || '').slice(0, MAX_TITLE_LEN));
+    setContent((item?.content || '').slice(0, MAX_CONTENT_LEN));
     setModalOpen(true);
     if (!item?.content && fetchItem) {
       setDetailLoading(true);
@@ -66,8 +68,8 @@ export default function ArticleList({
         const detail = await fetchItem(item.id);
         if (detail) {
           setEditing(detail);
-          setTitle(detail.title || item.title || '');
-          setContent(detail.content || '');
+          setTitle((detail.title || item.title || '').slice(0, MAX_TITLE_LEN));
+          setContent((detail.content || '').slice(0, MAX_CONTENT_LEN));
         }
       } finally {
         setDetailLoading(false);
@@ -77,6 +79,11 @@ export default function ArticleList({
 
   const submit = async () => {
     if (!title.trim() || !content.trim()) return;
+    if (content.length > MAX_CONTENT_LEN) {
+      message.warning(`内容最多 ${MAX_CONTENT_LEN} 个字符`);
+      setContent(content.slice(0, MAX_CONTENT_LEN));
+      return;
+    }
     if (editing) {
       const updated = await onUpdate(editing.id, title, content);
       if (updated) onSelect(updated);
@@ -298,12 +305,18 @@ export default function ArticleList({
         destroyOnHidden
       >
         <Space direction="vertical" style={{ width: '100%' }}>
-          <Input placeholder="标题" value={title} onChange={(e) => setTitle(e.target.value)} />
+          <Input
+            placeholder="标题"
+            value={title}
+            maxLength={MAX_TITLE_LEN}
+            onChange={(e) => setTitle((e.target.value || '').slice(0, MAX_TITLE_LEN))}
+          />
           <Input.TextArea
             placeholder="文章内容"
             rows={8}
             value={content}
-            onChange={(e) => setContent(e.target.value)}
+            maxLength={MAX_CONTENT_LEN}
+            onChange={(e) => setContent((e.target.value || '').slice(0, MAX_CONTENT_LEN))}
           />
         </Space>
       </Modal>

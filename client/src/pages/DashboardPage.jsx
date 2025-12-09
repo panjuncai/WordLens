@@ -690,7 +690,7 @@ export default function DashboardPage() {
       return;
     }
     setContentError('');
-    const computedTitle = trimmed.split(/\s+/)[0] || '未命名';
+    const computedTitle = (trimmed.split(/\s+/)[0] || '未命名').slice(0, 20);
     const created = await createArticle(computedTitle, newContent);
     if (created) {
       setActiveArticle(created);

@@ -55,6 +55,8 @@ export default function DashboardPage() {
   const draggingRef = useRef(false);
   const pullStartY = useRef(null);
   const pullTriggered = useRef(false);
+  const mainScrollRef = useRef(null);
+  const chunkRefs = useRef({});
   const [pullStatus, setPullStatus] = useState('idle'); // idle | pulling | ready | refreshing
   const [pullDistance, setPullDistance] = useState(0);
   const PULL_THRESHOLD = 70;
@@ -557,6 +559,31 @@ export default function DashboardPage() {
       handleChunkPlay(target.index, { triggerPreview: true, triggerReveal: false });
     }
   }, [handleChunkPlay, moveActiveWithin, segments]);
+
+  const registerChunkRef = useCallback((index, el) => {
+    if (el) {
+      chunkRefs.current[index] = el;
+    } else {
+      delete chunkRefs.current[index];
+    }
+  }, []);
+
+  useEffect(() => {
+    if (!isPlaying && !isPaused) return;
+    if (typeof activeIndex !== 'number' || activeIndex < 0) return;
+    const container = mainScrollRef.current;
+    const target = chunkRefs.current[activeIndex];
+    if (!container || !target) return;
+    const containerRect = container.getBoundingClientRect();
+    const targetRect = target.getBoundingClientRect();
+    const currentScroll = container.scrollTop;
+    const offset = targetRect.top - containerRect.top;
+    const desired = currentScroll + offset - (containerRect.height / 2) + (targetRect.height / 2);
+    container.scrollTo({
+      top: Math.max(0, desired),
+      behavior: 'smooth',
+    });
+  }, [activeIndex, isPaused, isPlaying]);
   const togglePausePlayback = useCallback(() => {
     if (!isPlaying || !playbackRef.current) return;
     const controller = playbackRef.current;
@@ -1046,7 +1073,7 @@ export default function DashboardPage() {
               </div>
             )
           )}
-          <div className="main-scroll-area">
+          <div className="main-scroll-area" ref={mainScrollRef}>
             <div className="content-container">
               {creating || (!activeArticle && !articles.length) ? (
                 <div className="article-panel">
@@ -1133,6 +1160,7 @@ export default function DashboardPage() {
                       delete inputRefs.current[id];
                     }
                   }}
+                  registerChunkRef={registerChunkRef}
                   onPreview={(urls, idx) => {
                       setPreviewList(urls);
                       setPreviewIndex(idx);

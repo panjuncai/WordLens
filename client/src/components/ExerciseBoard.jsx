@@ -26,6 +26,7 @@ export default function ExerciseBoard({
   loadingWord,
   registerInputRef,
   onPreview,
+  registerChunkRef = () => {},
 }) {
   const handleChunkKey = (e, segment) => {
     if (e.key === 'Enter' || e.key === ' ') {
@@ -57,6 +58,7 @@ export default function ExerciseBoard({
               <span
                 key={key}
                 className={chunkClass}
+                ref={(el) => registerChunkRef(segment.index, el)}
                 onClick={() => {
                   if (!isPunct) onChunkActivate(segment);
                 }}
@@ -109,6 +111,7 @@ export default function ExerciseBoard({
             <span
               key={key}
               className={chunkClass}
+              ref={(el) => registerChunkRef(segment.index, el)}
               onClick={() => onChunkActivate(segment)}
               onKeyDown={(e) => handleChunkKey(e, segment)}
               role="button"

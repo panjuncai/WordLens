@@ -53,6 +53,17 @@ export default function DashboardPage() {
   const [carouselPos, setCarouselPos] = useState(() => computeDefaultCarouselPos());
   const dragOffsetRef = useRef({ x: 0, y: 0 });
   const draggingRef = useRef(false);
+  const pullStartY = useRef(null);
+  const pullTriggered = useRef(false);
+  const [pullStatus, setPullStatus] = useState('idle'); // idle | pulling | ready | refreshing
+  const [pullDistance, setPullDistance] = useState(0);
+  const PULL_THRESHOLD = 70;
+  const pullProgress = Math.min(1, Math.max(0, pullDistance / PULL_THRESHOLD));
+  const pullLabel = pullStatus === 'refreshing'
+    ? '刷新中...'
+    : pullStatus === 'ready'
+      ? '松开刷新'
+      : '下拉刷新';
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const mq = window.matchMedia('(max-width: 768px)');
@@ -68,6 +79,58 @@ export default function DashboardPage() {
     if (!isMobile) {
       setMobileSidebarOpen(false);
     }
+  }, [isMobile]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isMobile) return undefined;
+    const canTrigger = () => window.scrollY === 0;
+    const handleStart = (e) => {
+      if (!canTrigger()) return;
+      pullStartY.current = e.touches?.[0]?.clientY ?? null;
+      pullTriggered.current = false;
+      setPullStatus('pulling');
+      setPullDistance(0);
+    };
+    const handleMove = (e) => {
+      if (pullStartY.current === null) return;
+      const currentY = e.touches?.[0]?.clientY;
+      if (typeof currentY !== 'number') return;
+      const delta = currentY - pullStartY.current;
+      if (delta <= 0) {
+        setPullStatus('idle');
+        setPullDistance(0);
+        return;
+      }
+      setPullDistance(delta);
+      if (delta >= PULL_THRESHOLD) {
+        pullTriggered.current = true;
+        setPullStatus('ready');
+      } else {
+        pullTriggered.current = false;
+        setPullStatus('pulling');
+      }
+    };
+    const handleEnd = () => {
+      if (pullTriggered.current) {
+        pullTriggered.current = false;
+        pullStartY.current = null;
+        setPullStatus('refreshing');
+        setPullDistance(PULL_THRESHOLD);
+        window.location.reload();
+        return;
+      }
+      pullStartY.current = null;
+      setPullStatus('idle');
+      setPullDistance(0);
+    };
+    window.addEventListener('touchstart', handleStart, { passive: true });
+    window.addEventListener('touchmove', handleMove, { passive: true });
+    window.addEventListener('touchend', handleEnd, { passive: true });
+    return () => {
+      window.removeEventListener('touchstart', handleStart);
+      window.removeEventListener('touchmove', handleMove);
+      window.removeEventListener('touchend', handleEnd);
+    };
   }, [isMobile]);
 
   const updateUrl = (articleId) => {
@@ -784,6 +847,14 @@ export default function DashboardPage() {
 
   return (
     <>
+      {isMobile && (
+        <div className={`pull-refresh-indicator ${pullStatus !== 'idle' ? 'visible' : ''}`}>
+          <span className="pull-refresh-text">{pullLabel}</span>
+          <div className="pull-refresh-bar">
+            <div className="pull-refresh-bar-fill" style={{ width: `${pullProgress * 100}%` }} />
+          </div>
+        </div>
+      )}
       <ImageCarousel
         visible={autoCarousel && carouselState.visible}
         state={carouselState}

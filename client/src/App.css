@@ -1086,11 +1086,11 @@ body[data-theme='dark'] .image-thumb {
     text-overflow: ellipsis;
   }
 
-  .mobile-toolbar-shell {
-    display: block;
-    position: fixed;
-    left: 0;
-    right: 0;
+.mobile-toolbar-shell {
+  display: block;
+  position: fixed;
+  left: 0;
+  right: 0;
     bottom: 0;
     padding: 0 12px calc(10px + env(safe-area-inset-bottom));
     background: linear-gradient(180deg, rgba(15, 23, 42, 0) 0%, rgba(15, 23, 42, 0.35) 70%);
@@ -1218,4 +1218,48 @@ body[data-theme='dark'] .image-thumb {
   .bubble-body {
     padding: 12px 14px;
   }
+}
+
+.pull-refresh-indicator {
+  position: fixed;
+  top: 12px;
+  left: 50%;
+  transform: translate(-50%, -18px);
+  padding: 8px 12px;
+  background: var(--surface);
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  box-shadow: 0 6px 18px rgba(0, 0, 0, 0.12);
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  opacity: 0;
+  pointer-events: none;
+  transition: opacity 120ms ease, transform 120ms ease;
+  z-index: 40;
+}
+
+.pull-refresh-indicator.visible {
+  opacity: 1;
+  transform: translate(-50%, 0);
+}
+
+.pull-refresh-text {
+  font-size: 13px;
+  color: var(--text);
+}
+
+.pull-refresh-bar {
+  width: 90px;
+  height: 4px;
+  background: rgba(37, 99, 235, 0.18);
+  border-radius: 999px;
+  overflow: hidden;
+}
+
+.pull-refresh-bar-fill {
+  height: 100%;
+  width: 0%;
+  background: var(--accent);
+  transition: width 80ms ease;
 }

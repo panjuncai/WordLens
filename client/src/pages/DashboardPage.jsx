@@ -60,6 +60,7 @@ export default function DashboardPage() {
   const [pullStatus, setPullStatus] = useState('idle'); // idle | pulling | ready | refreshing
   const [pullDistance, setPullDistance] = useState(0);
   const PULL_THRESHOLD = 70;
+  const PULL_ACTIVATE = 8;
   const pullProgress = Math.min(1, Math.max(0, pullDistance / PULL_THRESHOLD));
   const pullLabel = pullStatus === 'refreshing'
     ? '刷新中...'
@@ -90,7 +91,7 @@ export default function DashboardPage() {
       if (!canTrigger()) return;
       pullStartY.current = e.touches?.[0]?.clientY ?? null;
       pullTriggered.current = false;
-      setPullStatus('pulling');
+      setPullStatus('idle');
       setPullDistance(0);
     };
     const handleMove = (e) => {
@@ -104,6 +105,11 @@ export default function DashboardPage() {
         return;
       }
       setPullDistance(delta);
+      if (delta < PULL_ACTIVATE) {
+        setPullStatus('idle');
+        pullTriggered.current = false;
+        return;
+      }
       if (delta >= PULL_THRESHOLD) {
         pullTriggered.current = true;
         setPullStatus('ready');

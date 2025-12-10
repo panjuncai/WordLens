@@ -10,7 +10,7 @@ import {
 
 export default function useArticles(enabled = true) {
   const [items, setItems] = useState([]);
-  const [loading, setLoading] = useState(false);
+  const [loading, setLoading] = useState(enabled);
   const [saving, setSaving] = useState(false);
   const normalizeTitle = useCallback((title) => (title || '').slice(0, 20), []);
 

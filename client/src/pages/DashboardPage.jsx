@@ -1,5 +1,12 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Drawer, Dropdown, Modal, message } from 'antd';
+import {
+  Button,
+  Drawer,
+  Dropdown,
+  Modal,
+  message,
+  Spin,
+} from 'antd';
 import { MenuOutlined, MoreOutlined } from '@ant-design/icons';
 import HeroSection from '../components/HeroSection';
 import ArticleList from '../components/ArticleList';
@@ -335,6 +342,7 @@ export default function DashboardPage() {
   }, [sceneText, selectedWords, cancelCurrentPlayback]);
 
   useEffect(() => {
+    if (articlesLoading || !user) return;
     if (!articles.length) {
       setCreating(true);
       setActiveArticle(null);
@@ -345,6 +353,7 @@ export default function DashboardPage() {
       const match = articles.find((a) => String(a.id) === String(pendingArticleId));
       if (match) {
         setActiveArticle(match);
+        setCreating(false);
         setPendingArticleId(null);
         return;
       }
@@ -352,8 +361,9 @@ export default function DashboardPage() {
     }
     if (!creating && !activeArticle) {
       setActiveArticle(articles[0]);
+      setCreating(false);
     }
-  }, [articles, activeArticle, creating, pendingArticleId]);
+  }, [articles, activeArticle, articlesLoading, creating, pendingArticleId, user]);
 
   useEffect(() => {
     if (showCloze) {
@@ -1083,7 +1093,11 @@ export default function DashboardPage() {
           )}
           <div className="main-scroll-area" ref={mainScrollRef}>
             <div className="content-container">
-              {creating || (!activeArticle && !articles.length) ? (
+              {(articlesLoading || !user) && !articles.length ? (
+                <div className="article-panel" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', minHeight: 360 }}>
+                  <Spin size="large" tip="加载中..." />
+                </div>
+              ) : creating || (!activeArticle && !articles.length) ? (
                 <div className="article-panel">
                   <div className="new-article-shell">
                     <form

@@ -1026,6 +1026,7 @@ export default function DashboardPage() {
                   setAutoCarousel={setAutoCarousel}
                   setBlurWords={setBlurWords}
                   setAccentCheck={setAccentCheck}
+                  setThemeMode={setThemeMode}
                   isMobile
                   onOpenConfig={() => {
                     setConfigOpen(true);
@@ -1063,15 +1064,16 @@ export default function DashboardPage() {
                     imagePrefetchProgress={imagePrefetchProgress}
                     autoCarousel={autoCarousel}
                     blurWords={blurWords}
-                    accentCheck={accentCheck}
-                    setAutoCarousel={setAutoCarousel}
-                    setBlurWords={setBlurWords}
-                    setAccentCheck={setAccentCheck}
-                    onOpenConfig={() => {
-                      setConfigOpen(true);
-                      loadConfig();
-                    }}
-                    onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+                  accentCheck={accentCheck}
+                  setAutoCarousel={setAutoCarousel}
+                  setBlurWords={setBlurWords}
+                  setAccentCheck={setAccentCheck}
+                  setThemeMode={setThemeMode}
+                  onOpenConfig={() => {
+                    setConfigOpen(true);
+                    loadConfig();
+                  }}
+                  onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
                     onLogout={logout}
                     themeMode={themeMode}
                   />

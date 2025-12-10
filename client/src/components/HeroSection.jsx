@@ -48,6 +48,7 @@ export default function HeroSection({
   isMobile = false,
   onOpenConfig = () => {},
   onToggleTheme = () => {},
+  setThemeMode = () => {},
   onLogout = () => {},
   themeMode = 'light',
   onMenuConfig = null,
@@ -162,7 +163,19 @@ export default function HeroSection({
       base.push(
         { type: 'divider' },
         { key: 'config', label: 'TTS 配置' },
-        { key: 'theme', label: themeMode === 'dark' ? '切换到亮色' : '切换到暗色' },
+        {
+          key: 'theme-toggle',
+          label: (
+            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+              <Text>暗色模式</Text>
+              <Switch
+                size="small"
+                checked={themeMode === 'dark'}
+                onChange={(checked) => setThemeMode(checked ? 'dark' : 'light')}
+              />
+            </div>
+          ),
+        },
         { key: 'logout', label: '退出登录' },
       );
     }
@@ -202,7 +215,6 @@ export default function HeroSection({
     if (key === 'audio-cn') prefetchChineseRef.current();
     if (key === 'image') prefetchImagesRef.current();
     if (key === 'config') openConfigRef.current();
-    if (key === 'theme') toggleThemeRef.current();
     if (key === 'logout') logoutRef.current();
   }, []);
   const menuProps = useMemo(() => ({

@@ -66,14 +66,21 @@ export default function DashboardPage() {
   const chunkRefs = useRef({});
   const [pullStatus, setPullStatus] = useState('idle'); // idle | pulling | ready | refreshing
   const [pullDistance, setPullDistance] = useState(0);
-  const PULL_THRESHOLD = 70;
-  const PULL_ACTIVATE = 8;
+  // Mobile pull-to-refresh: raise thresholds to avoid accidental triggers.
+  const PULL_THRESHOLD = 140;
+  const PULL_ACTIVATE = 18;
+  const TOP_STAY_MS = 400;
   const pullProgress = Math.min(1, Math.max(0, pullDistance / PULL_THRESHOLD));
   const pullLabel = pullStatus === 'refreshing'
     ? '刷新中...'
     : pullStatus === 'ready'
       ? '松开刷新'
       : '下拉刷新';
+  const indicatorOffset = pullStatus === 'idle' ? 0 : Math.min(pullDistance, PULL_THRESHOLD * 1.2);
+  const indicatorY = pullStatus === 'idle' ? -18 : Math.max(0, indicatorOffset / 3);
+  const indicatorScale = pullStatus === 'refreshing' ? 1 : 0.92 + pullProgress * 0.08;
+  const topEnterAtRef = useRef(null);
+  const topReadyRef = useRef(false);
   useEffect(() => {
     if (typeof window === 'undefined') return undefined;
     const mq = window.matchMedia('(max-width: 768px)');
@@ -93,7 +100,34 @@ export default function DashboardPage() {
 
   useEffect(() => {
     if (typeof window === 'undefined' || !isMobile) return undefined;
-    const canTrigger = () => window.scrollY === 0;
+    const getScrollTop = () => {
+      const container = mainScrollRef.current;
+      return container ? container.scrollTop : window.scrollY;
+    };
+    const handleScroll = () => {
+      const atTop = getScrollTop() <= 0;
+      if (atTop) {
+        if (topEnterAtRef.current == null) {
+          topEnterAtRef.current = Date.now();
+          topReadyRef.current = false;
+        } else if (!topReadyRef.current && Date.now() - topEnterAtRef.current >= TOP_STAY_MS) {
+          topReadyRef.current = true;
+        }
+      } else {
+        topEnterAtRef.current = null;
+        topReadyRef.current = false;
+      }
+    };
+    const canTrigger = () => {
+      if (getScrollTop() > 0) return false;
+      if (topReadyRef.current) return true;
+      const enteredAt = topEnterAtRef.current;
+      if (enteredAt && Date.now() - enteredAt >= TOP_STAY_MS) {
+        topReadyRef.current = true;
+        return true;
+      }
+      return false;
+    };
     const handleStart = (e) => {
       if (!canTrigger()) return;
       pullStartY.current = e.touches?.[0]?.clientY ?? null;
@@ -138,10 +172,20 @@ export default function DashboardPage() {
       setPullStatus('idle');
       setPullDistance(0);
     };
+    const scrollEl = mainScrollRef.current;
+    handleScroll();
+    window.addEventListener('scroll', handleScroll, { passive: true });
+    if (scrollEl) {
+      scrollEl.addEventListener('scroll', handleScroll, { passive: true });
+    }
     window.addEventListener('touchstart', handleStart, { passive: true });
     window.addEventListener('touchmove', handleMove, { passive: true });
     window.addEventListener('touchend', handleEnd, { passive: true });
     return () => {
+      window.removeEventListener('scroll', handleScroll);
+      if (scrollEl) {
+        scrollEl.removeEventListener('scroll', handleScroll);
+      }
       window.removeEventListener('touchstart', handleStart);
       window.removeEventListener('touchmove', handleMove);
       window.removeEventListener('touchend', handleEnd);
@@ -482,11 +526,25 @@ export default function DashboardPage() {
         idx += 1;
         continue;
       }
+      const prefetchUpcomingAudio = () => {
+        const speakable = segments.filter((seg) => seg.type !== 'punct');
+        const currentPos = speakable.findIndex((seg) => seg.index === chunk.index);
+        if (currentPos === -1) return;
+        const nextTargets = speakable.slice(currentPos + 1, currentPos + 3);
+        nextTargets.forEach((seg) => {
+          const textValue = (seg.value || '').trim();
+          if (!textValue) return;
+          const cacheKey = `${azureVoice || ''}:${textValue.toLowerCase()}`;
+          if (audioCache.current?.[cacheKey]) return;
+          ensureAudio(textValue, azureVoice).catch(() => {});
+        });
+      };
       setActiveIndex(chunk.index);
       lastPlayedIndex = chunk.index;
       const textValue = (chunk.value || '').trim();
       const playable = textValue && chunk.type !== 'punct';
       if (playable) {
+        prefetchUpcomingAudio();
         const playTimes = typeof repeat === 'number'
           ? repeat
           : continuous
@@ -540,6 +598,7 @@ export default function DashboardPage() {
     clampedCount,
     azureVoice,
     playWord,
+    ensureAudio,
     showCloze,
     openImagesForWord,
     blurWords,
@@ -891,10 +950,19 @@ export default function DashboardPage() {
   return (
     <>
       {isMobile && (
-        <div className={`pull-refresh-indicator ${pullStatus !== 'idle' ? 'visible' : ''}`}>
+        <div
+          className={`pull-refresh-indicator ${pullStatus !== 'idle' ? 'visible' : ''}`}
+          style={{
+            transform: `translate(-50%, ${indicatorY}px) scale(${indicatorScale})`,
+          }}
+        >
+          <div
+            className={`pull-refresh-icon ${pullStatus}`}
+            style={pullStatus === 'refreshing' ? undefined : { transform: `rotate(${pullProgress * 240}deg)` }}
+          />
           <span className="pull-refresh-text">{pullLabel}</span>
           <div className="pull-refresh-bar">
-            <div className="pull-refresh-bar-fill" style={{ width: `${pullProgress * 100}%` }} />
+            <div className="pull-refresh-bar-fill" style={{ '--pull-progress': pullProgress }} />
           </div>
         </div>
       )}

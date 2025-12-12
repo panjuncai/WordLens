@@ -64,6 +64,7 @@ export default function DashboardPage() {
   const pullTriggered = useRef(false);
   const mainScrollRef = useRef(null);
   const chunkRefs = useRef({});
+  const refreshArticleRef = useRef(null);
   const [pullStatus, setPullStatus] = useState('idle'); // idle | pulling | ready | refreshing
   const [pullDistance, setPullDistance] = useState(0);
   // Mobile pull-to-refresh: raise thresholds to avoid accidental triggers.
@@ -165,7 +166,12 @@ export default function DashboardPage() {
         pullStartY.current = null;
         setPullStatus('refreshing');
         setPullDistance(PULL_THRESHOLD);
-        window.location.reload();
+        const doRefresh = refreshArticleRef.current;
+        if (typeof doRefresh === 'function') {
+          doRefresh();
+        } else {
+          window.location.reload();
+        }
         return;
       }
       pullStartY.current = null;
@@ -301,6 +307,7 @@ export default function DashboardPage() {
     items: articles,
     loading: articlesLoading,
     saving: articlesSaving,
+    load: reloadArticles,
     createItem: createArticle,
     updateItem: updateArticle,
     deleteItem: deleteArticle,
@@ -309,6 +316,24 @@ export default function DashboardPage() {
 
   const blanks = useMemo(() => segments.filter((seg) => seg.role === 'blank'), [segments]);
   const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
+
+  useEffect(() => {
+    refreshArticleRef.current = async () => {
+      try {
+        const currentId = activeArticle?.id;
+        await reloadArticles();
+        if (currentId) {
+          const detail = await fetchItem(currentId);
+          if (detail) {
+            setActiveArticle(detail);
+          }
+        }
+      } finally {
+        setPullStatus('idle');
+        setPullDistance(0);
+      }
+    };
+  }, [activeArticle, fetchItem, reloadArticles]);
 
   const copyArticle = async () => {
     try {

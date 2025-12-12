@@ -956,10 +956,10 @@ export default function DashboardPage() {
             transform: `translate(-50%, ${indicatorY}px) scale(${indicatorScale})`,
           }}
         >
-          <div
+          {/* <div
             className={`pull-refresh-icon ${pullStatus}`}
             style={pullStatus === 'refreshing' ? undefined : { transform: `rotate(${pullProgress * 240}deg)` }}
-          />
+          /> */}
           <span className="pull-refresh-text">{pullLabel}</span>
           <div className="pull-refresh-bar">
             <div className="pull-refresh-bar-fill" style={{ '--pull-progress': pullProgress }} />

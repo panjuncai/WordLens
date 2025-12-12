@@ -1234,6 +1234,7 @@ body[data-theme='dark'] .image-thumb {
   display: flex;
   align-items: center;
   gap: 10px;
+  white-space: nowrap;
   opacity: 0;
   pointer-events: none;
   transition: opacity 150ms ease, transform 150ms ease;
@@ -1248,6 +1249,8 @@ body[data-theme='dark'] .image-thumb {
 .pull-refresh-text {
   font-size: 13px;
   color: var(--text);
+  white-space: nowrap;
+  flex-shrink: 0;
 }
 
 .pull-refresh-icon {

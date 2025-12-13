@@ -248,23 +248,10 @@ export function buildReadingSegments(text) {
   };
 
   tokens.forEach((token) => {
-    if (token === '\n' || token === '\r\n') {
-      parts.push({ type: 'punct', value: token });
-      return;
-    }
-    // 换行段（一个或多个换行）单独作为分隔
-    if (/^(?:\r?\n)+$/.test(token)) {
-      parts.push({ type: 'punct', value: token });
-      return;
-    }
-    // 句末/分隔标点（含尾随空格）直接挂到上一段末尾，保证 TTS 的停顿自然
-    if (/^[。｡.！？!?:：?]/.test(token)) {
+    // 换行/分隔标点（含尾随空格）直接挂到上一段末尾，避免产生“纯标点”的词块
+    if (/^(?:\r?\n)+$/.test(token) || /^[。｡.！？!?:：?]/.test(token)) {
       const last = parts[parts.length - 1];
-      if (last && last.type !== 'punct') {
-        last.value += token;
-      } else {
-        parts.push({ type: 'punct', value: token });
-      }
+      if (last) last.value += token;
       return;
     }
     splitByLanguageRuns(token).forEach((run) => {
@@ -272,5 +259,30 @@ export function buildReadingSegments(text) {
     });
   });
 
-  return normalizeFlatSegments(parts);
+  // 把不包含中文/外语/数字的碎片（例如孤立标点/括号/空白）并入相邻块，避免展示成独立词块
+  const merged = [];
+  let prefixBuffer = '';
+  const isMeaningful = (value) => CHINESE_CHAR.test(value) || LATIN_CHAR.test(value) || DIGIT.test(value);
+
+  parts.forEach((part) => {
+    if (!part?.value) return;
+    if (isMeaningful(part.value)) {
+      if (prefixBuffer) {
+        part.value = `${prefixBuffer}${part.value}`;
+        prefixBuffer = '';
+      }
+      merged.push(part);
+      return;
+    }
+    if (merged.length) {
+      merged[merged.length - 1].value += part.value;
+    } else {
+      prefixBuffer += part.value;
+    }
+  });
+  if (prefixBuffer && merged.length) {
+    merged[merged.length - 1].value += prefixBuffer;
+  }
+
+  return normalizeFlatSegments(merged);
 }

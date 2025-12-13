@@ -3,6 +3,16 @@ import { PictureOutlined, ReloadOutlined, CopyOutlined,QuestionCircleOutlined } 
 
 const { Text } = Typography;
 
+const splitOuterWhitespace = (value) => {
+  const raw = value == null ? '' : String(value);
+  const leadingMatch = raw.match(/^[\s\u00a0]+/);
+  const trailingMatch = raw.match(/[\s\u00a0]+$/);
+  const leading = leadingMatch ? leadingMatch[0] : '';
+  const trailing = trailingMatch ? trailingMatch[0] : '';
+  const core = raw.replace(/^[\s\u00a0]+|[\s\u00a0]+$/g, '');
+  return { leading, core, trailing };
+};
+
 export default function ExerciseBoard({
   segments,
   statuses,
@@ -54,22 +64,34 @@ export default function ExerciseBoard({
           ].filter(Boolean).join(' ');
 
           if (!isBlank) {
+            const { leading, core, trailing } = splitOuterWhitespace(segment.value);
+            if (!core) {
+              return (
+                <span key={key} className="cloze-text">
+                  {segment.value}
+                </span>
+              );
+            }
             return (
-              <span
-                key={key}
-                className={chunkClass}
-                ref={(el) => registerChunkRef(segment.index, el)}
-                onClick={() => {
-                  if (!isPunct) onChunkActivate(segment);
-                }}
-                onKeyDown={(e) => {
-                  if (!isPunct) handleChunkKey(e, segment);
-                }}
-                role={isPunct ? undefined : 'button'}
-                tabIndex={isPunct ? -1 : 0}
-              >
-                <span className="cloze-text">{segment.value}</span>
-              </span>
+              <>
+                {leading && <span className="cloze-text">{leading}</span>}
+                <span
+                  key={key}
+                  className={chunkClass}
+                  ref={(el) => registerChunkRef(segment.index, el)}
+                  onClick={() => {
+                    if (!isPunct) onChunkActivate(segment);
+                  }}
+                  onKeyDown={(e) => {
+                    if (!isPunct) handleChunkKey(e, segment);
+                  }}
+                  role={isPunct ? undefined : 'button'}
+                  tabIndex={isPunct ? -1 : 0}
+                >
+                  <span className="cloze-text">{core}</span>
+                </span>
+                {trailing && <span className="cloze-text">{trailing}</span>}
+              </>
             );
           }
 

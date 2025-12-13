@@ -648,6 +648,12 @@ export default function DashboardPage() {
       const blanksOnly = segments.filter((seg) => seg.role === 'blank');
       target = moveActiveWithin(blanksOnly, delta);
     }
+    if (scope === 'fr') {
+      const frOnly = segments
+        .filter((seg) => seg.type === 'fr' && seg.type !== 'punct')
+        .sort((a, b) => a.index - b.index);
+      target = moveActiveWithin(frOnly, delta);
+    }
     if (!target) {
       const sorted = segments
         .filter((seg) => seg.type !== 'punct')
@@ -779,13 +785,13 @@ export default function DashboardPage() {
       moveActive(-1);
     } else if (['ArrowUp'].includes(e.key)) {
       e.preventDefault();
-      moveActive(-1, { scope: 'blank' });
+      moveActive(-1, { scope: 'fr' });
     } else if (['ArrowDown'].includes(e.key)) {
       e.preventDefault();
-      moveActive(1, { scope: 'blank' });
+      moveActive(1, { scope: 'fr' });
     } else if (e.key === 'Tab') {
       e.preventDefault();
-      moveActive(e.shiftKey ? -1 : 1, { scope: 'blank' });
+      moveActive(e.shiftKey ? -1 : 1, { scope: 'fr' });
     } else if (e.key === 'Enter') {
       e.preventDefault();
       const current = segments.find((seg) => seg.index === activeIndex) || segments[0];

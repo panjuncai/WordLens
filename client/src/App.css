@@ -786,6 +786,16 @@ body,
   display: inline;
 }
 
+.chunk-item.chunk-fr {
+  color: var(--accent);
+  background: rgba(37, 99, 235, 0.08);
+  border-bottom: 1px dashed rgba(37, 99, 235, 0.55);
+}
+
+.chunk-item.chunk-cn {
+  color: var(--text);
+}
+
 .chunk-item.chunk-punct {
   cursor: default;
 }

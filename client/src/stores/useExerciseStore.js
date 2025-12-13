@@ -1,11 +1,11 @@
 import { create } from 'zustand';
-import { extractCandidates, buildSegments } from '../utils/textProcessor';
+import { extractCandidates, buildReadingSegments, buildSegments } from '../utils/textProcessor';
 import { SAMPLE_SCENE } from '../constants/defaults';
 
 const useExerciseStore = create((set, get) => ({
   sceneText: SAMPLE_SCENE,
-  selectedWords: extractCandidates(SAMPLE_SCENE),
-  segments: buildSegments(SAMPLE_SCENE, extractCandidates(SAMPLE_SCENE)),
+  selectedWords: [],
+  segments: buildReadingSegments(SAMPLE_SCENE),
   showCloze: false,
   answers: {},
   statuses: {},
@@ -13,11 +13,10 @@ const useExerciseStore = create((set, get) => ({
   revealedIds: new Set(),
   setSceneText: (text) => set({ sceneText: text }),
   loadArticle: (text) => {
-    const words = extractCandidates(text);
     set({
       sceneText: text,
-      selectedWords: words,
-      segments: buildSegments(text, words),
+      selectedWords: [],
+      segments: buildReadingSegments(text),
       showCloze: false,
       answers: {},
       statuses: {},
@@ -36,7 +35,10 @@ const useExerciseStore = create((set, get) => ({
     });
     return words.length;
   },
-  resetCloze: () => set({ showCloze: false }),
+  resetCloze: () => {
+    const { sceneText } = get();
+    set({ showCloze: false, segments: buildReadingSegments(sceneText) });
+  },
   setSelectedWords: (words) => {
     const { sceneText } = get();
     set({

@@ -34,8 +34,9 @@ export const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&
 
 const CHINESE_CHAR = /[\u4E00-\u9FFF]/;
 const LATIN_CHAR = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
-// 仅拆句号/感叹号/问号及换行，保持分隔符本身
-const CN_PUNCT_SPLIT = /([。｡.！？!?]|(?:\r?\n)+)/;
+// 仅拆句号/感叹号/问号/冒号及换行，保持分隔符本身；并把标点后的空格归到标点里，避免下一段以空格开头
+const CN_PUNCT_SPLIT = /([。｡.！？!?:：?][ \t]*|(?:\r?\n)+)/;
+const DIGIT = /[0-9]/;
 
 const splitChineseText = (value) => {
   if (!value) return [];
@@ -127,6 +128,24 @@ const normalizeSegments = (parts) => {
   });
 };
 
+const normalizeFlatSegments = (parts) => {
+  let textId = 0;
+  let order = 0;
+  return (parts || [])
+    .filter((part) => part && typeof part.value === 'string' && part.value !== '')
+    .map((part) => {
+      textId += 1;
+      order += 1;
+      return {
+        index: order - 1,
+        id: `chunk-${textId}`,
+        role: 'text',
+        type: part.type || detectChunkType(part.value),
+        value: part.value,
+      };
+    });
+};
+
 export function buildSegments(text, targets) {
   const safeTargets = (targets || []).filter(Boolean);
   if (!safeTargets.length) {
@@ -150,4 +169,108 @@ export function buildSegments(text, targets) {
     parts.push({ type: 'text', value: text.slice(lastIndex) });
   }
   return normalizeSegments(parts);
+}
+
+export function buildReadingSegments(text) {
+  const source = text || '';
+  if (!source) return [];
+  // 先按句号/感叹号/问号/冒号/换行拆出“大块”（标点保留在块末尾），再在块内按语言拆分
+  const tokens = source.split(CN_PUNCT_SPLIT).filter((part) => part !== '');
+  const parts = [];
+
+  const classifyDigit = (value, idx) => {
+    const seekPrev = () => {
+      for (let i = idx - 1; i >= 0; i -= 1) {
+        const ch = value[i];
+        if (ch === ' ' || ch === '\t' || ch === '\u00a0') continue;
+        if (DIGIT.test(ch)) continue;
+        return ch;
+      }
+      return '';
+    };
+    const seekNext = () => {
+      for (let i = idx + 1; i < value.length; i += 1) {
+        const ch = value[i];
+        if (ch === ' ' || ch === '\t' || ch === '\u00a0') continue;
+        if (DIGIT.test(ch)) continue;
+        return ch;
+      }
+      return '';
+    };
+    const prevChar = seekPrev();
+    const nextChar = seekNext();
+    if (LATIN_CHAR.test(prevChar) || LATIN_CHAR.test(nextChar)) return 'fr';
+    if (CHINESE_CHAR.test(prevChar) || CHINESE_CHAR.test(nextChar)) return 'cn';
+    return 'cn';
+  };
+
+  const splitByLanguageRuns = (value) => {
+    const runs = [];
+    let currentType = null;
+    let buffer = '';
+    const flush = () => {
+      if (!buffer) return;
+      runs.push({ type: currentType || detectChunkType(buffer), value: buffer });
+      buffer = '';
+      currentType = null;
+    };
+
+    for (let i = 0; i < value.length; i += 1) {
+      const ch = value[i];
+      let nextType = null;
+      if (CHINESE_CHAR.test(ch)) {
+        nextType = 'cn';
+      } else if (LATIN_CHAR.test(ch)) {
+        nextType = 'fr';
+      } else if (DIGIT.test(ch)) {
+        nextType = classifyDigit(value, i);
+      } else if (ch === '\u00a0' || ch === ' ' || ch === '\t') {
+        // 空白归到当前块，避免产生碎片
+        nextType = currentType;
+      } else {
+        // 其它符号（括号/逗号等）优先归到当前块；没有当前块就先归中文块，避免与外语混读时断裂
+        nextType = currentType || 'cn';
+      }
+
+      if (!currentType) {
+        currentType = nextType;
+        buffer += ch;
+        continue;
+      }
+      if (nextType && nextType !== currentType) {
+        flush();
+        currentType = nextType;
+      }
+      buffer += ch;
+    }
+    flush();
+    return runs;
+  };
+
+  tokens.forEach((token) => {
+    if (token === '\n' || token === '\r\n') {
+      parts.push({ type: 'punct', value: token });
+      return;
+    }
+    // 换行段（一个或多个换行）单独作为分隔
+    if (/^(?:\r?\n)+$/.test(token)) {
+      parts.push({ type: 'punct', value: token });
+      return;
+    }
+    // 句末/分隔标点（含尾随空格）直接挂到上一段末尾，保证 TTS 的停顿自然
+    if (/^[。｡.！？!?:：?]/.test(token)) {
+      const last = parts[parts.length - 1];
+      if (last && last.type !== 'punct') {
+        last.value += token;
+      } else {
+        parts.push({ type: 'punct', value: token });
+      }
+      return;
+    }
+    splitByLanguageRuns(token).forEach((run) => {
+      if (run.value) parts.push(run);
+    });
+  });
+
+  return normalizeFlatSegments(parts);
 }

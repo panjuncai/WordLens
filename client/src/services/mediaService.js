@@ -1,9 +1,16 @@
 import api from '../api';
 
-// 保留中/英/法字母与数字，去除其他符号，保持词之间的间隔
+// TTS 请求文本清洗：
+// - 去掉所有标点/符号（节省 token）
+// - 压缩空白
+// - 纯中文（无拉丁字母）时去掉所有空白
 const sanitizeText = (value) => {
-  const kept = (value || '').match(/[A-Za-zÀ-ÖØ-öø-ÿ\u4e00-\u9fff0-9]+/g);
-  return kept ? kept.join(' ') : '';
+  const normalized = String(value ?? '').replace(/\u00a0/g, ' ');
+  const tokens = normalized.match(/[A-Za-zÀ-ÖØ-öø-ÿ\u4E00-\u9FFF0-9]+/g) || [];
+  const hasCjk = tokens.some((t) => /[\u4E00-\u9FFF]/.test(t));
+  const hasLatin = tokens.some((t) => /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(t));
+  if (hasCjk && !hasLatin) return tokens.join('');
+  return tokens.join(' ').replace(/\s+/g, ' ').trim();
 };
 
 export const tts = (text, voice) => api.post('/api/tts', { text: sanitizeText(text), voice });

@@ -14,6 +14,17 @@ export default function useTtsAudio() {
     .replace(/\s+/g, ' ')
     .trim();
 
+  const sanitizeForTts = (text) => {
+    const normalized = sanitizeText(text);
+    if (!normalized) return '';
+    const hasCjk = /[\u4E00-\u9FFF]/.test(normalized);
+    const hasLatin = /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(normalized);
+    if (hasCjk && !hasLatin) {
+      return normalized.replace(/[\s\u00a0]+/g, '');
+    }
+    return normalized;
+  };
+
   const cleanupAudio = () => {
     if (audioRef.current) {
       audioRef.current.onended = null;
@@ -62,7 +73,7 @@ export default function useTtsAudio() {
   }, [loadCache]);
 
   const ensureAudio = async (word, voice) => {
-    const normalized = sanitizeText(word);
+    const normalized = sanitizeForTts(word);
     if (!normalized) throw new Error('文本为空，无法生成音频');
     const key = `${voice || ''}:${normalized.toLowerCase()}`;
     if (audioCache.current[key]) return audioCache.current[key];
@@ -92,7 +103,7 @@ export default function useTtsAudio() {
   });
 
   const playWord = async (word, times = 1, voice) => {
-    const normalized = sanitizeText(word);
+    const normalized = sanitizeForTts(word);
     if (!normalized) return;
     const playbackToken = playbackTokenRef.current + 1;
     playbackTokenRef.current = playbackToken;

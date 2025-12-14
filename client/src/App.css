@@ -807,8 +807,8 @@ body,
 }
 
 .chunk-item.chunk-active {
-  background: rgba(249, 115, 22, 0.15);
-  outline: 2px solid #f97316;
+  background: transparent;
+  outline: 1px solid #f97316;
   outline-offset: 2px;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
 }
@@ -836,8 +836,8 @@ body,
 }
 
 .word-audio.active {
-  background: rgba(249, 115, 22, 0.15);
-  outline: 2px solid #f97316;
+  background: transparent;
+  outline: 1px solid #f97316;
   outline-offset: 2px;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
 }
@@ -865,7 +865,9 @@ body,
 }
 
 .blank-input {
-  width: 90px;
+  width: auto;
+  min-width: 70px;
+  max-width: 320px;
 }
 
 .blank-input.correct {

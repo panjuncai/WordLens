@@ -13,6 +13,18 @@ const splitOuterWhitespace = (value) => {
   return { leading, core, trailing };
 };
 
+const clamp = (min, val, max) => Math.max(min, Math.min(max, val));
+
+const computeBlankWidth = (value) => {
+  const raw = String(value ?? '').trim();
+  if (!raw) return '80px';
+  const normalized = raw.replace(/\s+/g, ' ');
+  const len = normalized.length;
+  // Use ch units so the box visually matches text length across fonts; keep within reasonable bounds.
+  const widthCh = clamp(6, len + 2, 34);
+  return `${widthCh}ch`;
+};
+
 export default function ExerciseBoard({
   segments,
   statuses,
@@ -39,6 +51,9 @@ export default function ExerciseBoard({
   registerChunkRef = () => {},
 }) {
   const handleChunkKey = (e, segment) => {
+    const target = e.target;
+    const tag = target?.tagName?.toLowerCase?.();
+    if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onChunkActivate(segment);
@@ -145,11 +160,12 @@ export default function ExerciseBoard({
                 <Input
                   size="small"
                   className={`blank-input ${status || ''}`}
-                  placeholder="____"
+                  placeholder=""
                   value={answers[segment.id] || ''}
                   onChange={(e) => onInputChange(segment.id, e.target.value)}
                   onKeyDown={(e) => onInputKeyDown(e, segment)}
                   onFocus={() => onInputFocus(segment)}
+                  style={{ width: computeBlankWidth(segment.value) }}
                   ref={(el) => {
                     registerInputRef(segment.id, el);
                   }}

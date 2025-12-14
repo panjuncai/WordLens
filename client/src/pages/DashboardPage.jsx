@@ -1,4 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
+import { flushSync } from 'react-dom';
 import {
   Button,
   Drawer,
@@ -225,6 +226,7 @@ export default function DashboardPage() {
   const inputRefs = useRef({});
   const carouselRef = useRef(null);
   const playbackRef = useRef({ cancelled: false });
+  const playRequestTokenRef = useRef(0);
   const { playWord, ensureAudio, audioCache, stop: stopAudio } = useTtsAudio();
 
   const cancelCurrentPlayback = useCallback((preserveActive = false) => {
@@ -249,7 +251,6 @@ export default function DashboardPage() {
   }, []);
 
   useEffect(() => () => cancelCurrentPlayback(), [cancelCurrentPlayback]);
-
 
   // fine-grained subscriptions to避免 getSnapshot警告
   const sceneText = useExerciseStore((state) => state.sceneText);
@@ -661,11 +662,17 @@ export default function DashboardPage() {
           ensureAudio(textValue, azureVoice).catch(() => {});
         });
       };
-      setActiveIndex(chunk.index);
+      flushSync(() => {
+        setActiveIndex(chunk.index);
+      });
       lastPlayedIndex = chunk.index;
       const textValue = (chunk.value || '').trim();
       const playable = textValue && chunk.type !== 'punct';
       if (playable) {
+        // Ensure the active highlight paints before starting the next audio.
+        if (!continuous && typeof window !== 'undefined') {
+          await new Promise((resolve) => window.requestAnimationFrame(resolve));
+        }
         prefetchUpcomingAudio();
         const playTimes = typeof repeat === 'number'
           ? repeat
@@ -727,6 +734,27 @@ export default function DashboardPage() {
     setRevealedIds,
   ]);
 
+  const activateAndPlay = useCallback((index, options = {}) => {
+    playRequestTokenRef.current += 1;
+    const token = playRequestTokenRef.current;
+    // Stop current audio immediately so the UI feels responsive.
+    cancelCurrentPlayback(true);
+    flushSync(() => {
+      setActiveIndex(index);
+    });
+    if (typeof window === 'undefined') {
+      handleChunkPlay(index, options);
+      return;
+    }
+    // Delay playback until after paint so the highlight always appears first.
+    window.requestAnimationFrame(() => {
+      window.requestAnimationFrame(() => {
+        if (playRequestTokenRef.current !== token) return;
+        handleChunkPlay(index, options);
+      });
+    });
+  }, [cancelCurrentPlayback, handleChunkPlay]);
+
   const moveActiveWithin = useCallback((list, delta) => {
     if (!list.length) return null;
     const order = list.map((seg) => seg.index);
@@ -758,10 +786,9 @@ export default function DashboardPage() {
       target = moveActiveWithin(sorted, delta);
     }
     if (target) {
-      setActiveIndex(target.index);
-      handleChunkPlay(target.index, { triggerPreview: true, triggerReveal: false });
+      activateAndPlay(target.index, { triggerPreview: true, triggerReveal: false });
     }
-  }, [handleChunkPlay, moveActiveWithin, segments]);
+  }, [activateAndPlay, moveActiveWithin, segments]);
 
   const registerChunkRef = useCallback((index, el) => {
     if (el) {
@@ -896,11 +923,10 @@ export default function DashboardPage() {
       e.preventDefault();
       const current = segments.find((seg) => seg.index === activeIndex) || segments[0];
       if (current) {
-        setActiveIndex(current.index);
-        handleChunkPlay(current.index, { triggerPreview: true, triggerReveal: false });
+        activateAndPlay(current.index, { triggerPreview: true, triggerReveal: false });
       }
     }
-  }, [activeIndex, handleChunkPlay, moveActive, segments, showCloze]);
+  }, [activeIndex, activateAndPlay, moveActive, segments, showCloze]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !isMobile) return undefined;
@@ -1388,14 +1414,14 @@ export default function DashboardPage() {
                   onInputChange={handleChange}
                   onInputKeyDown={handleKeyDown}
                   onInputFocus={(item) => {
-                    handleChunkPlay(item.index, {
+                    activateAndPlay(item.index, {
                       repeat: clampedCount,
                       triggerPreview: false,
                       triggerReveal: false,
                     });
                   }}
                   onChunkActivate={(segment) => {
-                    handleChunkPlay(segment.index, { triggerPreview: true, triggerReveal: true });
+                    activateAndPlay(segment.index, { triggerPreview: true, triggerReveal: true });
                   }}
                   onKeyNavigate={onKeyNavigate}
                   imageMap={imageMap}

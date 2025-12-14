@@ -873,11 +873,15 @@ body,
 .blank-input.correct {
   border-color: #22c55e !important;
   background: rgba(34, 197, 94, 0.12);
+  color: #16a34a !important;
+  caret-color: #16a34a;
 }
 
 .blank-input.wrong {
   border-color: #ef4444 !important;
   background: rgba(239, 68, 68, 0.12);
+  color: #dc2626 !important;
+  caret-color: #dc2626;
 }
 
 .image-grid {
@@ -1207,9 +1211,9 @@ body[data-theme='dark'] .image-thumb {
   }
 
   .blank-input {
-    width: 110px;
     font-size: 16px;
     padding: 6px 8px;
+    max-width: 80vw;
   }
 
   .mobile-sidebar-drawer .ant-drawer-body {

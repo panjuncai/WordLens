@@ -164,6 +164,7 @@ export default function ExerciseBoard({
                   value={answers[segment.id] || ''}
                   onChange={(e) => onInputChange(segment.id, e.target.value)}
                   onKeyDown={(e) => onInputKeyDown(e, segment)}
+                  onPressEnter={(e) => onInputKeyDown(e, segment)}
                   onFocus={() => onInputFocus(segment)}
                   style={{ width: computeBlankWidth(segment.value) }}
                   ref={(el) => {

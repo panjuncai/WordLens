@@ -886,7 +886,9 @@ export default function DashboardPage() {
   };
 
   const handleKeyDown = (e, item) => {
-    if (e.key === 'Enter') {
+    const key = e.key;
+    const isEnter = key === 'Enter' || e.code === 'Enter' || e.keyCode === 13;
+    if (isEnter) {
       e.preventDefault();
       handleEnter(item);
     } else if (e.key === 'Tab') {

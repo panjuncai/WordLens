@@ -813,6 +813,20 @@ body,
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
 }
 
+.chunk-wrap {
+  display: inline;
+}
+
+.chunk-item.chunk-blurred .cloze-text {
+  filter: blur(6px);
+  user-select: none;
+  transition: filter 140ms ease;
+}
+
+.chunk-item.chunk-blurred.chunk-active .cloze-text {
+  filter: blur(0px);
+}
+
 .word-audio {
   color: var(--accent);
   cursor: pointer;

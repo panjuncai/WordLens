@@ -685,7 +685,7 @@ export default function DashboardPage() {
         if (!continuous && triggerPreview && !showCloze && chunk.type === 'fr') {
           openImagesForWord(textValue);
         }
-        if (!continuous && triggerReveal && blurWords && !showCloze && chunk.role === 'blank') {
+        if (!continuous && triggerReveal && blurWords && !showCloze && chunk.type === 'fr') {
           setRevealedIds((prev) => {
             const next = new Set(prev);
             if (next.has(chunk.id)) {

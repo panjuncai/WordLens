@@ -72,12 +72,14 @@ export default function ExerciseBoard({
                 </span>
               );
             }
+            const isForeign = segment.type === 'fr' && !isPunct;
+            const isBlurred = blurWords && isForeign && !revealedIds.has(segment.id);
+            const decoratedChunkClass = `${chunkClass}${isBlurred ? ' chunk-blurred' : ''}`;
             return (
-              <>
+              <span key={key} className="chunk-wrap">
                 {leading && <span className="cloze-text">{leading}</span>}
                 <span
-                  key={key}
-                  className={chunkClass}
+                  className={decoratedChunkClass}
                   ref={(el) => registerChunkRef(segment.index, el)}
                   onClick={() => {
                     if (!isPunct) onChunkActivate(segment);
@@ -91,7 +93,7 @@ export default function ExerciseBoard({
                   <span className="cloze-text">{core}</span>
                 </span>
                 {trailing && <span className="cloze-text">{trailing}</span>}
-              </>
+              </span>
             );
           }
 

@@ -10,11 +10,17 @@ db.serialize(() => {
     password_hash TEXT NOT NULL,
     azure_key TEXT,
     azure_region TEXT,
-    azure_voice TEXT
+    azure_voice TEXT,
+    study_total_ms INTEGER DEFAULT 0,
+    study_today_ms INTEGER DEFAULT 0,
+    study_today_date TEXT
   )`);
   db.run('ALTER TABLE users ADD COLUMN azure_key TEXT', () => {});
   db.run('ALTER TABLE users ADD COLUMN azure_region TEXT', () => {});
   db.run('ALTER TABLE users ADD COLUMN azure_voice TEXT', () => {});
+  db.run('ALTER TABLE users ADD COLUMN study_total_ms INTEGER DEFAULT 0', () => {});
+  db.run('ALTER TABLE users ADD COLUMN study_today_ms INTEGER DEFAULT 0', () => {});
+  db.run('ALTER TABLE users ADD COLUMN study_today_date TEXT', () => {});
   db.run(`CREATE TABLE IF NOT EXISTS user_articles (
     id INTEGER PRIMARY KEY AUTOINCREMENT,
     user_id INTEGER NOT NULL,

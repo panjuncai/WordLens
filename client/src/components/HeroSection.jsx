@@ -23,7 +23,6 @@ export default function HeroSection({
   onReset,
   showCloze,
   onReadAll,
-  readingAll,
   onTogglePause,
   isPlaying,
   isPaused,
@@ -47,6 +46,7 @@ export default function HeroSection({
   setAccentCheck,
   isMobile = false,
   onOpenConfig = () => {},
+  onOpenStudyStats = () => {},
   onToggleTheme = () => {},
   setThemeMode = () => {},
   onLogout = () => {},
@@ -59,6 +59,7 @@ export default function HeroSection({
   const prefetchChineseRef = useRef(prefetchChinese);
   const prefetchImagesRef = useRef(prefetchImages);
   const openConfigRef = useRef(onOpenConfig);
+  const openStudyStatsRef = useRef(onOpenStudyStats);
   const toggleThemeRef = useRef(onToggleTheme);
   const logoutRef = useRef(onLogout);
 
@@ -68,6 +69,7 @@ export default function HeroSection({
   useEffect(() => { prefetchChineseRef.current = prefetchChinese; }, [prefetchChinese]);
   useEffect(() => { prefetchImagesRef.current = prefetchImages; }, [prefetchImages]);
   useEffect(() => { openConfigRef.current = onOpenConfig; }, [onOpenConfig]);
+  useEffect(() => { openStudyStatsRef.current = onOpenStudyStats; }, [onOpenStudyStats]);
   useEffect(() => { toggleThemeRef.current = onToggleTheme; }, [onToggleTheme]);
   useEffect(() => { logoutRef.current = onLogout; }, [onLogout]);
 
@@ -162,6 +164,7 @@ export default function HeroSection({
       );
       base.push(
         { type: 'divider' },
+        { key: 'stats', label: '学习统计' },
         { key: 'config', label: 'TTS 配置' },
         {
           key: 'theme-toggle',
@@ -194,6 +197,7 @@ export default function HeroSection({
     setAutoCarousel,
     setAutoPlayCount,
     setBlurWords,
+    setThemeMode,
     showCloze,
     themeMode,
   ]);
@@ -214,6 +218,7 @@ export default function HeroSection({
     if (key === 'audio') prefetchAudioRef.current();
     if (key === 'audio-cn') prefetchChineseRef.current();
     if (key === 'image') prefetchImagesRef.current();
+    if (key === 'stats') openStudyStatsRef.current();
     if (key === 'config') openConfigRef.current();
     if (key === 'logout') logoutRef.current();
   }, []);
@@ -295,10 +300,10 @@ export default function HeroSection({
                 />
               </Tooltip>
               <Tooltip title="上一个外语词块(快捷键:↑)">
-                <Button size={controlSize} type="text" icon={<ArrowUpOutlined />} onClick={() => onMoveShortcut(-1, 'blank')} />
+                <Button size={controlSize} type="text" icon={<ArrowUpOutlined />} onClick={() => onMoveShortcut(-1, 'foreign')} />
               </Tooltip>
               <Tooltip title="下一个外语词块(快捷键:↓)">
-                <Button size={controlSize} type="text" icon={<ArrowDownOutlined />} onClick={() => onMoveShortcut(1, 'blank')} />
+                <Button size={controlSize} type="text" icon={<ArrowDownOutlined />} onClick={() => onMoveShortcut(1, 'foreign')} />
               </Tooltip>
               <Tooltip title="上一个词块(快捷键:←)">
                 <Button size={controlSize} type="text" icon={<ArrowLeftOutlined />} onClick={() => onMoveShortcut(-1, 'all')} />

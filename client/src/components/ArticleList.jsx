@@ -43,6 +43,7 @@ export default function ArticleList({
   themeMode = 'light',
   onToggleTheme = () => {},
   onOpenConfig = () => {},
+  onOpenStudyStats = () => {},
   onLogout = () => {},
   fetchItem = null,
   onLogoClick = () => {},
@@ -95,6 +96,7 @@ export default function ArticleList({
   };
 
   const userMenuItems = [
+    { key: 'stats', label: '学习统计' },
     { key: 'config', label: 'TTS 配置' },
     {
       key: 'theme',
@@ -110,6 +112,7 @@ export default function ArticleList({
   ];
 
   const handleMenuClick = ({ key }) => {
+    if (key === 'stats') onOpenStudyStats();
     if (key === 'config') onOpenConfig();
     if (key === 'logout') onLogout();
   };

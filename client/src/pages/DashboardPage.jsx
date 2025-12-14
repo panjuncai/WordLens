@@ -13,6 +13,7 @@ import ArticleList from '../components/ArticleList';
 import ExerciseBoard from '../components/ExerciseBoard';
 import ImageCarousel from '../components/ImageCarousel';
 import ConfigModal from '../components/ConfigModal';
+import { addStudyTime, getStudyStats } from '../services/userService';
 import useTtsAudio from '../hooks/useTtsAudio';
 import useImageSearch from '../hooks/useImageSearch';
 import useArticles from '../hooks/useArticles';
@@ -47,6 +48,10 @@ export default function DashboardPage() {
   const [mobileSidebarOpen, setMobileSidebarOpen] = useState(false);
   const [typedIntro] = useState('今天想背点什么？');
   const [mobileMenuProps, setMobileMenuProps] = useState(null);
+  const [studyStatsOpen, setStudyStatsOpen] = useState(false);
+  const [studyStatsLoading, setStudyStatsLoading] = useState(false);
+  const [studyStats, setStudyStats] = useState({ todayMs: 0, totalMs: 0, day: '' });
+  const tzOffsetMinutes = useMemo(() => new Date().getTimezoneOffset(), []);
   const computeDefaultCarouselPos = () => {
     const w = typeof window !== 'undefined' ? window.innerWidth : 1200;
     const h = typeof window !== 'undefined' ? window.innerHeight : 800;
@@ -281,6 +286,39 @@ export default function DashboardPage() {
   const themeMode = useConfigStore((state) => state.themeMode);
   const setThemeMode = useConfigStore((state) => state.setThemeMode);
 
+  const formatDuration = useCallback((ms) => {
+    const totalMinutes = Math.max(0, Math.floor((ms || 0) / 60000));
+    const hours = Math.floor(totalMinutes / 60);
+    const minutes = totalMinutes % 60;
+    return `${hours} 小时 ${minutes} 分钟`;
+  }, []);
+
+  const refreshStudyStats = useCallback(async () => {
+    if (!user) return;
+    setStudyStatsLoading(true);
+    try {
+      const { data } = await getStudyStats(tzOffsetMinutes);
+      setStudyStats({
+        todayMs: Number(data?.today_ms) || 0,
+        totalMs: Number(data?.total_ms) || 0,
+        day: data?.day || '',
+      });
+    } finally {
+      setStudyStatsLoading(false);
+    }
+  }, [tzOffsetMinutes, user]);
+
+  const postStudyTime = useCallback(async (deltaMs) => {
+    if (!user) return;
+    const { data } = await addStudyTime(deltaMs, tzOffsetMinutes);
+    setStudyStats((prev) => ({
+      ...prev,
+      todayMs: Number(data?.today_ms) || prev.todayMs,
+      totalMs: Number(data?.total_ms) || prev.totalMs,
+      day: data?.day || prev.day,
+    }));
+  }, [tzOffsetMinutes, user]);
+
   const loadConfig = useCallback(async () => {
     try {
       const { data } = await api.get('/api/user/config');
@@ -439,6 +477,65 @@ export default function DashboardPage() {
       setCarouselState((prev) => ({ ...prev, visible: false }));
     }
   }, [showCloze]);
+
+  useEffect(() => {
+    if (!studyStatsOpen) return;
+    refreshStudyStats();
+  }, [refreshStudyStats, studyStatsOpen]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !user) return undefined;
+    let lastTick = Date.now();
+    let pendingMs = 0;
+    let flushing = false;
+    const shouldTrack = () => document.visibilityState === 'visible' && window.document.hasFocus();
+
+    const flush = async () => {
+      if (flushing) return;
+      const delta = pendingMs;
+      if (delta < 1000) return;
+      pendingMs = 0;
+      flushing = true;
+      try {
+        await postStudyTime(delta);
+      } catch {
+        pendingMs += delta;
+      } finally {
+        flushing = false;
+      }
+    };
+
+    const tick = () => {
+      const now = Date.now();
+      const delta = now - lastTick;
+      lastTick = now;
+      if (shouldTrack()) {
+        pendingMs += Math.max(0, delta);
+      }
+      if (pendingMs >= 30000) {
+        flush();
+      }
+    };
+
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') flush();
+      lastTick = Date.now();
+    };
+    const handleBlur = () => flush();
+    const handleFocus = () => { lastTick = Date.now(); };
+
+    const timer = window.setInterval(tick, 5000);
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleBlur);
+    window.addEventListener('focus', handleFocus);
+    return () => {
+      window.clearInterval(timer);
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleBlur);
+      window.removeEventListener('focus', handleFocus);
+      flush();
+    };
+  }, [postStudyTime, user]);
 
   useEffect(() => {
     if (!autoCarousel) {
@@ -1023,6 +1120,25 @@ export default function DashboardPage() {
         innerRef={carouselRef}
         onDragStart={handleCarouselDragStart}
       />
+      <Modal
+        title="学习统计"
+        open={studyStatsOpen}
+        onCancel={() => setStudyStatsOpen(false)}
+        footer={null}
+        destroyOnHidden
+      >
+        <div className="study-stats-grid">
+          <div className="study-stats-card">
+            <div className="study-stats-label">今日学习时长</div>
+            <div className="study-stats-value">{formatDuration(studyStats.todayMs)}</div>
+          </div>
+          <div className="study-stats-card">
+            <div className="study-stats-label">总学习时长</div>
+            <div className="study-stats-value">{formatDuration(studyStats.totalMs)}</div>
+          </div>
+        </div>
+        {studyStatsLoading && <div style={{ marginTop: 12 }}><Spin /></div>}
+      </Modal>
 
       <div className="app-layout">
         {!isMobile && (
@@ -1049,6 +1165,7 @@ export default function DashboardPage() {
                 setConfigOpen(true);
                 loadConfig();
               }}
+              onOpenStudyStats={() => setStudyStatsOpen(true)}
               onLogout={logout}
               fetchItem={fetchItem}
               onLogoClick={startCreate}
@@ -1087,6 +1204,7 @@ export default function DashboardPage() {
                 setConfigOpen(true);
                 loadConfig();
               }}
+              onOpenStudyStats={() => setStudyStatsOpen(true)}
               onLogout={logout}
               fetchItem={fetchItem}
               onLogoClick={() => {
@@ -1126,7 +1244,7 @@ export default function DashboardPage() {
                   onTogglePause={togglePausePlayback}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
-                  onMoveShortcut={(delta, scope) => moveActive(delta, { scope })}
+                  onMoveShortcut={(delta, scope) => moveActive(delta, { scope: scope === 'foreign' ? (showCloze ? 'blank' : 'fr') : scope })}
                   autoPlayCount={autoPlayCount}
                   setAutoPlayCount={setAutoPlayCount}
                   prefetchAudio={prefetchAudio}
@@ -1150,6 +1268,7 @@ export default function DashboardPage() {
                     setConfigOpen(true);
                     loadConfig();
                   }}
+                  onOpenStudyStats={() => setStudyStatsOpen(true)}
                   onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
                   onLogout={logout}
                   themeMode={themeMode}
@@ -1168,7 +1287,7 @@ export default function DashboardPage() {
                     onTogglePause={togglePausePlayback}
                     isPlaying={isPlaying}
                     isPaused={isPaused}
-                    onMoveShortcut={(delta, scope) => moveActive(delta, { scope })}
+                    onMoveShortcut={(delta, scope) => moveActive(delta, { scope: scope === 'foreign' ? (showCloze ? 'blank' : 'fr') : scope })}
                     autoPlayCount={autoPlayCount}
                     setAutoPlayCount={setAutoPlayCount}
                     prefetchAudio={prefetchAudio}
@@ -1186,12 +1305,13 @@ export default function DashboardPage() {
                   setAutoCarousel={setAutoCarousel}
                   setBlurWords={setBlurWords}
                   setAccentCheck={setAccentCheck}
-                  setThemeMode={setThemeMode}
-                  onOpenConfig={() => {
-                    setConfigOpen(true);
-                    loadConfig();
-                  }}
-                  onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
+                    setThemeMode={setThemeMode}
+                    onOpenConfig={() => {
+                      setConfigOpen(true);
+                      loadConfig();
+                    }}
+                    onOpenStudyStats={() => setStudyStatsOpen(true)}
+                    onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
                     onLogout={logout}
                     themeMode={themeMode}
                   />

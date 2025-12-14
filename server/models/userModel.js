@@ -8,9 +8,15 @@ const updateConfig = (id, { azureKey, azureRegion, azureVoice }) => run(
   [azureKey || '', azureRegion || '', azureVoice || '', id],
 );
 
+const updateStudyStats = (id, { studyTotalMs, studyTodayMs, studyTodayDate }) => run(
+  'UPDATE users SET study_total_ms = ?, study_today_ms = ?, study_today_date = ? WHERE id = ?',
+  [studyTotalMs || 0, studyTodayMs || 0, studyTodayDate || null, id],
+);
+
 module.exports = {
   findByEmail,
   findById,
   create,
   updateConfig,
+  updateStudyStats,
 };

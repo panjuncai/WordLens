@@ -39,6 +39,7 @@ export default function ExerciseBoard({
   onCopyArticle,
   onInputChange,
   onInputKeyDown,
+  onInputValidate = () => {},
   onInputFocus,
   onChunkActivate,
   onKeyNavigate,
@@ -165,6 +166,9 @@ export default function ExerciseBoard({
                   onChange={(e) => onInputChange(segment.id, e.target.value)}
                   onKeyDown={(e) => onInputKeyDown(e, segment)}
                   onPressEnter={(e) => onInputKeyDown(e, segment)}
+                  onBlur={(e) => {
+                    onInputValidate(segment, e.target.value);
+                  }}
                   onFocus={() => onInputFocus(segment)}
                   style={{ width: computeBlankWidth(segment.value) }}
                   ref={(el) => {

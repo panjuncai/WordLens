@@ -866,14 +866,19 @@ export default function DashboardPage() {
     setAnswer(id, val);
   };
 
-  const handleEnter = (item) => {
-    const inputVal = (answers[item.id] || '').trim();
+  const validateBlank = useCallback((item, rawInput) => {
+    const inputVal = String(rawInput ?? answers[item.id] ?? '').trim();
     const sensitivity = accentCheck ? 'accent' : 'base';
     const correct = inputVal.localeCompare(item.value, undefined, { sensitivity, usage: 'search' }) === 0;
     if (correct && !accentCheck && inputVal !== item.value) {
       setAnswer(item.id, item.value);
     }
     setStatus(item.id, correct ? 'correct' : 'wrong');
+    return correct;
+  }, [accentCheck, answers, setAnswer, setStatus]);
+
+  const handleEnter = (item, rawInput) => {
+    const correct = validateBlank(item, rawInput);
     if (correct) {
       const idx = blanks.findIndex((seg) => seg.id === item.id);
       const next = blanks[idx + 1];
@@ -890,7 +895,7 @@ export default function DashboardPage() {
     const isEnter = key === 'Enter' || e.code === 'Enter' || e.keyCode === 13;
     if (isEnter) {
       e.preventDefault();
-      handleEnter(item);
+      handleEnter(item, e.target?.value);
     } else if (e.key === 'Tab') {
       e.preventDefault();
       const idx = blanks.findIndex((seg) => seg.id === item.id);
@@ -1415,6 +1420,9 @@ export default function DashboardPage() {
                   onToggleWordList={toggleWordList}
                   onInputChange={handleChange}
                   onInputKeyDown={handleKeyDown}
+                  onInputValidate={(segment, raw) => {
+                    validateBlank(segment, raw);
+                  }}
                   onInputFocus={(item) => {
                     activateAndPlay(item.index, {
                       repeat: clampedCount,

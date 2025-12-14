@@ -775,8 +775,11 @@ export default function DashboardPage() {
     }
   };
 
-  const onKeyNavigate = (e) => {
+  const onKeyNavigate = useCallback((e) => {
     if (showCloze || !segments.length) return;
+    const target = e.target;
+    const tag = target?.tagName?.toLowerCase?.();
+    if (tag === 'input' || tag === 'textarea' || target?.isContentEditable) return;
     if (['ArrowRight'].includes(e.key)) {
       e.preventDefault();
       moveActive(1);
@@ -800,7 +803,13 @@ export default function DashboardPage() {
         handleChunkPlay(current.index, { triggerPreview: true, triggerReveal: false });
       }
     }
-  };
+  }, [activeIndex, handleChunkPlay, moveActive, segments, showCloze]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined' || !isMobile) return undefined;
+    window.addEventListener('keydown', onKeyNavigate);
+    return () => window.removeEventListener('keydown', onKeyNavigate);
+  }, [isMobile, onKeyNavigate]);
 
   const prefetchAudio = async () => {
     const blankWords = segments.filter((seg) => seg.role === 'blank');

@@ -653,9 +653,15 @@ export default function DashboardPage() {
     }
     let idx = startIdx;
     let lastPlayedIndex = null;
-    while (idx < segments.length) {
+    const shouldLoop = continuous;
+    while (idx < segments.length || shouldLoop) {
       if (controller.cancelled) break;
       if (controller.paused) break;
+      if (idx >= segments.length) {
+        // Infinite loop: after reaching the end, continue from the beginning.
+        idx = 0;
+        continue;
+      }
       const chunk = segments[idx];
       if (!chunk) break;
       if (chunk.type === 'punct') {
@@ -797,8 +803,8 @@ export default function DashboardPage() {
       const startPos = getLoopStartPos(speakable);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
       const repeatTimes = Math.max(1, clampedCount);
-      for (let pos = startPos; pos < speakable.length; pos += 1) {
-        if (sentenceLoopTokenRef.current !== token) return;
+      let pos = startPos;
+      while (sentenceLoopTokenRef.current === token) {
         const seg = speakable[pos];
         await handleChunkPlay(seg.index, {
           repeat: repeatTimes,
@@ -806,6 +812,7 @@ export default function DashboardPage() {
           triggerPreview: false,
           triggerReveal: false,
         });
+        pos = (pos + 1) % speakable.length;
       }
     })()
       .finally(() => {
@@ -844,8 +851,8 @@ export default function DashboardPage() {
       const startPos = getLoopStartPos(foreignOnly);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
       const repeatTimes = Math.max(1, clampedCount);
-      for (let pos = startPos; pos < foreignOnly.length; pos += 1) {
-        if (sentenceLoopTokenRef.current !== token) return;
+      let pos = startPos;
+      while (sentenceLoopTokenRef.current === token) {
         const seg = foreignOnly[pos];
         await handleChunkPlay(seg.index, {
           repeat: repeatTimes,
@@ -853,6 +860,7 @@ export default function DashboardPage() {
           triggerPreview: false,
           triggerReveal: false,
         });
+        pos = (pos + 1) % foreignOnly.length;
       }
     })()
       .finally(() => {
@@ -1113,6 +1121,10 @@ export default function DashboardPage() {
 
   const readFullText = useCallback(() => {
     if (!segments.length) return;
+    // Stop sentence/foreign loops when switching to full-text playback.
+    sentenceLoopTokenRef.current += 1;
+    setSentenceLooping(false);
+    setForeignLooping(false);
     const startIndex = typeof activeIndex === 'number' && activeIndex >= 0
       ? activeIndex
       : segments[0]?.index;

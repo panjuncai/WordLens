@@ -22,7 +22,7 @@ import useExerciseStore from '../stores/useExerciseStore';
 import useConfigStore from '../stores/useConfigStore';
 import useAuthStore from '../stores/useAuthStore';
 import api from '../api';
-import { CAROUSEL_INTERVAL, MAX_AUTOPLAY_COUNT } from '../constants/config';
+import { CAROUSEL_INTERVAL, DEFAULT_AUTOPLAY_INTERVAL_SECONDS, MAX_AUTOPLAY_COUNT, MAX_AUTOPLAY_INTERVAL_SECONDS } from '../constants/config';
 
 export default function DashboardPage() {
   const { user, logout } = useAuthStore();
@@ -274,6 +274,7 @@ export default function DashboardPage() {
   const blurWords = useConfigStore((state) => state.blurWords);
   const accentCheck = useConfigStore((state) => state.accentCheck);
   const autoPlayCount = useConfigStore((state) => state.autoPlayCount);
+  const autoPlayIntervalSeconds = useConfigStore((state) => state.autoPlayIntervalSeconds);
   const azureKey = useConfigStore((state) => state.azureKey);
   const azureRegion = useConfigStore((state) => state.azureRegion);
   const azureVoice = useConfigStore((state) => state.azureVoice);
@@ -281,6 +282,7 @@ export default function DashboardPage() {
   const setBlurWords = useConfigStore((state) => state.setBlurWords);
   const setAccentCheck = useConfigStore((state) => state.setAccentCheck);
   const setAutoPlayCount = useConfigStore((state) => state.setAutoPlayCount);
+  const setAutoPlayIntervalSeconds = useConfigStore((state) => state.setAutoPlayIntervalSeconds);
   const setAzureKey = useConfigStore((state) => state.setAzureKey);
   const setAzureRegion = useConfigStore((state) => state.setAzureRegion);
   const setAzureVoice = useConfigStore((state) => state.setAzureVoice);
@@ -355,6 +357,12 @@ export default function DashboardPage() {
 
   const blanks = useMemo(() => segments.filter((seg) => seg.role === 'blank'), [segments]);
   const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
+  const clampedIntervalSeconds = Math.min(
+    MAX_AUTOPLAY_INTERVAL_SECONDS,
+    Math.max(0, Number.isFinite(Number(autoPlayIntervalSeconds)) ? Number(autoPlayIntervalSeconds) : DEFAULT_AUTOPLAY_INTERVAL_SECONDS),
+  );
+  const sentenceLoopTokenRef = useRef(0);
+  const [sentenceLooping, setSentenceLooping] = useState(false);
 
   useEffect(() => {
     refreshArticleRef.current = async () => {
@@ -444,6 +452,8 @@ export default function DashboardPage() {
   useEffect(() => {
     inputRefs.current = {};
     cancelCurrentPlayback();
+    sentenceLoopTokenRef.current += 1;
+    setSentenceLooping(false);
     setPreviewList([]);
     setPreviewIndex(0);
     setCarouselState((prev) => ({ ...prev, visible: false, word: '', urls: [], loading: false }));
@@ -628,6 +638,7 @@ export default function DashboardPage() {
     const {
       continuous = false,
       repeat,
+      gapMs = 0,
       triggerPreview = true,
       triggerReveal = true,
     } = options;
@@ -683,7 +694,7 @@ export default function DashboardPage() {
               : 1;
         const voice = azureVoice;
         try {
-          await playWord(textValue, playTimes, voice);
+          await playWord(textValue, playTimes, voice, { gapMs });
         } catch {
           controller.cancelled = true;
           break;
@@ -754,6 +765,51 @@ export default function DashboardPage() {
       });
     });
   }, [cancelCurrentPlayback, handleChunkPlay]);
+
+  const toggleSentenceLoop = useCallback(() => {
+    if (!segments.length) return;
+    if (sentenceLooping) {
+      sentenceLoopTokenRef.current += 1;
+      setSentenceLooping(false);
+      cancelCurrentPlayback(true);
+      return;
+    }
+    sentenceLoopTokenRef.current += 1;
+    const token = sentenceLoopTokenRef.current;
+    setSentenceLooping(true);
+    (async () => {
+      const speakable = segments
+        .filter((seg) => seg.type !== 'punct' && (seg.value || '').trim())
+        .sort((a, b) => a.index - b.index);
+      if (!speakable.length) return;
+      const startPos = Math.max(0, speakable.findIndex((seg) => seg.index === activeIndex));
+      const intervalMs = Math.round(clampedIntervalSeconds * 1000);
+      const repeatTimes = Math.max(1, clampedCount);
+      for (let pos = startPos; pos < speakable.length; pos += 1) {
+        if (sentenceLoopTokenRef.current !== token) return;
+        const seg = speakable[pos];
+        await handleChunkPlay(seg.index, {
+          repeat: repeatTimes,
+          gapMs: intervalMs,
+          triggerPreview: false,
+          triggerReveal: false,
+        });
+      }
+    })()
+      .finally(() => {
+        if (sentenceLoopTokenRef.current === token) {
+          setSentenceLooping(false);
+        }
+      });
+  }, [
+    activeIndex,
+    cancelCurrentPlayback,
+    clampedCount,
+    clampedIntervalSeconds,
+    handleChunkPlay,
+    segments,
+    sentenceLooping,
+  ]);
 
   const moveActiveWithin = useCallback((list, delta) => {
     if (!list.length) return null;
@@ -1280,6 +1336,10 @@ export default function DashboardPage() {
                   onMoveShortcut={(delta, scope) => moveActive(delta, { scope: scope === 'foreign' ? (showCloze ? 'blank' : 'fr') : scope })}
                   autoPlayCount={autoPlayCount}
                   setAutoPlayCount={setAutoPlayCount}
+                  autoPlayIntervalSeconds={autoPlayIntervalSeconds}
+                  setAutoPlayIntervalSeconds={setAutoPlayIntervalSeconds}
+                  isSentenceLooping={sentenceLooping}
+                  onToggleSentenceLoop={toggleSentenceLoop}
                   prefetchAudio={prefetchAudio}
                   prefetching={prefetching}
                   prefetchProgress={prefetchProgress}
@@ -1323,6 +1383,10 @@ export default function DashboardPage() {
                     onMoveShortcut={(delta, scope) => moveActive(delta, { scope: scope === 'foreign' ? (showCloze ? 'blank' : 'fr') : scope })}
                     autoPlayCount={autoPlayCount}
                     setAutoPlayCount={setAutoPlayCount}
+                    autoPlayIntervalSeconds={autoPlayIntervalSeconds}
+                    setAutoPlayIntervalSeconds={setAutoPlayIntervalSeconds}
+                    isSentenceLooping={sentenceLooping}
+                    onToggleSentenceLoop={toggleSentenceLoop}
                     prefetchAudio={prefetchAudio}
                     prefetching={prefetching}
                     prefetchProgress={prefetchProgress}

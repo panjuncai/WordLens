@@ -29,6 +29,10 @@ export default function HeroSection({
   onMoveShortcut,
   autoPlayCount,
   setAutoPlayCount,
+  autoPlayIntervalSeconds = 1,
+  setAutoPlayIntervalSeconds = () => {},
+  isSentenceLooping = false,
+  onToggleSentenceLoop = () => {},
   prefetchAudio,
   prefetching,
   prefetchProgress,
@@ -92,6 +96,22 @@ export default function HeroSection({
               max={20}
               value={autoPlayCount}
               onChange={(v) => setAutoPlayCount(v || 0)}
+              style={{ width: 80 }}
+            />
+          </div>
+        ),
+      },
+      {
+        key: 'interval',
+        label: (
+          <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+            <Text>自动发音间隔(秒)</Text>
+            <InputNumber
+              size="small"
+              min={0}
+              max={300}
+              value={autoPlayIntervalSeconds}
+              onChange={(v) => setAutoPlayIntervalSeconds(v ?? 0)}
               style={{ width: 80 }}
             />
           </div>
@@ -187,6 +207,7 @@ export default function HeroSection({
     accentCheck,
     autoCarousel,
     autoPlayCount,
+    autoPlayIntervalSeconds,
     blurWords,
     handleToggleMode,
     imagePrefetching,
@@ -196,6 +217,7 @@ export default function HeroSection({
     setAccentCheck,
     setAutoCarousel,
     setAutoPlayCount,
+    setAutoPlayIntervalSeconds,
     setBlurWords,
     setThemeMode,
     showCloze,
@@ -297,6 +319,15 @@ export default function HeroSection({
                   type="text"
                   icon={isActivePlaying ? <PauseOutlined /> : <PlayCircleOutlined />}
                   onClick={handlePrimaryAction}
+                />
+              </Tooltip>
+              <Tooltip title={isSentenceLooping ? '停止单句循环' : '单句循环'}>
+                <Button
+                  size={controlSize}
+                  type="text"
+                  icon={<RetweetOutlined />}
+                  className={isSentenceLooping ? 'hero-loop-active' : ''}
+                  onClick={onToggleSentenceLoop}
                 />
               </Tooltip>
               <Tooltip title="上一个外语词块(快捷键:↑)">

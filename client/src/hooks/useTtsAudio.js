@@ -102,9 +102,10 @@ export default function useTtsAudio() {
     audio.play().catch(finalize);
   });
 
-  const playWord = async (word, times = 1, voice) => {
+  const playWord = async (word, times = 1, voice, options = {}) => {
     const normalized = sanitizeForTts(word);
     if (!normalized) return;
+    const gapMs = Number(options?.gapMs) || 0;
     const playbackToken = playbackTokenRef.current + 1;
     playbackTokenRef.current = playbackToken;
     try {
@@ -113,6 +114,15 @@ export default function useTtsAudio() {
         if (playbackTokenRef.current !== playbackToken) break;
         await playAudioUrl(url);
         if (playbackTokenRef.current !== playbackToken) break;
+        if (gapMs > 0 && i < times - 1) {
+          let remaining = gapMs;
+          while (remaining > 0) {
+            if (playbackTokenRef.current !== playbackToken) break;
+            const step = Math.min(250, remaining);
+            await new Promise((resolve) => setTimeout(resolve, step));
+            remaining -= step;
+          }
+        }
       }
     } catch (error) {
       const detail = error.response?.data?.message || error.response?.data?.error || error.message;

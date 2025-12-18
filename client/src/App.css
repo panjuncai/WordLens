@@ -1190,9 +1190,13 @@ body[data-theme='dark'] .image-thumb {
     font-size: 20px;
   }
 
-  .hero-control-buttons .ant-btn .anticon {
-    font-size: 22px;
-  }
+.hero-control-buttons .ant-btn .anticon {
+  font-size: 22px;
+}
+
+.hero-loop-active {
+  color: #22c55e !important;
+}
 
   .app-sidebar {
     display: none;

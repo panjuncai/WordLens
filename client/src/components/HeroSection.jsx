@@ -10,6 +10,7 @@ import {
   FormOutlined,
   RedoOutlined,
   RetweetOutlined,
+  SwapOutlined,
   ArrowUpOutlined,
   ArrowDownOutlined,
   ArrowLeftOutlined,
@@ -33,6 +34,8 @@ export default function HeroSection({
   setAutoPlayIntervalSeconds = () => {},
   isSentenceLooping = false,
   onToggleSentenceLoop = () => {},
+  isForeignLooping = false,
+  onToggleForeignLoop = () => {},
   prefetchAudio,
   prefetching,
   prefetchProgress,
@@ -328,6 +331,15 @@ export default function HeroSection({
                   icon={<RetweetOutlined />}
                   className={isSentenceLooping ? 'hero-loop-active' : ''}
                   onClick={onToggleSentenceLoop}
+                />
+              </Tooltip>
+              <Tooltip title={isForeignLooping ? '停止外语循环' : '外语循环'}>
+                <Button
+                  size={controlSize}
+                  type="text"
+                  icon={<SwapOutlined />}
+                  className={isForeignLooping ? 'hero-loop-active' : ''}
+                  onClick={onToggleForeignLoop}
                 />
               </Tooltip>
               <Tooltip title="上一个外语词块(快捷键:↑)">

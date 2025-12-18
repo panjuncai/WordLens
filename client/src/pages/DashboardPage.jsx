@@ -363,6 +363,7 @@ export default function DashboardPage() {
   );
   const sentenceLoopTokenRef = useRef(0);
   const [sentenceLooping, setSentenceLooping] = useState(false);
+  const [foreignLooping, setForeignLooping] = useState(false);
 
   useEffect(() => {
     refreshArticleRef.current = async () => {
@@ -454,6 +455,7 @@ export default function DashboardPage() {
     cancelCurrentPlayback();
     sentenceLoopTokenRef.current += 1;
     setSentenceLooping(false);
+    setForeignLooping(false);
     setPreviewList([]);
     setPreviewIndex(0);
     setCarouselState((prev) => ({ ...prev, visible: false, word: '', urls: [], loading: false }));
@@ -766,23 +768,33 @@ export default function DashboardPage() {
     });
   }, [cancelCurrentPlayback, handleChunkPlay]);
 
+  const getLoopStartPos = useCallback((list) => {
+    if (!list.length) return 0;
+    const exact = list.findIndex((seg) => seg.index === activeIndex);
+    if (exact >= 0) return exact;
+    const next = list.findIndex((seg) => seg.index > activeIndex);
+    return next >= 0 ? next : 0;
+  }, [activeIndex]);
+
   const toggleSentenceLoop = useCallback(() => {
     if (!segments.length) return;
     if (sentenceLooping) {
       sentenceLoopTokenRef.current += 1;
       setSentenceLooping(false);
+      setForeignLooping(false);
       cancelCurrentPlayback(true);
       return;
     }
     sentenceLoopTokenRef.current += 1;
     const token = sentenceLoopTokenRef.current;
     setSentenceLooping(true);
+    setForeignLooping(false);
     (async () => {
       const speakable = segments
         .filter((seg) => seg.type !== 'punct' && (seg.value || '').trim())
         .sort((a, b) => a.index - b.index);
       if (!speakable.length) return;
-      const startPos = Math.max(0, speakable.findIndex((seg) => seg.index === activeIndex));
+      const startPos = getLoopStartPos(speakable);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
       const repeatTimes = Math.max(1, clampedCount);
       for (let pos = startPos; pos < speakable.length; pos += 1) {
@@ -802,13 +814,60 @@ export default function DashboardPage() {
         }
       });
   }, [
-    activeIndex,
     cancelCurrentPlayback,
     clampedCount,
     clampedIntervalSeconds,
+    getLoopStartPos,
     handleChunkPlay,
     segments,
     sentenceLooping,
+  ]);
+
+  const toggleForeignLoop = useCallback(() => {
+    if (!segments.length) return;
+    if (foreignLooping) {
+      sentenceLoopTokenRef.current += 1;
+      setForeignLooping(false);
+      setSentenceLooping(false);
+      cancelCurrentPlayback(true);
+      return;
+    }
+    sentenceLoopTokenRef.current += 1;
+    const token = sentenceLoopTokenRef.current;
+    setForeignLooping(true);
+    setSentenceLooping(false);
+    (async () => {
+      const foreignOnly = segments
+        .filter((seg) => seg.type === 'fr' && seg.type !== 'punct' && (seg.value || '').trim())
+        .sort((a, b) => a.index - b.index);
+      if (!foreignOnly.length) return;
+      const startPos = getLoopStartPos(foreignOnly);
+      const intervalMs = Math.round(clampedIntervalSeconds * 1000);
+      const repeatTimes = Math.max(1, clampedCount);
+      for (let pos = startPos; pos < foreignOnly.length; pos += 1) {
+        if (sentenceLoopTokenRef.current !== token) return;
+        const seg = foreignOnly[pos];
+        await handleChunkPlay(seg.index, {
+          repeat: repeatTimes,
+          gapMs: intervalMs,
+          triggerPreview: false,
+          triggerReveal: false,
+        });
+      }
+    })()
+      .finally(() => {
+        if (sentenceLoopTokenRef.current === token) {
+          setForeignLooping(false);
+        }
+      });
+  }, [
+    cancelCurrentPlayback,
+    clampedCount,
+    clampedIntervalSeconds,
+    foreignLooping,
+    getLoopStartPos,
+    handleChunkPlay,
+    segments,
   ]);
 
   const moveActiveWithin = useCallback((list, delta) => {
@@ -1340,6 +1399,8 @@ export default function DashboardPage() {
                   setAutoPlayIntervalSeconds={setAutoPlayIntervalSeconds}
                   isSentenceLooping={sentenceLooping}
                   onToggleSentenceLoop={toggleSentenceLoop}
+                  isForeignLooping={foreignLooping}
+                  onToggleForeignLoop={toggleForeignLoop}
                   prefetchAudio={prefetchAudio}
                   prefetching={prefetching}
                   prefetchProgress={prefetchProgress}
@@ -1387,6 +1448,8 @@ export default function DashboardPage() {
                     setAutoPlayIntervalSeconds={setAutoPlayIntervalSeconds}
                     isSentenceLooping={sentenceLooping}
                     onToggleSentenceLoop={toggleSentenceLoop}
+                    isForeignLooping={foreignLooping}
+                    onToggleForeignLoop={toggleForeignLoop}
                     prefetchAudio={prefetchAudio}
                     prefetching={prefetching}
                     prefetchProgress={prefetchProgress}

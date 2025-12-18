@@ -641,6 +641,7 @@ export default function DashboardPage() {
       continuous = false,
       repeat,
       gapMs = 0,
+      betweenChunksMs = 0,
       triggerPreview = true,
       triggerReveal = true,
     } = options;
@@ -721,6 +722,16 @@ export default function DashboardPage() {
             }
             return next;
           });
+        }
+        if (continuous && betweenChunksMs > 0) {
+          let remaining = betweenChunksMs;
+          while (remaining > 0) {
+            if (controller.cancelled || controller.paused) break;
+            const step = Math.min(250, remaining);
+            await new Promise((resolve) => setTimeout(resolve, step));
+            remaining -= step;
+          }
+          if (controller.paused || controller.cancelled) break;
         }
       }
       if (!continuous) break;
@@ -812,6 +823,16 @@ export default function DashboardPage() {
           triggerPreview: false,
           triggerReveal: false,
         });
+        if (sentenceLoopTokenRef.current !== token) return;
+        if (intervalMs > 0) {
+          let remaining = intervalMs;
+          while (remaining > 0) {
+            if (sentenceLoopTokenRef.current !== token) return;
+            const step = Math.min(250, remaining);
+            await new Promise((resolve) => setTimeout(resolve, step));
+            remaining -= step;
+          }
+        }
         pos = (pos + 1) % speakable.length;
       }
     })()
@@ -860,6 +881,16 @@ export default function DashboardPage() {
           triggerPreview: false,
           triggerReveal: false,
         });
+        if (sentenceLoopTokenRef.current !== token) return;
+        if (intervalMs > 0) {
+          let remaining = intervalMs;
+          while (remaining > 0) {
+            if (sentenceLoopTokenRef.current !== token) return;
+            const step = Math.min(250, remaining);
+            await new Promise((resolve) => setTimeout(resolve, step));
+            remaining -= step;
+          }
+        }
         pos = (pos + 1) % foreignOnly.length;
       }
     })()
@@ -1129,8 +1160,13 @@ export default function DashboardPage() {
       ? activeIndex
       : segments[0]?.index;
     if (typeof startIndex !== 'number') return;
-    handleChunkPlay(startIndex, { continuous: true, triggerPreview: false, triggerReveal: false });
-  }, [activeIndex, handleChunkPlay, segments]);
+    handleChunkPlay(startIndex, {
+      continuous: true,
+      betweenChunksMs: Math.round(clampedIntervalSeconds * 1000),
+      triggerPreview: false,
+      triggerReveal: false,
+    });
+  }, [activeIndex, clampedIntervalSeconds, handleChunkPlay, segments]);
 
   const startCreate = () => {
     setCreating(true);

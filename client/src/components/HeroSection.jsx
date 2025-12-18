@@ -1,5 +1,5 @@
 import { useCallback, useEffect, useMemo, useRef } from 'react';
-import { Button, Dropdown, InputNumber, Space, Switch, Typography, Tooltip } from 'antd';
+import { Button, Dropdown, InputNumber, Select, Space, Switch, Typography, Tooltip } from 'antd';
 import {
   EllipsisOutlined,
   PoweroffOutlined,
@@ -36,6 +36,10 @@ export default function HeroSection({
   onToggleSentenceLoop = () => {},
   isForeignLooping = false,
   onToggleForeignLoop = () => {},
+  backgroundPlaybackEnabled = true,
+  onToggleBackgroundPlayback = () => {},
+  sleepTimerMinutes = 0,
+  onSleepTimerMinutesChange = () => {},
   prefetchAudio,
   prefetching,
   prefetchProgress,
@@ -187,6 +191,35 @@ export default function HeroSection({
       );
       base.push(
         { type: 'divider' },
+        {
+          key: 'background',
+          label: (
+            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+              <Text>后台播放</Text>
+              <Switch size="small" checked={backgroundPlaybackEnabled} onChange={onToggleBackgroundPlayback} />
+            </div>
+          ),
+        },
+        {
+          key: 'sleep-timer',
+          label: (
+            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+              <Text>定时关闭</Text>
+              <Select
+                size="small"
+                value={sleepTimerMinutes}
+                style={{ width: 110 }}
+                onChange={(v) => onSleepTimerMinutesChange(v)}
+                options={[
+                  { value: 0, label: '不关闭' },
+                  { value: 15, label: '15 分钟' },
+                  { value: 30, label: '30 分钟' },
+                  { value: 60, label: '60 分钟' },
+                ]}
+              />
+            </div>
+          ),
+        },
         { key: 'stats', label: '学习统计' },
         { key: 'config', label: 'TTS 配置' },
         {
@@ -211,17 +244,21 @@ export default function HeroSection({
     autoCarousel,
     autoPlayCount,
     autoPlayIntervalSeconds,
+    backgroundPlaybackEnabled,
     blurWords,
     handleToggleMode,
     imagePrefetching,
     isMobile,
     prefetching,
     prefetchingCn,
+    onSleepTimerMinutesChange,
+    onToggleBackgroundPlayback,
     setAccentCheck,
     setAutoCarousel,
     setAutoPlayCount,
     setAutoPlayIntervalSeconds,
     setBlurWords,
+    sleepTimerMinutes,
     setThemeMode,
     showCloze,
     themeMode,

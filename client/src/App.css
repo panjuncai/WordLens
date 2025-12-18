@@ -734,6 +734,14 @@ body,
   min-width: 160px;
 }
 
+.hero-menu-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  min-width: 220px;
+}
+
 .ant-card {
   background: var(--surface);
   border: none;

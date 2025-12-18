@@ -275,6 +275,9 @@ export default function DashboardPage() {
   const accentCheck = useConfigStore((state) => state.accentCheck);
   const autoPlayCount = useConfigStore((state) => state.autoPlayCount);
   const autoPlayIntervalSeconds = useConfigStore((state) => state.autoPlayIntervalSeconds);
+  const backgroundPlaybackEnabled = useConfigStore((state) => state.backgroundPlaybackEnabled);
+  const sleepTimerMinutes = useConfigStore((state) => state.sleepTimerMinutes);
+  const sleepTimerEndAt = useConfigStore((state) => state.sleepTimerEndAt);
   const azureKey = useConfigStore((state) => state.azureKey);
   const azureRegion = useConfigStore((state) => state.azureRegion);
   const azureVoice = useConfigStore((state) => state.azureVoice);
@@ -283,6 +286,9 @@ export default function DashboardPage() {
   const setAccentCheck = useConfigStore((state) => state.setAccentCheck);
   const setAutoPlayCount = useConfigStore((state) => state.setAutoPlayCount);
   const setAutoPlayIntervalSeconds = useConfigStore((state) => state.setAutoPlayIntervalSeconds);
+  const setBackgroundPlaybackEnabled = useConfigStore((state) => state.setBackgroundPlaybackEnabled);
+  const setSleepTimerMinutes = useConfigStore((state) => state.setSleepTimerMinutes);
+  const setSleepTimerEndAt = useConfigStore((state) => state.setSleepTimerEndAt);
   const setAzureKey = useConfigStore((state) => state.setAzureKey);
   const setAzureRegion = useConfigStore((state) => state.setAzureRegion);
   const setAzureVoice = useConfigStore((state) => state.setAzureVoice);
@@ -549,6 +555,61 @@ export default function DashboardPage() {
       flush();
     };
   }, [postStudyTime, user]);
+
+  const stopAllPlayback = useCallback(() => {
+    sentenceLoopTokenRef.current += 1;
+    setSentenceLooping(false);
+    setForeignLooping(false);
+    cancelCurrentPlayback(true);
+  }, [cancelCurrentPlayback]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (backgroundPlaybackEnabled) return undefined;
+    const handleVisibility = () => {
+      if (document.visibilityState !== 'visible') stopAllPlayback();
+    };
+    const handleBlur = () => stopAllPlayback();
+    document.addEventListener('visibilitychange', handleVisibility);
+    window.addEventListener('blur', handleBlur);
+    return () => {
+      document.removeEventListener('visibilitychange', handleVisibility);
+      window.removeEventListener('blur', handleBlur);
+    };
+  }, [backgroundPlaybackEnabled, stopAllPlayback]);
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return undefined;
+    if (!sleepTimerEndAt) return undefined;
+    const endAt = Number(sleepTimerEndAt);
+    if (!Number.isFinite(endAt)) return undefined;
+    const remaining = endAt - Date.now();
+    if (remaining <= 0) {
+      stopAllPlayback();
+      setSleepTimerMinutes(0);
+      setSleepTimerEndAt(null);
+      return undefined;
+    }
+    const timer = window.setTimeout(() => {
+      stopAllPlayback();
+      setSleepTimerMinutes(0);
+      setSleepTimerEndAt(null);
+      message.info('已到定时关闭时间，已停止播放');
+    }, remaining);
+    return () => window.clearTimeout(timer);
+  }, [setSleepTimerEndAt, setSleepTimerMinutes, sleepTimerEndAt, stopAllPlayback]);
+
+  const handleSleepTimerChange = useCallback((minutes) => {
+    const m = Number(minutes) || 0;
+    if (m <= 0) {
+      setSleepTimerMinutes(0);
+      setSleepTimerEndAt(null);
+      return;
+    }
+    setSleepTimerMinutes(m);
+    setSleepTimerEndAt(Date.now() + m * 60 * 1000);
+    message.success(`定时关闭已设置：${m} 分钟`);
+  }, [setSleepTimerEndAt, setSleepTimerMinutes]);
 
   useEffect(() => {
     if (!autoCarousel) {
@@ -1362,6 +1423,10 @@ export default function DashboardPage() {
                 loadConfig();
               }}
               onOpenStudyStats={() => setStudyStatsOpen(true)}
+              backgroundPlaybackEnabled={backgroundPlaybackEnabled}
+              onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
+              sleepTimerMinutes={sleepTimerMinutes}
+              onSleepTimerMinutesChange={handleSleepTimerChange}
               onLogout={logout}
               fetchItem={fetchItem}
               onLogoClick={startCreate}
@@ -1401,6 +1466,10 @@ export default function DashboardPage() {
                 loadConfig();
               }}
               onOpenStudyStats={() => setStudyStatsOpen(true)}
+              backgroundPlaybackEnabled={backgroundPlaybackEnabled}
+              onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
+              sleepTimerMinutes={sleepTimerMinutes}
+              onSleepTimerMinutesChange={handleSleepTimerChange}
               onLogout={logout}
               fetchItem={fetchItem}
               onLogoClick={() => {
@@ -1449,6 +1518,10 @@ export default function DashboardPage() {
                   onToggleSentenceLoop={toggleSentenceLoop}
                   isForeignLooping={foreignLooping}
                   onToggleForeignLoop={toggleForeignLoop}
+                  backgroundPlaybackEnabled={backgroundPlaybackEnabled}
+                  onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
+                  sleepTimerMinutes={sleepTimerMinutes}
+                  onSleepTimerMinutesChange={handleSleepTimerChange}
                   prefetchAudio={prefetchAudio}
                   prefetching={prefetching}
                   prefetchProgress={prefetchProgress}
@@ -1498,6 +1571,10 @@ export default function DashboardPage() {
                     onToggleSentenceLoop={toggleSentenceLoop}
                     isForeignLooping={foreignLooping}
                     onToggleForeignLoop={toggleForeignLoop}
+                    backgroundPlaybackEnabled={backgroundPlaybackEnabled}
+                    onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
+                    sleepTimerMinutes={sleepTimerMinutes}
+                    onSleepTimerMinutesChange={handleSleepTimerChange}
                     prefetchAudio={prefetchAudio}
                     prefetching={prefetching}
                     prefetchProgress={prefetchProgress}

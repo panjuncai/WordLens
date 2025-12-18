@@ -4,6 +4,7 @@ import {
   Card,
   Dropdown,
   Input,
+  Select,
   Modal,
   Space,
   Typography,
@@ -44,6 +45,10 @@ export default function ArticleList({
   onToggleTheme = () => {},
   onOpenConfig = () => {},
   onOpenStudyStats = () => {},
+  backgroundPlaybackEnabled = true,
+  onToggleBackgroundPlayback = () => {},
+  sleepTimerMinutes = 0,
+  onSleepTimerMinutesChange = () => {},
   onLogout = () => {},
   fetchItem = null,
   onLogoClick = () => {},
@@ -96,6 +101,35 @@ export default function ArticleList({
   };
 
   const userMenuItems = [
+    {
+      key: 'background',
+      label: (
+        <div className="menu-switch" onClick={(e) => e.stopPropagation()}>
+          <span>后台播放</span>
+          <Switch size="small" checked={backgroundPlaybackEnabled} onChange={onToggleBackgroundPlayback} />
+        </div>
+      ),
+    },
+    {
+      key: 'sleep-timer',
+      label: (
+        <div className="menu-switch" onClick={(e) => e.stopPropagation()}>
+          <span>定时关闭</span>
+          <Select
+            size="small"
+            value={sleepTimerMinutes}
+            style={{ width: 110 }}
+            onChange={(v) => onSleepTimerMinutesChange(v)}
+            options={[
+              { value: 0, label: '不关闭' },
+              { value: 15, label: '15 分钟' },
+              { value: 30, label: '30 分钟' },
+              { value: 60, label: '60 分钟' },
+            ]}
+          />
+        </div>
+      ),
+    },
     { key: 'stats', label: '学习统计' },
     { key: 'config', label: 'TTS 配置' },
     {

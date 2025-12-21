@@ -20,8 +20,7 @@ import {
 const { Text } = Typography;
 
 export default function HeroSection({
-  onExtract,
-  onReset,
+  onToggleMode = () => {},
   showCloze,
   onReadAll,
   onTogglePause,
@@ -64,8 +63,6 @@ export default function HeroSection({
   themeMode = 'light',
   onMenuConfig = null,
 }) {
-  const extractRef = useRef(onExtract);
-  const resetRef = useRef(onReset);
   const prefetchAudioRef = useRef(prefetchAudio);
   const prefetchChineseRef = useRef(prefetchChinese);
   const prefetchImagesRef = useRef(prefetchImages);
@@ -74,8 +71,6 @@ export default function HeroSection({
   const toggleThemeRef = useRef(onToggleTheme);
   const logoutRef = useRef(onLogout);
 
-  useEffect(() => { extractRef.current = onExtract; }, [onExtract]);
-  useEffect(() => { resetRef.current = onReset; }, [onReset]);
   useEffect(() => { prefetchAudioRef.current = prefetchAudio; }, [prefetchAudio]);
   useEffect(() => { prefetchChineseRef.current = prefetchChinese; }, [prefetchChinese]);
   useEffect(() => { prefetchImagesRef.current = prefetchImages; }, [prefetchImages]);
@@ -87,9 +82,8 @@ export default function HeroSection({
   const controlSize = isMobile ? 'middle' : 'large';
   const switchSize = isMobile ? 'default' : 'large';
   const handleToggleMode = useCallback((checked) => {
-    if (checked) extractRef.current();
-    else resetRef.current();
-  }, []);
+    onToggleMode(checked);
+  }, [onToggleMode]);
   const menuItems = useMemo(() => {
     const base = [
       {

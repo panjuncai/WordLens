@@ -1503,6 +1503,10 @@ export default function DashboardPage() {
                 <HeroSection
                   onExtract={onExtract}
                   onReset={onReset}
+                  onToggleMode={(checked) => {
+                    if (checked) onExtract();
+                    else onReset();
+                  }}
                   showCloze={showCloze}
                   onReadAll={readFullText}
                   readingAll={isPlaying && !isPaused}
@@ -1556,6 +1560,10 @@ export default function DashboardPage() {
                   <HeroSection
                     onExtract={onExtract}
                     onReset={onReset}
+                    onToggleMode={(checked) => {
+                      if (checked) onExtract();
+                      else onReset();
+                    }}
                     showCloze={showCloze}
                     onReadAll={readFullText}
                     readingAll={isPlaying && !isPaused}

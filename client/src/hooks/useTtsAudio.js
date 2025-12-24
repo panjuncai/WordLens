@@ -18,7 +18,7 @@ export default function useTtsAudio() {
     const normalized = sanitizeText(text);
     if (!normalized) return '';
     const hasCjk = /[\u4E00-\u9FFF]/.test(normalized);
-    const hasLatin = /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(normalized);
+    const hasLatin = /[A-Za-z\u00C0-\u024F]/.test(normalized);
     if (hasCjk && !hasLatin) {
       return normalized.replace(/[\s\u00a0]+/g, '');
     }

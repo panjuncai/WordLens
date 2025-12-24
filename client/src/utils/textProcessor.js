@@ -1,5 +1,5 @@
 // 逻辑：匹配一个“单词”，后面可选跟上“空格+单词”的组合
-export const wordPattern = /[a-zA-Z\u00C0-\u00FF'’-]+(?:\s+[a-zA-Z\u00C0-\u00FF'’-]+)*/g;
+export const wordPattern = /[a-zA-Z\u00C0-\u024F'’-]+(?:\s+[a-zA-Z\u00C0-\u024F'’-]+)*/g;
 
 export const articleSet = new Set([
   'un',
@@ -33,7 +33,7 @@ export const fixedComboFirsts = new Set(fixedCombos.map((c) => c.split(' ')[0]))
 export const escapeRegex = (value) => value.replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
 
 const CHINESE_CHAR = /[\u4E00-\u9FFF]/;
-const LATIN_CHAR = /[A-Za-zÀ-ÖØ-öø-ÿ]/;
+const LATIN_CHAR = /[A-Za-z\u00C0-\u024F]/;
 // 仅拆句号/感叹号/问号/冒号及换行，保持分隔符本身；并把标点后的空格归到标点里，避免下一段以空格开头
 const CN_PUNCT_SPLIT = /([。｡.！？!?:：?][ \t]*|(?:\r?\n)+)/;
 const DIGIT = /[0-9]/;
@@ -79,7 +79,7 @@ export function extractCandidates(text) {
   matches.forEach((m) => {
     const raw = m[0] || '';
     const cleaned = raw
-      .replace(/^[^A-Za-zÀ-ÖØ-öø-ÿ]+|[^A-Za-zÀ-ÖØ-öø-ÿ]+$/g, '')
+      .replace(/^[^A-Za-z\u00C0-\u024F]+|[^A-Za-z\u00C0-\u024F]+$/g, '')
       .replace(/\s+/g, ' ')
       .trim();
     if (!cleaned || cleaned.length < 2) return;

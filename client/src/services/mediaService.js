@@ -6,9 +6,9 @@ import api from '../api';
 // - 纯中文（无拉丁字母）时去掉所有空白
 const sanitizeText = (value) => {
   const normalized = String(value ?? '').replace(/\u00a0/g, ' ');
-  const tokens = normalized.match(/[A-Za-zÀ-ÖØ-öø-ÿ\u4E00-\u9FFF0-9]+/g) || [];
+  const tokens = normalized.match(/[A-Za-z\u00C0-\u024F\u4E00-\u9FFF0-9]+/g) || [];
   const hasCjk = tokens.some((t) => /[\u4E00-\u9FFF]/.test(t));
-  const hasLatin = tokens.some((t) => /[A-Za-zÀ-ÖØ-öø-ÿ]/.test(t));
+  const hasLatin = tokens.some((t) => /[A-Za-z\u00C0-\u024F]/.test(t));
   if (hasCjk && !hasLatin) return tokens.join('');
   return tokens.join(' ').replace(/\s+/g, ' ').trim();
 };

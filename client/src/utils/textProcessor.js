@@ -1,5 +1,5 @@
-// 逻辑：匹配一个“单词”，后面可选跟上“空格+单词”的组合
-export const wordPattern = /[a-zA-Z\u00C0-\u024F'’-]+(?:\s+[a-zA-Z\u00C0-\u024F'’-]+)*/g;
+// 逻辑：匹配一个“单词”，后面可选跟上“空格+单词”的组合（不跨行）
+export const wordPattern = /[a-zA-Z\u00C0-\u024F'’-]+(?:[ \t]+[a-zA-Z\u00C0-\u024F'’-]+)*/g;
 
 export const articleSet = new Set([
   'un',

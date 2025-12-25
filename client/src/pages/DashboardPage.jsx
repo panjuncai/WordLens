@@ -818,9 +818,9 @@ export default function DashboardPage() {
                 shouldAbort: () => controller.cancelled || controller.paused,
               });
               if (controller.cancelled || controller.paused) return;
-              const atSequenceEnd = seqIndex === normalizedShadowingSequence.length - 1;
-              const hasMoreRepeats = repIndex < playTimes - 1;
-              if (atSequenceEnd && hasMoreRepeats && gapMs > 0) {
+              const isLastPlay = repIndex === playTimes - 1
+                && seqIndex === normalizedShadowingSequence.length - 1;
+              if (!isLastPlay && gapMs > 0) {
                 const ok = await waitForPlaybackGap(gapMs, controller);
                 if (!ok) return;
               }
@@ -862,6 +862,10 @@ export default function DashboardPage() {
             }
             return next;
           });
+        }
+        if (!continuous && betweenChunksMs > 0) {
+          const ok = await waitForPlaybackGap(betweenChunksMs, controller);
+          if (!ok || controller.paused || controller.cancelled) break;
         }
         if (continuous && betweenChunksMs > 0) {
           const ok = await waitForPlaybackGap(betweenChunksMs, controller);
@@ -957,6 +961,7 @@ export default function DashboardPage() {
         ? getLoopStartPosFor(speakable, startIndex)
         : getLoopStartPos(speakable);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
+      const shadowingActive = forceShadowing || shadowingEnabled;
       let pos = startPos;
       while (sentenceLoopTokenRef.current === token) {
         const seg = speakable[pos];
@@ -968,10 +973,11 @@ export default function DashboardPage() {
           gapMs: intervalMs,
           triggerPreview: false,
           triggerReveal: false,
+          betweenChunksMs: shadowingActive ? intervalMs : 0,
           forceShadowing,
         });
         if (sentenceLoopTokenRef.current !== token) return;
-        if (intervalMs > 0) {
+        if (!shadowingActive && intervalMs > 0) {
           let remaining = intervalMs;
           while (remaining > 0) {
             if (sentenceLoopTokenRef.current !== token) return;
@@ -995,6 +1001,7 @@ export default function DashboardPage() {
     getLoopStartPos,
     getLoopStartPosFor,
     handleChunkPlay,
+    shadowingEnabled,
     segments,
   ]);
 
@@ -1014,6 +1021,7 @@ export default function DashboardPage() {
         ? getLoopStartPosFor(foreignOnly, startIndex)
         : getLoopStartPos(foreignOnly);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
+      const shadowingActive = forceShadowing || shadowingEnabled;
       let pos = startPos;
       while (sentenceLoopTokenRef.current === token) {
         const seg = foreignOnly[pos];
@@ -1023,10 +1031,11 @@ export default function DashboardPage() {
           gapMs: intervalMs,
           triggerPreview: false,
           triggerReveal: false,
+          betweenChunksMs: shadowingActive ? intervalMs : 0,
           forceShadowing,
         });
         if (sentenceLoopTokenRef.current !== token) return;
-        if (intervalMs > 0) {
+        if (!shadowingActive && intervalMs > 0) {
           let remaining = intervalMs;
           while (remaining > 0) {
             if (sentenceLoopTokenRef.current !== token) return;
@@ -1049,6 +1058,7 @@ export default function DashboardPage() {
     getLoopStartPos,
     getLoopStartPosFor,
     handleChunkPlay,
+    shadowingEnabled,
     segments,
   ]);
 

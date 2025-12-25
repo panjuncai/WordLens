@@ -29,6 +29,8 @@ export default function HeroSection({
   onMoveShortcut,
   autoPlayCount,
   setAutoPlayCount,
+  autoPlayCountCn = 1,
+  setAutoPlayCountCn = () => {},
   autoPlayIntervalSeconds = 1,
   setAutoPlayIntervalSeconds = () => {},
   isSentenceLooping = false,
@@ -87,10 +89,26 @@ export default function HeroSection({
   const menuItems = useMemo(() => {
     const base = [
       {
+        key: 'count-cn',
+        label: (
+          <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+            <Text>自动中文发音次数</Text>
+            <InputNumber
+              size="small"
+              min={0}
+              max={20}
+              value={autoPlayCountCn}
+              onChange={(v) => setAutoPlayCountCn(v || 0)}
+              style={{ width: 80 }}
+            />
+          </div>
+        ),
+      },
+      {
         key: 'count',
         label: (
           <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-            <Text>自动发音次数</Text>
+            <Text>自动外语发音次数</Text>
             <InputNumber
               size="small"
               min={0}
@@ -237,6 +255,7 @@ export default function HeroSection({
     accentCheck,
     autoCarousel,
     autoPlayCount,
+    autoPlayCountCn,
     autoPlayIntervalSeconds,
     backgroundPlaybackEnabled,
     blurWords,
@@ -250,6 +269,7 @@ export default function HeroSection({
     setAccentCheck,
     setAutoCarousel,
     setAutoPlayCount,
+    setAutoPlayCountCn,
     setAutoPlayIntervalSeconds,
     setBlurWords,
     sleepTimerMinutes,

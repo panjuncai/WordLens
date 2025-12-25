@@ -274,6 +274,7 @@ export default function DashboardPage() {
   const blurWords = useConfigStore((state) => state.blurWords);
   const accentCheck = useConfigStore((state) => state.accentCheck);
   const autoPlayCount = useConfigStore((state) => state.autoPlayCount);
+  const autoPlayCountCn = useConfigStore((state) => state.autoPlayCountCn);
   const autoPlayIntervalSeconds = useConfigStore((state) => state.autoPlayIntervalSeconds);
   const backgroundPlaybackEnabled = useConfigStore((state) => state.backgroundPlaybackEnabled);
   const sleepTimerMinutes = useConfigStore((state) => state.sleepTimerMinutes);
@@ -285,6 +286,7 @@ export default function DashboardPage() {
   const setBlurWords = useConfigStore((state) => state.setBlurWords);
   const setAccentCheck = useConfigStore((state) => state.setAccentCheck);
   const setAutoPlayCount = useConfigStore((state) => state.setAutoPlayCount);
+  const setAutoPlayCountCn = useConfigStore((state) => state.setAutoPlayCountCn);
   const setAutoPlayIntervalSeconds = useConfigStore((state) => state.setAutoPlayIntervalSeconds);
   const setBackgroundPlaybackEnabled = useConfigStore((state) => state.setBackgroundPlaybackEnabled);
   const setSleepTimerMinutes = useConfigStore((state) => state.setSleepTimerMinutes);
@@ -362,7 +364,8 @@ export default function DashboardPage() {
   } = useArticles(!!user);
 
   const blanks = useMemo(() => segments.filter((seg) => seg.role === 'blank'), [segments]);
-  const clampedCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
+  const clampedFrCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCount || 0));
+  const clampedCnCount = Math.min(MAX_AUTOPLAY_COUNT, Math.max(0, autoPlayCountCn || 0));
   const clampedIntervalSeconds = Math.min(
     MAX_AUTOPLAY_INTERVAL_SECONDS,
     Math.max(0, Number.isFinite(Number(autoPlayIntervalSeconds)) ? Number(autoPlayIntervalSeconds) : DEFAULT_AUTOPLAY_INTERVAL_SECONDS),
@@ -759,9 +762,11 @@ export default function DashboardPage() {
           ? repeat
           : continuous
             ? 1
-            : chunk.role === 'blank'
-              ? Math.max(1, clampedCount)
-              : 1;
+            : chunk.type === 'fr'
+              ? Math.max(1, clampedFrCount)
+              : chunk.type === 'cn'
+                ? Math.max(1, clampedCnCount)
+                : 1;
         const voice = azureVoice;
         try {
           await playWord(textValue, playTimes, voice, { gapMs });
@@ -815,7 +820,8 @@ export default function DashboardPage() {
   }, [
     segments,
     cancelCurrentPlayback,
-    clampedCount,
+    clampedFrCount,
+    clampedCnCount,
     azureVoice,
     playWord,
     ensureAudio,
@@ -874,10 +880,12 @@ export default function DashboardPage() {
       if (!speakable.length) return;
       const startPos = getLoopStartPos(speakable);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
-      const repeatTimes = Math.max(1, clampedCount);
       let pos = startPos;
       while (sentenceLoopTokenRef.current === token) {
         const seg = speakable[pos];
+        const repeatTimes = seg.type === 'cn'
+          ? Math.max(1, clampedCnCount)
+          : Math.max(1, clampedFrCount);
         await handleChunkPlay(seg.index, {
           repeat: repeatTimes,
           gapMs: intervalMs,
@@ -904,7 +912,8 @@ export default function DashboardPage() {
       });
   }, [
     cancelCurrentPlayback,
-    clampedCount,
+    clampedCnCount,
+    clampedFrCount,
     clampedIntervalSeconds,
     getLoopStartPos,
     handleChunkPlay,
@@ -932,10 +941,10 @@ export default function DashboardPage() {
       if (!foreignOnly.length) return;
       const startPos = getLoopStartPos(foreignOnly);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
-      const repeatTimes = Math.max(1, clampedCount);
       let pos = startPos;
       while (sentenceLoopTokenRef.current === token) {
         const seg = foreignOnly[pos];
+        const repeatTimes = Math.max(1, clampedFrCount);
         await handleChunkPlay(seg.index, {
           repeat: repeatTimes,
           gapMs: intervalMs,
@@ -962,7 +971,7 @@ export default function DashboardPage() {
       });
   }, [
     cancelCurrentPlayback,
-    clampedCount,
+    clampedFrCount,
     clampedIntervalSeconds,
     foreignLooping,
     getLoopStartPos,
@@ -1061,7 +1070,7 @@ export default function DashboardPage() {
     const first = blanks[0];
     if (first) {
       setActiveIndex(first.index);
-      handleChunkPlay(first.index, { repeat: clampedCount, triggerPreview: true, triggerReveal: false });
+      handleChunkPlay(first.index, { repeat: Math.max(1, clampedFrCount), triggerPreview: true, triggerReveal: false });
     }
     // message.info('已恢复为原文');
   };
@@ -1516,6 +1525,8 @@ export default function DashboardPage() {
                   onMoveShortcut={(delta, scope) => moveActive(delta, { scope: scope === 'foreign' ? (showCloze ? 'blank' : 'fr') : scope })}
                   autoPlayCount={autoPlayCount}
                   setAutoPlayCount={setAutoPlayCount}
+                  autoPlayCountCn={autoPlayCountCn}
+                  setAutoPlayCountCn={setAutoPlayCountCn}
                   autoPlayIntervalSeconds={autoPlayIntervalSeconds}
                   setAutoPlayIntervalSeconds={setAutoPlayIntervalSeconds}
                   isSentenceLooping={sentenceLooping}
@@ -1573,6 +1584,8 @@ export default function DashboardPage() {
                     onMoveShortcut={(delta, scope) => moveActive(delta, { scope: scope === 'foreign' ? (showCloze ? 'blank' : 'fr') : scope })}
                     autoPlayCount={autoPlayCount}
                     setAutoPlayCount={setAutoPlayCount}
+                    autoPlayCountCn={autoPlayCountCn}
+                    setAutoPlayCountCn={setAutoPlayCountCn}
                     autoPlayIntervalSeconds={autoPlayIntervalSeconds}
                     setAutoPlayIntervalSeconds={setAutoPlayIntervalSeconds}
                     isSentenceLooping={sentenceLooping}
@@ -1685,7 +1698,7 @@ export default function DashboardPage() {
                   }}
                   onInputFocus={(item) => {
                     activateAndPlay(item.index, {
-                      repeat: clampedCount,
+                      repeat: Math.max(1, clampedFrCount),
                       triggerPreview: false,
                       triggerReveal: false,
                     });

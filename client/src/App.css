@@ -787,6 +787,7 @@ body,
   cursor: pointer;
   border-radius: 6px;
   padding: 0 2px;
+  position: relative;
   transition: background 120ms, box-shadow 120ms, outline 120ms;
 }
 
@@ -819,6 +820,61 @@ body,
   outline: 1px solid #f97316;
   outline-offset: 2px;
   box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.35);
+}
+
+.chunk-item.chunk-shadowing {
+  outline: 1px solid rgb(var(--shadowing-color, 52, 211, 153));
+  outline-offset: 2px;
+  animation: shadowingPulse 1.6s ease-in-out infinite;
+}
+
+.chunk-item.shadowing-slow {
+  --shadowing-color: 96, 165, 250;
+}
+
+.chunk-item.shadowing-normal {
+  --shadowing-color: 52, 211, 153;
+}
+
+.chunk-item.shadowing-fast {
+  --shadowing-color: 251, 146, 60;
+}
+
+@keyframes shadowingPulse {
+  0% {
+    box-shadow: 0 0 0 0 rgba(var(--shadowing-color, 52, 211, 153), 0.45);
+  }
+  70% {
+    box-shadow: 0 0 0 6px rgba(var(--shadowing-color, 52, 211, 153), 0.05);
+  }
+  100% {
+    box-shadow: 0 0 0 0 rgba(var(--shadowing-color, 52, 211, 153), 0.25);
+  }
+}
+
+.shadowing-tag {
+  position: absolute;
+  top: -16px;
+  right: -14px;
+  margin: 0;
+  padding: 0 6px;
+  line-height: 18px;
+  font-size: 11px;
+  border-radius: 10px;
+  pointer-events: none;
+}
+
+.shadowing-popover {
+  display: flex;
+  flex-direction: column;
+  gap: 6px;
+  min-width: 180px;
+}
+
+.shadowing-popover-meta {
+  display: flex;
+  align-items: center;
+  gap: 8px;
 }
 
 .chunk-wrap {

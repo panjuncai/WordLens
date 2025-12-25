@@ -108,12 +108,14 @@ export default function useTtsAudio() {
     if (!normalized) return;
     const gapMs = Number(options?.gapMs) || 0;
     const rate = Number.isFinite(Number(options?.rate)) ? Number(options.rate) : 1.0;
+    const onSpeedChange = typeof options?.onSpeedChange === 'function' ? options.onSpeedChange : null;
     const playbackToken = playbackTokenRef.current + 1;
     playbackTokenRef.current = playbackToken;
     try {
       const url = await ensureAudio(normalized, voice, rate);
       for (let i = 0; i < times; i += 1) {
         if (playbackTokenRef.current !== playbackToken) break;
+        if (onSpeedChange) onSpeedChange(rate);
         await playAudioUrl(url);
         if (playbackTokenRef.current !== playbackToken) break;
         if (gapMs > 0 && i < times - 1) {

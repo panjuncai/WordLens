@@ -1,5 +1,5 @@
-import { Button, Divider, Input, Popover, Space, Tag, Typography,Tooltip } from 'antd';
-import { PictureOutlined, ReloadOutlined, CopyOutlined,QuestionCircleOutlined } from '@ant-design/icons';
+import { Button, Divider, Input, Popover, Space, Steps, Tag, Typography, Tooltip } from 'antd';
+import { PictureOutlined, ReloadOutlined, CopyOutlined, QuestionCircleOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -35,6 +35,9 @@ export default function ExerciseBoard({
   blurWords,
   revealedIds,
   activeIndex,
+  shadowingEnabled = false,
+  shadowingSequence = [],
+  currentPlayingSpeed = null,
   onToggleWordList,
   onCopyArticle,
   onInputChange,
@@ -51,6 +54,29 @@ export default function ExerciseBoard({
   onPreview,
   registerChunkRef = () => {},
 }) {
+  const speedTone = (rate) => {
+    if (!Number.isFinite(rate)) return 'normal';
+    if (rate < 0.9) return 'slow';
+    if (rate > 1.05) return 'fast';
+    return 'normal';
+  };
+  const shadowingSteps = Array.isArray(shadowingSequence) ? shadowingSequence : [];
+  const getShadowingStepIndex = () => {
+    if (!shadowingSteps.length || !Number.isFinite(currentPlayingSpeed)) return 0;
+    const exact = shadowingSteps.findIndex((val) => Number(val) === Number(currentPlayingSpeed));
+    if (exact >= 0) return exact;
+    let closest = 0;
+    let closestDelta = Math.abs(Number(shadowingSteps[0]) - Number(currentPlayingSpeed));
+    for (let i = 1; i < shadowingSteps.length; i += 1) {
+      const delta = Math.abs(Number(shadowingSteps[i]) - Number(currentPlayingSpeed));
+      if (delta < closestDelta) {
+        closestDelta = delta;
+        closest = i;
+      }
+    }
+    return closest;
+  };
+  const stepIndex = getShadowingStepIndex();
   const handleChunkKey = (e, segment) => {
     const target = e.target;
     const tag = target?.tagName?.toLowerCase?.();
@@ -71,12 +97,19 @@ export default function ExerciseBoard({
           const entry = isBlank ? imageMap[segment.value.toLowerCase()] : null;
           const isActive = segment.index === activeIndex;
           const isPunct = segment.type === 'punct';
+          const isShadowingActive = shadowingEnabled
+            && segment.type === 'fr'
+            && isActive
+            && Number.isFinite(Number(currentPlayingSpeed));
+          const speedClass = isShadowingActive ? `shadowing-${speedTone(Number(currentPlayingSpeed))}` : '';
           const chunkClass = [
             'chunk-item',
             isBlank ? 'blank chunk-blank' : 'chunk-text',
             `chunk-${segment.type}`,
             isPunct ? 'chunk-punct' : '',
             isActive && !isPunct ? 'chunk-active' : '',
+            isShadowingActive ? 'chunk-shadowing' : '',
+            speedClass,
           ].filter(Boolean).join(' ');
 
           if (!isBlank) {
@@ -107,6 +140,14 @@ export default function ExerciseBoard({
                   tabIndex={isPunct ? -1 : 0}
                 >
                   <span className="cloze-text">{core}</span>
+                  {isShadowingActive && (
+                    <Tag
+                      className={`shadowing-tag shadowing-tag-${speedTone(Number(currentPlayingSpeed))}`}
+                      color="processing"
+                    >
+                      {Number(currentPlayingSpeed).toFixed(1)}x
+                    </Tag>
+                  )}
                 </span>
                 {trailing && <span className="cloze-text">{trailing}</span>}
               </span>
@@ -158,23 +199,33 @@ export default function ExerciseBoard({
               tabIndex={showCloze ? -1 : 0}
             >
               {showCloze ? (
-                <Input
-                  size="small"
-                  className={`blank-input ${status || ''}`}
-                  placeholder=""
-                  value={answers[segment.id] || ''}
-                  onChange={(e) => onInputChange(segment.id, e.target.value)}
-                  onKeyDown={(e) => onInputKeyDown(e, segment)}
-                  onPressEnter={(e) => onInputKeyDown(e, segment)}
-                  onBlur={(e) => {
-                    onInputValidate(segment, e.target.value);
-                  }}
-                  onFocus={() => onInputFocus(segment)}
-                  style={{ width: computeBlankWidth(segment.value) }}
-                  ref={(el) => {
-                    registerInputRef(segment.id, el);
-                  }}
-                />
+                <>
+                  <Input
+                    size="small"
+                    className={`blank-input ${status || ''}`}
+                    placeholder=""
+                    value={answers[segment.id] || ''}
+                    onChange={(e) => onInputChange(segment.id, e.target.value)}
+                    onKeyDown={(e) => onInputKeyDown(e, segment)}
+                    onPressEnter={(e) => onInputKeyDown(e, segment)}
+                    onBlur={(e) => {
+                      onInputValidate(segment, e.target.value);
+                    }}
+                    onFocus={() => onInputFocus(segment)}
+                    style={{ width: computeBlankWidth(segment.value) }}
+                    ref={(el) => {
+                      registerInputRef(segment.id, el);
+                    }}
+                  />
+                  {isShadowingActive && (
+                    <Tag
+                      className={`shadowing-tag shadowing-tag-${speedTone(Number(currentPlayingSpeed))}`}
+                      color="processing"
+                    >
+                      {Number(currentPlayingSpeed).toFixed(1)}x
+                    </Tag>
+                  )}
+                </>
               ) : (
                 <span
                   className={`word-audio ${blurWords && !revealedIds.has(segment.id) ? 'blurred' : ''}`}
@@ -193,7 +244,28 @@ export default function ExerciseBoard({
                 </Popover>
               )}
               {showCloze && (
-                <Popover content={segment.value} trigger="click">
+                <Popover
+                  content={(
+                    <div className="shadowing-popover">
+                      <Text>{segment.value}</Text>
+                      {isShadowingActive && shadowingSteps.length > 0 && (
+                        <>
+                          <div className="shadowing-popover-meta">
+                            <Tag color="processing">
+                              Shadowing: {Number(currentPlayingSpeed).toFixed(1)}x
+                            </Tag>
+                          </div>
+                          <Steps
+                            size="small"
+                            current={stepIndex}
+                            items={shadowingSteps.map((rate) => ({ title: `${Number(rate).toFixed(1)}x` }))}
+                          />
+                        </>
+                      )}
+                    </div>
+                  )}
+                  trigger="click"
+                >
                   <Button
                     size="small"
                     type="text"

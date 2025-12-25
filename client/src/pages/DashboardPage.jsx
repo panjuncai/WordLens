@@ -41,6 +41,7 @@ export default function DashboardPage() {
   const [activeIndex, setActiveIndex] = useState(-1);
   const [isPlaying, setIsPlaying] = useState(false);
   const [isPaused, setIsPaused] = useState(false);
+  const [currentPlayingSpeed, setCurrentPlayingSpeed] = useState(null);
   const [sidebarCollapsed, setSidebarCollapsed] = useState(false);
   const [previewSrc, setPreviewSrc] = useState('');
   const [previewList, setPreviewList] = useState([]);
@@ -237,6 +238,7 @@ export default function DashboardPage() {
     stopAudio();
     setIsPlaying(false);
     setIsPaused(false);
+    setCurrentPlayingSpeed(null);
     if (!preserveActive) {
       setActiveIndex(-1);
     }
@@ -806,7 +808,10 @@ export default function DashboardPage() {
             const playShadowing = async (repIndex, seqIndex) => {
               if (controller.cancelled || controller.paused) return;
               const rate = normalizedShadowingSequence[seqIndex];
-              await playWord(textValue, 1, voice, { rate });
+              await playWord(textValue, 1, voice, {
+                rate,
+                onSpeedChange: setCurrentPlayingSpeed,
+              });
               if (controller.cancelled || controller.paused) return;
               const isLast = repIndex === playTimes - 1
                 && seqIndex === normalizedShadowingSequence.length - 1;
@@ -826,11 +831,14 @@ export default function DashboardPage() {
               await playShadowing(0, 0);
             }
           } else {
+            setCurrentPlayingSpeed(null);
             await playWord(textValue, playTimes, voice, { gapMs });
           }
         } catch {
           controller.cancelled = true;
           break;
+        } finally {
+          setCurrentPlayingSpeed(null);
         }
         if (controller.paused || controller.cancelled) break;
         if (!continuous && triggerPreview && !showCloze && chunk.type === 'fr') {
@@ -881,6 +889,7 @@ export default function DashboardPage() {
     openImagesForWord,
     blurWords,
     setRevealedIds,
+    setCurrentPlayingSpeed,
     shadowingEnabled,
     normalizedShadowingSequence,
     waitForPlaybackGap,
@@ -1111,16 +1120,16 @@ export default function DashboardPage() {
     handleChunkPlay(resumeIndex, { continuous: true, triggerPreview: false, triggerReveal: false });
   }, [activeIndex, handleChunkPlay, isPaused, isPlaying, segments, stopAudio]);
 
-  const onExtract = () => {
+  const onExtract = useCallback(() => {
     const count = extractWords();
     if (!count) {
       message.warning('未找到可挖空的法语候选词，请检查文本');
       return;
     }
     // message.success(`已提取 ${count} 个候选词并完成挖空`);
-  };
+  }, [extractWords]);
 
-  const onReset = () => {
+  const onReset = useCallback(() => {
     resetCloze();
     const first = blanks[0];
     if (first) {
@@ -1128,7 +1137,15 @@ export default function DashboardPage() {
       handleChunkPlay(first.index, { repeat: Math.max(1, clampedFrCount), triggerPreview: true, triggerReveal: false });
     }
     // message.info('已恢复为原文');
-  };
+  }, [blanks, clampedFrCount, handleChunkPlay, resetCloze, setActiveIndex]);
+
+  const handleToggleMode = useCallback((checked) => {
+    if (checked) {
+      onExtract();
+    } else {
+      onReset();
+    }
+  }, [onExtract, onReset]);
 
   const onPlay = async (word) => {
     setLoadingWord(word);
@@ -1137,17 +1154,22 @@ export default function DashboardPage() {
         const playShadowingWord = async (seqIndex) => {
           if (seqIndex >= normalizedShadowingSequence.length) return;
           const rate = normalizedShadowingSequence[seqIndex];
-          await playWord(word, 1, azureVoice, { rate });
+          await playWord(word, 1, azureVoice, {
+            rate,
+            onSpeedChange: setCurrentPlayingSpeed,
+          });
           await playShadowingWord(seqIndex + 1);
         };
         await playShadowingWord(0);
       } else {
+        setCurrentPlayingSpeed(null);
         await playWord(word);
       }
     } catch {
       // handled inside hook
     } finally {
       setLoadingWord('');
+      setCurrentPlayingSpeed(null);
     }
   };
 
@@ -1577,10 +1599,7 @@ export default function DashboardPage() {
                 <HeroSection
                   onExtract={onExtract}
                   onReset={onReset}
-                  onToggleMode={(checked) => {
-                    if (checked) onExtract();
-                    else onReset();
-                  }}
+                  onToggleMode={handleToggleMode}
                   showCloze={showCloze}
                   onReadAll={readFullText}
                   readingAll={isPlaying && !isPaused}
@@ -1638,10 +1657,7 @@ export default function DashboardPage() {
                   <HeroSection
                     onExtract={onExtract}
                     onReset={onReset}
-                    onToggleMode={(checked) => {
-                      if (checked) onExtract();
-                      else onReset();
-                    }}
+                    onToggleMode={handleToggleMode}
                     showCloze={showCloze}
                     onReadAll={readFullText}
                     readingAll={isPlaying && !isPaused}
@@ -1755,41 +1771,44 @@ export default function DashboardPage() {
                     answers={answers}
                     showCloze={showCloze}
                     wordListOpen={wordListOpen}
-                  selectedWords={selectedWords}
-                  blurWords={blurWords}
-                  revealedIds={revealedIds}
-                  activeIndex={activeIndex}
-                  onToggleWordList={toggleWordList}
-                  onInputChange={handleChange}
-                  onInputKeyDown={handleKeyDown}
-                  onInputValidate={(segment, raw) => {
-                    validateBlank(segment, raw);
-                  }}
-                  onInputFocus={(item) => {
-                    activateAndPlay(item.index, {
-                      repeat: Math.max(1, clampedFrCount),
-                      triggerPreview: false,
-                      triggerReveal: false,
-                    });
-                  }}
-                  onChunkActivate={(segment) => {
-                    activateAndPlay(segment.index, { triggerPreview: true, triggerReveal: true });
-                  }}
-                  onKeyNavigate={onKeyNavigate}
-                  imageMap={imageMap}
-                  fetchImages={fetchImages}
-                  onPlay={onPlay}
-                  loadingWord={loadingWord}
-                  onCopyArticle={copyArticle}
-                  registerInputRef={(id, el) => {
-                    if (el) {
-                      inputRefs.current[id] = el;
-                    } else {
-                      delete inputRefs.current[id];
-                    }
-                  }}
-                  registerChunkRef={registerChunkRef}
-                  onPreview={(urls, idx) => {
+                    selectedWords={selectedWords}
+                    blurWords={blurWords}
+                    revealedIds={revealedIds}
+                    activeIndex={activeIndex}
+                    shadowingEnabled={shadowingEnabled}
+                    shadowingSequence={shadowingSequence}
+                    currentPlayingSpeed={currentPlayingSpeed}
+                    onToggleWordList={toggleWordList}
+                    onInputChange={handleChange}
+                    onInputKeyDown={handleKeyDown}
+                    onInputValidate={(segment, raw) => {
+                      validateBlank(segment, raw);
+                    }}
+                    onInputFocus={(item) => {
+                      activateAndPlay(item.index, {
+                        repeat: Math.max(1, clampedFrCount),
+                        triggerPreview: false,
+                        triggerReveal: false,
+                      });
+                    }}
+                    onChunkActivate={(segment) => {
+                      activateAndPlay(segment.index, { triggerPreview: true, triggerReveal: true });
+                    }}
+                    onKeyNavigate={onKeyNavigate}
+                    imageMap={imageMap}
+                    fetchImages={fetchImages}
+                    onPlay={onPlay}
+                    loadingWord={loadingWord}
+                    onCopyArticle={copyArticle}
+                    registerInputRef={(id, el) => {
+                      if (el) {
+                        inputRefs.current[id] = el;
+                      } else {
+                        delete inputRefs.current[id];
+                      }
+                    }}
+                    registerChunkRef={registerChunkRef}
+                    onPreview={(urls, idx) => {
                       setPreviewList(urls);
                       setPreviewIndex(idx);
                       setPreviewSrc(urls[idx]);

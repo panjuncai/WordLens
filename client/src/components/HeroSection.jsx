@@ -334,12 +334,49 @@ export default function HeroSection({
     items: wrappedMenuItems,
     onClick: handleMenuClick,
   }), [handleMenuClick, wrappedMenuItems]);
+  const menuPropsRef = useRef(menuProps);
+  useEffect(() => {
+    menuPropsRef.current = menuProps;
+  }, [menuProps]);
+  const menuSignature = useMemo(() => JSON.stringify({
+    autoPlayCount,
+    autoPlayCountCn,
+    autoPlayIntervalSeconds,
+    prefetching,
+    prefetchingCn,
+    imagePrefetching,
+    accentCheck,
+    showCloze,
+    blurWords,
+    shadowingEnabled,
+    autoCarousel,
+    backgroundPlaybackEnabled,
+    sleepTimerMinutes,
+    themeMode,
+    isMobile,
+  }), [
+    accentCheck,
+    autoCarousel,
+    autoPlayCount,
+    autoPlayCountCn,
+    autoPlayIntervalSeconds,
+    backgroundPlaybackEnabled,
+    blurWords,
+    imagePrefetching,
+    isMobile,
+    prefetching,
+    prefetchingCn,
+    shadowingEnabled,
+    showCloze,
+    sleepTimerMinutes,
+    themeMode,
+  ]);
 
   useEffect(() => {
     if (!onMenuConfig) return;
-    if (isMobile) onMenuConfig(menuProps);
+    if (isMobile) onMenuConfig(menuPropsRef.current);
     else onMenuConfig(null);
-  }, [isMobile, menuProps, onMenuConfig]);
+  }, [isMobile, menuSignature, onMenuConfig]);
 
   const isActivePlaying = isPlaying && !isPaused;
   const handlePrimaryAction = useCallback(() => {

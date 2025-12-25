@@ -369,6 +369,11 @@ body,
   font-size: 20px;
 }
 
+.hero-loop-active,
+.hero-control-active {
+  color: #22c55e !important;
+}
+
 .mobile-top-bar,
 .mobile-toolbar-shell {
   display: none;

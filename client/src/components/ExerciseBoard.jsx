@@ -1,5 +1,5 @@
-import { Button, Divider, Input, Popover, Space, Steps, Tag, Typography, Tooltip } from 'antd';
-import { PictureOutlined, ReloadOutlined, CopyOutlined, QuestionCircleOutlined } from '@ant-design/icons';
+import { Button, Divider, Input, Popover, Space, Steps, Tag, Typography, Tooltip, message } from 'antd';
+import { PictureOutlined, ReloadOutlined, CopyOutlined, CopyFilled, QuestionCircleOutlined } from '@ant-design/icons';
 
 const { Text } = Typography;
 
@@ -84,6 +84,23 @@ export default function ExerciseBoard({
     if (e.key === 'Enter' || e.key === ' ') {
       e.preventDefault();
       onChunkActivate(segment);
+    }
+  };
+  const handleCopyBlanks = async () => {
+    const fallbackWords = segments
+      .filter((segment) => segment.role === 'blank' && segment.type !== 'punct')
+      .map((segment) => String(segment.value || '').trim())
+      .filter(Boolean);
+    const words = selectedWords?.length ? selectedWords : fallbackWords;
+    if (!words.length) {
+      message.info('暂无外语语块可复制');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(words.join('\n'));
+      message.success('复制外语语块成功');
+    } catch {
+      message.error('复制失败，请检查浏览器权限');
     }
   };
 
@@ -287,19 +304,9 @@ export default function ExerciseBoard({
         <Tooltip title="全文复制">
           <Button size="small" type="text" icon={<CopyOutlined />} onClick={onCopyArticle} />
         </Tooltip>
-        <Text strong>当前挖空词：</Text>
-        <Button type="link" size="small" onClick={onToggleWordList}>
-          {wordListOpen ? '折叠' : '展开'}
-        </Button>
-        {wordListOpen && (
-          <>
-            {selectedWords.length ? (
-              selectedWords.map((w) => <Tag key={w}>{w}</Tag>)
-            ) : (
-              <Text type="secondary">暂无，点击上方“智能提取”</Text>
-            )}
-          </>
-        )}
+        <Tooltip title="复制外语语块">
+          <Button size="small" type="text" icon={<CopyFilled />} onClick={handleCopyBlanks} />
+        </Tooltip>
       </Space>
       <br/>
       <br/>

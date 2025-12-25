@@ -1,4 +1,4 @@
-import { useCallback, useEffect, useMemo, useRef } from 'react';
+import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { Button, Dropdown, InputNumber, Select, Space, Switch, Typography, Tooltip } from 'antd';
 import {
   EllipsisOutlined,
@@ -75,6 +75,8 @@ export default function HeroSection({
   const openStudyStatsRef = useRef(onOpenStudyStats);
   const toggleThemeRef = useRef(onToggleTheme);
   const logoutRef = useRef(onLogout);
+  const controlPulseRef = useRef(null);
+  const [activeControl, setActiveControl] = useState(null);
 
   useEffect(() => { prefetchAudioRef.current = prefetchAudio; }, [prefetchAudio]);
   useEffect(() => { prefetchChineseRef.current = prefetchChinese; }, [prefetchChinese]);
@@ -83,6 +85,12 @@ export default function HeroSection({
   useEffect(() => { openStudyStatsRef.current = onOpenStudyStats; }, [onOpenStudyStats]);
   useEffect(() => { toggleThemeRef.current = onToggleTheme; }, [onToggleTheme]);
   useEffect(() => { logoutRef.current = onLogout; }, [onLogout]);
+  useEffect(() => () => {
+    if (controlPulseRef.current) {
+      clearTimeout(controlPulseRef.current);
+      controlPulseRef.current = null;
+    }
+  }, []);
 
   const controlSize = isMobile ? 'middle' : 'large';
   const switchSize = isMobile ? 'default' : 'large';
@@ -379,6 +387,19 @@ export default function HeroSection({
   }, [isMobile, menuSignature, onMenuConfig]);
 
   const isActivePlaying = isPlaying && !isPaused;
+  const showReadAll = false;
+  const pulseControl = useCallback((key, handler) => {
+    if (controlPulseRef.current) {
+      clearTimeout(controlPulseRef.current);
+      controlPulseRef.current = null;
+    }
+    setActiveControl(key);
+    handler();
+    controlPulseRef.current = setTimeout(() => {
+      setActiveControl((prev) => (prev === key ? null : prev));
+      controlPulseRef.current = null;
+    }, 320);
+  }, []);
   const handlePrimaryAction = useCallback(() => {
     if (isActivePlaying) {
       onTogglePause();
@@ -445,21 +466,23 @@ export default function HeroSection({
             className="hero-control-space"
           >
             <Space size="small" wrap align="center" className="hero-control-buttons">
-              <Tooltip title={isActivePlaying ? '暂停' : (isPaused ? '继续' : '全文朗读')}>
-                <Button
-                  size={controlSize}
-                  type="text"
-                  icon={isActivePlaying ? <PauseOutlined /> : <PlayCircleOutlined />}
-                  onClick={handlePrimaryAction}
-                />
-              </Tooltip>
+              {showReadAll && (
+                <Tooltip title={isActivePlaying ? '暂停' : (isPaused ? '继续' : '全文朗读')}>
+                  <Button
+                    size={controlSize}
+                    type="text"
+                    icon={isActivePlaying ? <PauseOutlined /> : <PlayCircleOutlined />}
+                    onClick={handlePrimaryAction}
+                  />
+                </Tooltip>
+              )}
               <Tooltip title={isSentenceLooping ? '停止单句循环' : '单句循环'}>
                 <Button
                   size={controlSize}
                   type="text"
                   icon={<RetweetOutlined />}
-                  className={isSentenceLooping ? 'hero-loop-active' : ''}
-                  onClick={onToggleSentenceLoop}
+                  className={isSentenceLooping || activeControl === 'loop-sentence' ? 'hero-loop-active hero-control-active' : ''}
+                  onClick={() => pulseControl('loop-sentence', onToggleSentenceLoop)}
                 />
               </Tooltip>
               <Tooltip title={isForeignLooping ? '停止外语循环' : '外语循环'}>
@@ -467,21 +490,45 @@ export default function HeroSection({
                   size={controlSize}
                   type="text"
                   icon={<SwapOutlined />}
-                  className={isForeignLooping ? 'hero-loop-active' : ''}
-                  onClick={onToggleForeignLoop}
+                  className={isForeignLooping || activeControl === 'loop-foreign' ? 'hero-loop-active hero-control-active' : ''}
+                  onClick={() => pulseControl('loop-foreign', onToggleForeignLoop)}
                 />
               </Tooltip>
               <Tooltip title="上一个外语词块(快捷键:↑)">
-                <Button size={controlSize} type="text" icon={<ArrowUpOutlined />} onClick={() => onMoveShortcut(-1, 'foreign')} />
+                <Button
+                  size={controlSize}
+                  type="text"
+                  icon={<ArrowUpOutlined />}
+                  className={activeControl === 'arrow-up' ? 'hero-control-active' : ''}
+                  onClick={() => pulseControl('arrow-up', () => onMoveShortcut(-1, 'foreign'))}
+                />
               </Tooltip>
               <Tooltip title="下一个外语词块(快捷键:↓)">
-                <Button size={controlSize} type="text" icon={<ArrowDownOutlined />} onClick={() => onMoveShortcut(1, 'foreign')} />
+                <Button
+                  size={controlSize}
+                  type="text"
+                  icon={<ArrowDownOutlined />}
+                  className={activeControl === 'arrow-down' ? 'hero-control-active' : ''}
+                  onClick={() => pulseControl('arrow-down', () => onMoveShortcut(1, 'foreign'))}
+                />
               </Tooltip>
               <Tooltip title="上一个词块(快捷键:←)">
-                <Button size={controlSize} type="text" icon={<ArrowLeftOutlined />} onClick={() => onMoveShortcut(-1, 'all')} />
+                <Button
+                  size={controlSize}
+                  type="text"
+                  icon={<ArrowLeftOutlined />}
+                  className={activeControl === 'arrow-left' ? 'hero-control-active' : ''}
+                  onClick={() => pulseControl('arrow-left', () => onMoveShortcut(-1, 'all'))}
+                />
               </Tooltip>
               <Tooltip title="下一个词块(快捷键:→)">
-                <Button size={controlSize} type="text" icon={<ArrowRightOutlined />} onClick={() => onMoveShortcut(1, 'all')} />
+                <Button
+                  size={controlSize}
+                  type="text"
+                  icon={<ArrowRightOutlined />}
+                  className={activeControl === 'arrow-right' ? 'hero-control-active' : ''}
+                  onClick={() => pulseControl('arrow-right', () => onMoveShortcut(1, 'all'))}
+                />
               </Tooltip>
             </Space>
             {switchBlock}

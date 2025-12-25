@@ -745,6 +745,7 @@ export default function DashboardPage() {
       betweenChunksMs = 0,
       triggerPreview = true,
       triggerReveal = true,
+      forceShadowing = false,
     } = options;
     cancelCurrentPlayback(true);
     const controller = { cancelled: false, paused: false };
@@ -806,7 +807,8 @@ export default function DashboardPage() {
                 : 1;
         const voice = azureVoice;
         try {
-          if (shadowingEnabled && chunk.type === 'fr') {
+          const shadowingActive = forceShadowing || shadowingEnabled;
+          if (shadowingActive && chunk.type === 'fr') {
             const playShadowing = async (repIndex, seqIndex) => {
               if (controller.cancelled || controller.paused) return;
               const rate = normalizedShadowingSequence[seqIndex];
@@ -939,7 +941,8 @@ export default function DashboardPage() {
     return next >= 0 ? next : 0;
   }, []);
 
-  const startSentenceLoop = useCallback((startIndex) => {
+  const startSentenceLoop = useCallback((startIndex, options = {}) => {
+    const { forceShadowing = false } = options;
     if (!segments.length) return;
     sentenceLoopTokenRef.current += 1;
     const token = sentenceLoopTokenRef.current;
@@ -965,6 +968,7 @@ export default function DashboardPage() {
           gapMs: intervalMs,
           triggerPreview: false,
           triggerReveal: false,
+          forceShadowing,
         });
         if (sentenceLoopTokenRef.current !== token) return;
         if (intervalMs > 0) {
@@ -994,7 +998,8 @@ export default function DashboardPage() {
     segments,
   ]);
 
-  const startForeignLoop = useCallback((startIndex) => {
+  const startForeignLoop = useCallback((startIndex, options = {}) => {
+    const { forceShadowing = false } = options;
     if (!segments.length) return;
     sentenceLoopTokenRef.current += 1;
     const token = sentenceLoopTokenRef.current;
@@ -1018,6 +1023,7 @@ export default function DashboardPage() {
           gapMs: intervalMs,
           triggerPreview: false,
           triggerReveal: false,
+          forceShadowing,
         });
         if (sentenceLoopTokenRef.current !== token) return;
         if (intervalMs > 0) {
@@ -1091,18 +1097,16 @@ export default function DashboardPage() {
       cancelCurrentPlayback(true);
       return;
     }
-    if (!shadowingEnabled) {
-      setShadowingEnabled(true);
-    }
+    setShadowingEnabled(true);
     if (sentenceLooping) {
-      startSentenceLoop(current.index);
+      startSentenceLoop(current.index, { forceShadowing: true });
       return;
     }
     if (foreignLooping) {
-      startForeignLoop(current.index);
+      startForeignLoop(current.index, { forceShadowing: true });
       return;
     }
-    activateAndPlay(current.index, { triggerPreview: true, triggerReveal: true });
+    activateAndPlay(current.index, { triggerPreview: true, triggerReveal: true, forceShadowing: true });
   }, [
     activeIndex,
     activateAndPlay,

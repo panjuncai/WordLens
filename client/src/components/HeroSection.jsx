@@ -41,6 +41,7 @@ export default function HeroSection({
   onToggleForeignLoop = () => {},
   shadowingEnabled = false,
   onToggleShadowing = () => {},
+  onShadowingAction = () => {},
   prefetchAudio,
   prefetching,
   prefetchProgress,
@@ -434,7 +435,7 @@ export default function HeroSection({
                     type="text"
                     icon={<ShrinkOutlined />}
                     className={shadowingEnabled || activeControl === 'shadowing' ? 'hero-control-active' : ''}
-                    onClick={() => pulseControl('shadowing', () => onToggleShadowing(!shadowingEnabled))}
+                    onClick={() => pulseControl('shadowing', onShadowingAction)}
                   />
                 </Tooltip>
                 <Button

@@ -813,11 +813,12 @@ export default function DashboardPage() {
               await playWord(textValue, 1, voice, {
                 rate,
                 onSpeedChange: setCurrentPlayingSpeed,
+                shouldAbort: () => controller.cancelled || controller.paused,
               });
               if (controller.cancelled || controller.paused) return;
-              const isLast = repIndex === playTimes - 1
-                && seqIndex === normalizedShadowingSequence.length - 1;
-              if (!isLast && gapMs > 0) {
+              const atSequenceEnd = seqIndex === normalizedShadowingSequence.length - 1;
+              const hasMoreRepeats = repIndex < playTimes - 1;
+              if (atSequenceEnd && hasMoreRepeats && gapMs > 0) {
                 const ok = await waitForPlaybackGap(gapMs, controller);
                 if (!ok) return;
               }
@@ -834,7 +835,10 @@ export default function DashboardPage() {
             }
           } else {
             setCurrentPlayingSpeed(null);
-            await playWord(textValue, playTimes, voice, { gapMs });
+            await playWord(textValue, playTimes, voice, {
+              gapMs,
+              shouldAbort: () => controller.cancelled || controller.paused,
+            });
           }
         } catch {
           controller.cancelled = true;
@@ -901,6 +905,8 @@ export default function DashboardPage() {
     playRequestTokenRef.current += 1;
     const token = playRequestTokenRef.current;
     // Stop current audio immediately so the UI feels responsive.
+    setLoadingWord('');
+    setCurrentPlayingSpeed(null);
     cancelCurrentPlayback(true);
     flushSync(() => {
       setActiveIndex(index);
@@ -916,7 +922,7 @@ export default function DashboardPage() {
         handleChunkPlay(index, options);
       });
     });
-  }, [cancelCurrentPlayback, handleChunkPlay]);
+  }, [cancelCurrentPlayback, handleChunkPlay, setCurrentPlayingSpeed]);
 
   const getLoopStartPos = useCallback((list) => {
     if (!list.length) return 0;
@@ -925,16 +931,16 @@ export default function DashboardPage() {
     const next = list.findIndex((seg) => seg.index > activeIndex);
     return next >= 0 ? next : 0;
   }, [activeIndex]);
+  const getLoopStartPosFor = useCallback((list, startIndex) => {
+    if (!list.length) return 0;
+    const exact = list.findIndex((seg) => seg.index === startIndex);
+    if (exact >= 0) return exact;
+    const next = list.findIndex((seg) => seg.index > startIndex);
+    return next >= 0 ? next : 0;
+  }, []);
 
-  const toggleSentenceLoop = useCallback(() => {
+  const startSentenceLoop = useCallback((startIndex) => {
     if (!segments.length) return;
-    if (sentenceLooping) {
-      sentenceLoopTokenRef.current += 1;
-      setSentenceLooping(false);
-      setForeignLooping(false);
-      cancelCurrentPlayback(true);
-      return;
-    }
     sentenceLoopTokenRef.current += 1;
     const token = sentenceLoopTokenRef.current;
     setSentenceLooping(true);
@@ -944,7 +950,9 @@ export default function DashboardPage() {
         .filter((seg) => seg.type !== 'punct' && (seg.value || '').trim())
         .sort((a, b) => a.index - b.index);
       if (!speakable.length) return;
-      const startPos = getLoopStartPos(speakable);
+      const startPos = typeof startIndex === 'number'
+        ? getLoopStartPosFor(speakable, startIndex)
+        : getLoopStartPos(speakable);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
       let pos = startPos;
       while (sentenceLoopTokenRef.current === token) {
@@ -977,25 +985,17 @@ export default function DashboardPage() {
         }
       });
   }, [
-    cancelCurrentPlayback,
     clampedCnCount,
     clampedFrCount,
     clampedIntervalSeconds,
     getLoopStartPos,
+    getLoopStartPosFor,
     handleChunkPlay,
     segments,
-    sentenceLooping,
   ]);
 
-  const toggleForeignLoop = useCallback(() => {
+  const startForeignLoop = useCallback((startIndex) => {
     if (!segments.length) return;
-    if (foreignLooping) {
-      sentenceLoopTokenRef.current += 1;
-      setForeignLooping(false);
-      setSentenceLooping(false);
-      cancelCurrentPlayback(true);
-      return;
-    }
     sentenceLoopTokenRef.current += 1;
     const token = sentenceLoopTokenRef.current;
     setForeignLooping(true);
@@ -1005,7 +1005,9 @@ export default function DashboardPage() {
         .filter((seg) => seg.type === 'fr' && seg.type !== 'punct' && (seg.value || '').trim())
         .sort((a, b) => a.index - b.index);
       if (!foreignOnly.length) return;
-      const startPos = getLoopStartPos(foreignOnly);
+      const startPos = typeof startIndex === 'number'
+        ? getLoopStartPosFor(foreignOnly, startIndex)
+        : getLoopStartPos(foreignOnly);
       const intervalMs = Math.round(clampedIntervalSeconds * 1000);
       let pos = startPos;
       while (sentenceLoopTokenRef.current === token) {
@@ -1036,13 +1038,85 @@ export default function DashboardPage() {
         }
       });
   }, [
-    cancelCurrentPlayback,
     clampedFrCount,
     clampedIntervalSeconds,
-    foreignLooping,
     getLoopStartPos,
+    getLoopStartPosFor,
     handleChunkPlay,
     segments,
+  ]);
+
+  const toggleSentenceLoop = useCallback(() => {
+    if (!segments.length) return;
+    if (sentenceLooping) {
+      sentenceLoopTokenRef.current += 1;
+      setSentenceLooping(false);
+      setForeignLooping(false);
+      cancelCurrentPlayback(true);
+      return;
+    }
+    startSentenceLoop();
+  }, [
+    cancelCurrentPlayback,
+    segments,
+    startSentenceLoop,
+    sentenceLooping,
+  ]);
+
+  const toggleForeignLoop = useCallback(() => {
+    if (!segments.length) return;
+    if (foreignLooping) {
+      sentenceLoopTokenRef.current += 1;
+      setForeignLooping(false);
+      setSentenceLooping(false);
+      cancelCurrentPlayback(true);
+      return;
+    }
+    startForeignLoop();
+  }, [
+    cancelCurrentPlayback,
+    foreignLooping,
+    segments,
+    startForeignLoop,
+  ]);
+
+  const handleShadowingAction = useCallback(() => {
+    const current = segments.find((seg) => seg.index === activeIndex);
+    if (!current || current.type !== 'fr' || current.type === 'punct') return;
+    if (shadowingEnabled) {
+      sentenceLoopTokenRef.current += 1;
+      setSentenceLooping(false);
+      setForeignLooping(false);
+      setShadowingEnabled(false);
+      cancelCurrentPlayback(true);
+      return;
+    }
+    if (!shadowingEnabled) {
+      setShadowingEnabled(true);
+    }
+    if (sentenceLooping) {
+      startSentenceLoop(current.index);
+      return;
+    }
+    if (foreignLooping) {
+      startForeignLoop(current.index);
+      return;
+    }
+    activateAndPlay(current.index, { triggerPreview: true, triggerReveal: true });
+  }, [
+    activeIndex,
+    activateAndPlay,
+    cancelCurrentPlayback,
+    foreignLooping,
+    segments,
+    sentenceLoopTokenRef,
+    sentenceLooping,
+    setForeignLooping,
+    setSentenceLooping,
+    setShadowingEnabled,
+    shadowingEnabled,
+    startForeignLoop,
+    startSentenceLoop,
   ]);
 
   const moveActiveWithin = useCallback((list, delta) => {
@@ -1630,6 +1704,7 @@ export default function DashboardPage() {
                   onSleepTimerMinutesChange={handleSleepTimerChange}
                   shadowingEnabled={shadowingEnabled}
                   onToggleShadowing={setShadowingEnabled}
+                  onShadowingAction={handleShadowingAction}
                   prefetchAudio={prefetchAudio}
                   prefetching={prefetching}
                   prefetchProgress={prefetchProgress}
@@ -1689,6 +1764,7 @@ export default function DashboardPage() {
                     onSleepTimerMinutesChange={handleSleepTimerChange}
                     shadowingEnabled={shadowingEnabled}
                     onToggleShadowing={setShadowingEnabled}
+                    onShadowingAction={handleShadowingAction}
                     prefetchAudio={prefetchAudio}
                     prefetching={prefetching}
                     prefetchProgress={prefetchProgress}

@@ -120,9 +120,11 @@ export default function useTtsAudio() {
     const gapMs = Number(options?.gapMs) || 0;
     const rate = Number.isFinite(Number(options?.rate)) ? Number(options.rate) : 1.0;
     const onSpeedChange = typeof options?.onSpeedChange === 'function' ? options.onSpeedChange : null;
+    const shouldAbort = typeof options?.shouldAbort === 'function' ? options.shouldAbort : null;
     const playbackToken = playbackTokenRef.current + 1;
     playbackTokenRef.current = playbackToken;
     try {
+      if (shouldAbort && shouldAbort()) return;
       if (typeof navigator !== 'undefined' && navigator.mediaSession) {
         if (!mediaSessionReadyRef.current) {
           try {
@@ -154,13 +156,16 @@ export default function useTtsAudio() {
       }
       const url = await ensureAudio(normalized, voice, rate);
       for (let i = 0; i < times; i += 1) {
+        if (shouldAbort && shouldAbort()) break;
         if (playbackTokenRef.current !== playbackToken) break;
         if (onSpeedChange) onSpeedChange(rate);
         await playAudioUrl(url);
+        if (shouldAbort && shouldAbort()) break;
         if (playbackTokenRef.current !== playbackToken) break;
         if (gapMs > 0 && i < times - 1) {
           let remaining = gapMs;
           while (remaining > 0) {
+            if (shouldAbort && shouldAbort()) return;
             if (playbackTokenRef.current !== playbackToken) break;
             const step = Math.min(250, remaining);
             await new Promise((resolve) => setTimeout(resolve, step));

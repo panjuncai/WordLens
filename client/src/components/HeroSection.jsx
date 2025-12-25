@@ -437,6 +437,17 @@ export default function HeroSection({
                     onClick={() => pulseControl('loop-foreign', onToggleForeignLoop)}
                   />
                 </Tooltip>
+                {isMobile && (
+                  <Tooltip title="影子跟读">
+                    <Button
+                      size={controlSize}
+                      type="text"
+                      icon={<AudioOutlined />}
+                      className={shadowingEnabled || activeControl === 'shadowing' ? 'hero-control-active' : ''}
+                      onClick={() => pulseControl('shadowing', () => onToggleShadowing(!shadowingEnabled))}
+                    />
+                  </Tooltip>
+                )}
                 <Button
                   size={controlSize}
                   type="text"

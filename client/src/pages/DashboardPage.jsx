@@ -1049,10 +1049,13 @@ export default function DashboardPage() {
     if (!list.length) return null;
     const order = list.map((seg) => seg.index);
     const currentIdx = order.indexOf(activeIndex);
-    const targetIdx = currentIdx === -1
-      ? (delta > 0 ? 0 : order.length - 1)
-      : Math.max(0, Math.min(order.length - 1, currentIdx + delta));
-    return list.find((seg) => seg.index === order[targetIdx]) || null;
+    if (currentIdx === -1) {
+      const fallbackIdx = delta > 0 ? 0 : order.length - 1;
+      return list.find((seg) => seg.index === order[fallbackIdx]) || null;
+    }
+    const nextIdx = currentIdx + delta;
+    const wrappedIdx = (nextIdx % order.length + order.length) % order.length;
+    return list.find((seg) => seg.index === order[wrappedIdx]) || null;
   }, [activeIndex]);
 
   const moveActive = useCallback((delta, options = {}) => {

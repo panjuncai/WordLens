@@ -926,9 +926,6 @@ body,
   transition: filter 140ms ease;
 }
 
-.chunk-item.chunk-blurred.chunk-active .cloze-text {
-  filter: blur(0px);
-}
 
 .word-audio {
   color: var(--accent);

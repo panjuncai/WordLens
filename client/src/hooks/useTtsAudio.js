@@ -72,12 +72,13 @@ export default function useTtsAudio() {
     audioCache.current = loadCache();
   }, [loadCache]);
 
-  const ensureAudio = async (word, voice) => {
+  const ensureAudio = async (word, voice, rate = 1.0) => {
     const normalized = sanitizeForTts(word);
     if (!normalized) throw new Error('文本为空，无法生成音频');
-    const key = `${voice || ''}:${normalized.toLowerCase()}`;
+    const rateKey = Number.isFinite(Number(rate)) ? Number(rate).toFixed(2) : '1.00';
+    const key = `${voice || ''}:${rateKey}:${normalized.toLowerCase()}`;
     if (audioCache.current[key]) return audioCache.current[key];
-    const { data } = await tts(normalized, voice);
+    const { data } = await tts(normalized, voice, rate);
     if (!data?.audioBase64) throw new Error('未收到音频，请检查 Azure 配置');
     const url = `data:${data.format || 'audio/mp3'};base64,${data.audioBase64}`;
     audioCache.current[key] = url;
@@ -106,10 +107,11 @@ export default function useTtsAudio() {
     const normalized = sanitizeForTts(word);
     if (!normalized) return;
     const gapMs = Number(options?.gapMs) || 0;
+    const rate = Number.isFinite(Number(options?.rate)) ? Number(options.rate) : 1.0;
     const playbackToken = playbackTokenRef.current + 1;
     playbackTokenRef.current = playbackToken;
     try {
-      const url = await ensureAudio(normalized, voice);
+      const url = await ensureAudio(normalized, voice, rate);
       for (let i = 0; i < times; i += 1) {
         if (playbackTokenRef.current !== playbackToken) break;
         await playAudioUrl(url);

@@ -15,6 +15,7 @@ import {
   ArrowDownOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
+  AudioOutlined,
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -41,6 +42,8 @@ export default function HeroSection({
   onToggleBackgroundPlayback = () => {},
   sleepTimerMinutes = 0,
   onSleepTimerMinutesChange = () => {},
+  shadowingEnabled = false,
+  onToggleShadowing = () => {},
   prefetchAudio,
   prefetching,
   prefetchProgress,
@@ -187,7 +190,28 @@ export default function HeroSection({
           label: (
             <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
               <Text>单词遮挡</Text>
-              <Switch size="small" checked={blurWords} onChange={setBlurWords} />
+              <Switch
+                size="small"
+                checked={blurWords}
+                onChange={setBlurWords}
+                checkedChildren={<EyeInvisibleOutlined />}
+                unCheckedChildren={<EyeOutlined />}
+              />
+            </div>
+          ),
+        },
+        {
+          key: 'shadowing',
+          label: (
+            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
+              <Text>影子跟读</Text>
+              <Switch
+                size="small"
+                checked={shadowingEnabled}
+                onChange={onToggleShadowing}
+                checkedChildren={<AudioOutlined />}
+                unCheckedChildren={<AudioOutlined />}
+              />
             </div>
           ),
         },
@@ -196,7 +220,13 @@ export default function HeroSection({
           label: (
             <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
               <Text>图片轮播</Text>
-              <Switch size="small" checked={autoCarousel} onChange={setAutoCarousel} />
+              <Switch
+                size="small"
+                checked={autoCarousel}
+                onChange={setAutoCarousel}
+                checkedChildren={<RetweetOutlined />}
+                unCheckedChildren={<RetweetOutlined />}
+              />
             </div>
           ),
         },
@@ -266,12 +296,14 @@ export default function HeroSection({
     prefetchingCn,
     onSleepTimerMinutesChange,
     onToggleBackgroundPlayback,
+    onToggleShadowing,
     setAccentCheck,
     setAutoCarousel,
     setAutoPlayCount,
     setAutoPlayCountCn,
     setAutoPlayIntervalSeconds,
     setBlurWords,
+    shadowingEnabled,
     sleepTimerMinutes,
     setThemeMode,
     showCloze,
@@ -339,7 +371,7 @@ export default function HeroSection({
           checked={autoCarousel}
           onChange={setAutoCarousel}
           checkedChildren={<RetweetOutlined />}
-          unCheckedChildren={<PoweroffOutlined />}
+          unCheckedChildren={<RetweetOutlined />}
         />
       </Tooltip>
       <Tooltip title="单词遮挡">
@@ -349,6 +381,15 @@ export default function HeroSection({
           onChange={setBlurWords}
           checkedChildren={<EyeInvisibleOutlined />}
           unCheckedChildren={<EyeOutlined />}
+        />
+      </Tooltip>
+      <Tooltip title="影子跟读">
+        <Switch
+          size={switchSize}
+          checked={shadowingEnabled}
+          onChange={onToggleShadowing}
+          checkedChildren={<AudioOutlined />}
+          unCheckedChildren={<AudioOutlined />}
         />
       </Tooltip>
     </Space>

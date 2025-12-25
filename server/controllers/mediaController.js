@@ -19,13 +19,14 @@ async function tts(req, res, next) {
     const kept = (val || '').match(/[A-Za-zÀ-ÖØ-öø-ÿ\u4e00-\u9fff0-9]+/g);
     return kept ? kept.join(' ') : '';
   };
-  const { text, voice } = req.body || {};
+  const { text, voice, rate } = req.body || {};
   const cleanText = sanitize(text);
   if (!cleanText) return res.status(400).json({ error: 'Text is required' });
   try {
     const user = await userModel.findById(req.user.id);
     const data = await ttsService.synthesize(cleanText, {
       voice,
+      rate,
       azureKey: user?.azure_key,
       azureRegion: user?.azure_region,
       azureVoice: user?.azure_voice,

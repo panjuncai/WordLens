@@ -1,7 +1,7 @@
 const axios = require('axios');
 const { defaultVoice, azureKey: envKey, azureRegion: envRegion } = require('../config/env');
 
-async function synthesize(text, { voice, azureKey, azureRegion }) {
+async function synthesize(text, { voice, azureKey, azureRegion, rate = 1.0 }) {
   const key = azureKey || envKey;
   const region = azureRegion || envRegion;
   const voiceName = voice || defaultVoice;
@@ -10,7 +10,7 @@ async function synthesize(text, { voice, azureKey, azureRegion }) {
     err.status = 500;
     throw err;
   }
-  const ssml = `<speak version="1.0" xml:lang="fr-FR"><voice name="${voiceName}">${text}</voice></speak>`;
+  const ssml = `<speak version="1.0" xml:lang="fr-FR"><voice name="${voiceName}"><prosody rate="${rate}">${text}</prosody></voice></speak>`;
   const ttsResponse = await axios.post(
     `https://${region}.tts.speech.microsoft.com/cognitiveservices/v1`,
     ssml,

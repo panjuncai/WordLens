@@ -279,6 +279,8 @@ export default function DashboardPage() {
   const backgroundPlaybackEnabled = useConfigStore((state) => state.backgroundPlaybackEnabled);
   const sleepTimerMinutes = useConfigStore((state) => state.sleepTimerMinutes);
   const sleepTimerEndAt = useConfigStore((state) => state.sleepTimerEndAt);
+  const shadowingEnabled = useConfigStore((state) => state.shadowingEnabled);
+  const shadowingSequence = useConfigStore((state) => state.shadowingSequence);
   const azureKey = useConfigStore((state) => state.azureKey);
   const azureRegion = useConfigStore((state) => state.azureRegion);
   const azureVoice = useConfigStore((state) => state.azureVoice);
@@ -291,6 +293,8 @@ export default function DashboardPage() {
   const setBackgroundPlaybackEnabled = useConfigStore((state) => state.setBackgroundPlaybackEnabled);
   const setSleepTimerMinutes = useConfigStore((state) => state.setSleepTimerMinutes);
   const setSleepTimerEndAt = useConfigStore((state) => state.setSleepTimerEndAt);
+  const setShadowingEnabled = useConfigStore((state) => state.setShadowingEnabled);
+  const setShadowingSequence = useConfigStore((state) => state.setShadowingSequence);
   const setAzureKey = useConfigStore((state) => state.setAzureKey);
   const setAzureRegion = useConfigStore((state) => state.setAzureRegion);
   const setAzureVoice = useConfigStore((state) => state.setAzureVoice);
@@ -370,6 +374,35 @@ export default function DashboardPage() {
     MAX_AUTOPLAY_INTERVAL_SECONDS,
     Math.max(0, Number.isFinite(Number(autoPlayIntervalSeconds)) ? Number(autoPlayIntervalSeconds) : DEFAULT_AUTOPLAY_INTERVAL_SECONDS),
   );
+  const waitForPlaybackGap = useCallback((ms, controller) => new Promise((resolve) => {
+    if (!ms) {
+      resolve(true);
+      return;
+    }
+    const started = Date.now();
+    const tick = () => {
+      if (controller?.cancelled || controller?.paused) {
+        resolve(false);
+        return;
+      }
+      const elapsed = Date.now() - started;
+      if (elapsed >= ms) {
+        resolve(true);
+        return;
+      }
+      const remaining = ms - elapsed;
+      const step = Math.min(250, remaining);
+      setTimeout(tick, step);
+    };
+    tick();
+  }), []);
+  const normalizedShadowingSequence = useMemo(() => {
+    const raw = Array.isArray(shadowingSequence) ? shadowingSequence : [];
+    const cleaned = raw
+      .map((val) => (Number.isFinite(Number(val)) ? Number(val) : 1.0))
+      .filter((val) => val > 0);
+    return cleaned.length ? cleaned : [1.0];
+  }, [shadowingSequence]);
   const sentenceLoopTokenRef = useRef(0);
   const [sentenceLooping, setSentenceLooping] = useState(false);
   const [foreignLooping, setForeignLooping] = useState(false);
@@ -769,7 +802,32 @@ export default function DashboardPage() {
                 : 1;
         const voice = azureVoice;
         try {
-          await playWord(textValue, playTimes, voice, { gapMs });
+          if (shadowingEnabled && chunk.type === 'fr') {
+            const playShadowing = async (repIndex, seqIndex) => {
+              if (controller.cancelled || controller.paused) return;
+              const rate = normalizedShadowingSequence[seqIndex];
+              await playWord(textValue, 1, voice, { rate });
+              if (controller.cancelled || controller.paused) return;
+              const isLast = repIndex === playTimes - 1
+                && seqIndex === normalizedShadowingSequence.length - 1;
+              if (!isLast && gapMs > 0) {
+                const ok = await waitForPlaybackGap(gapMs, controller);
+                if (!ok) return;
+              }
+              if (seqIndex + 1 < normalizedShadowingSequence.length) {
+                await playShadowing(repIndex, seqIndex + 1);
+                return;
+              }
+              if (repIndex + 1 < playTimes) {
+                await playShadowing(repIndex + 1, 0);
+              }
+            };
+            if (normalizedShadowingSequence.length > 0 && playTimes > 0) {
+              await playShadowing(0, 0);
+            }
+          } else {
+            await playWord(textValue, playTimes, voice, { gapMs });
+          }
         } catch {
           controller.cancelled = true;
           break;
@@ -790,14 +848,8 @@ export default function DashboardPage() {
           });
         }
         if (continuous && betweenChunksMs > 0) {
-          let remaining = betweenChunksMs;
-          while (remaining > 0) {
-            if (controller.cancelled || controller.paused) break;
-            const step = Math.min(250, remaining);
-            await new Promise((resolve) => setTimeout(resolve, step));
-            remaining -= step;
-          }
-          if (controller.paused || controller.cancelled) break;
+          const ok = await waitForPlaybackGap(betweenChunksMs, controller);
+          if (!ok || controller.paused || controller.cancelled) break;
         }
       }
       if (!continuous) break;
@@ -829,6 +881,9 @@ export default function DashboardPage() {
     openImagesForWord,
     blurWords,
     setRevealedIds,
+    shadowingEnabled,
+    normalizedShadowingSequence,
+    waitForPlaybackGap,
   ]);
 
   const activateAndPlay = useCallback((index, options = {}) => {
@@ -1078,7 +1133,17 @@ export default function DashboardPage() {
   const onPlay = async (word) => {
     setLoadingWord(word);
     try {
-      await playWord(word);
+      if (shadowingEnabled && /[A-Za-z\u00C0-\u024F]/.test(word || '')) {
+        const playShadowingWord = async (seqIndex) => {
+          if (seqIndex >= normalizedShadowingSequence.length) return;
+          const rate = normalizedShadowingSequence[seqIndex];
+          await playWord(word, 1, azureVoice, { rate });
+          await playShadowingWord(seqIndex + 1);
+        };
+        await playShadowingWord(0);
+      } else {
+        await playWord(word);
+      }
     } catch {
       // handled inside hook
     } finally {
@@ -1537,6 +1602,8 @@ export default function DashboardPage() {
                   onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
                   sleepTimerMinutes={sleepTimerMinutes}
                   onSleepTimerMinutesChange={handleSleepTimerChange}
+                  shadowingEnabled={shadowingEnabled}
+                  onToggleShadowing={setShadowingEnabled}
                   prefetchAudio={prefetchAudio}
                   prefetching={prefetching}
                   prefetchProgress={prefetchProgress}
@@ -1596,6 +1663,8 @@ export default function DashboardPage() {
                     onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
                     sleepTimerMinutes={sleepTimerMinutes}
                     onSleepTimerMinutesChange={handleSleepTimerChange}
+                    shadowingEnabled={shadowingEnabled}
+                    onToggleShadowing={setShadowingEnabled}
                     prefetchAudio={prefetchAudio}
                     prefetching={prefetching}
                     prefetchProgress={prefetchProgress}
@@ -1744,6 +1813,10 @@ export default function DashboardPage() {
         setAzureKey={setAzureKey}
         setAzureRegion={setAzureRegion}
         setAzureVoice={setAzureVoice}
+        shadowingEnabled={shadowingEnabled}
+        setShadowingEnabled={setShadowingEnabled}
+        shadowingSequence={shadowingSequence}
+        setShadowingSequence={setShadowingSequence}
       />
 
       <Modal

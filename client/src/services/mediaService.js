@@ -13,6 +13,6 @@ const sanitizeText = (value) => {
   return tokens.join(' ').replace(/\s+/g, ' ').trim();
 };
 
-export const tts = (text, voice) => api.post('/api/tts', { text: sanitizeText(text), voice });
+export const tts = (text, voice, rate) => api.post('/api/tts', { text: sanitizeText(text), voice, rate });
 
 export const fetchImages = (word, offset = 0) => api.get('/api/images', { params: { word, offset } });

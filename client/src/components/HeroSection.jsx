@@ -1,8 +1,7 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { Button, Dropdown, InputNumber, Select, Space, Switch, Typography, Tooltip } from 'antd';
+import { Button, Dropdown, InputNumber, Space, Switch, Typography, Tooltip } from 'antd';
 import {
   EllipsisOutlined,
-  PoweroffOutlined,
   PlayCircleOutlined,
   PauseOutlined,
   EyeOutlined,
@@ -38,10 +37,6 @@ export default function HeroSection({
   onToggleSentenceLoop = () => {},
   isForeignLooping = false,
   onToggleForeignLoop = () => {},
-  backgroundPlaybackEnabled = true,
-  onToggleBackgroundPlayback = () => {},
-  sleepTimerMinutes = 0,
-  onSleepTimerMinutesChange = () => {},
   shadowingEnabled = false,
   onToggleShadowing = () => {},
   prefetchAudio,
@@ -63,10 +58,7 @@ export default function HeroSection({
   onOpenConfig = () => {},
   onOpenShadowingConfig = () => {},
   onOpenStudyStats = () => {},
-  onToggleTheme = () => {},
-  setThemeMode = () => {},
   onLogout = () => {},
-  themeMode = 'light',
   onMenuConfig = null,
 }) {
   const prefetchAudioRef = useRef(prefetchAudio);
@@ -74,7 +66,6 @@ export default function HeroSection({
   const prefetchImagesRef = useRef(prefetchImages);
   const openConfigRef = useRef(onOpenConfig);
   const openStudyStatsRef = useRef(onOpenStudyStats);
-  const toggleThemeRef = useRef(onToggleTheme);
   const logoutRef = useRef(onLogout);
   const controlPulseRef = useRef(null);
   const [activeControl, setActiveControl] = useState(null);
@@ -84,7 +75,6 @@ export default function HeroSection({
   useEffect(() => { prefetchImagesRef.current = prefetchImages; }, [prefetchImages]);
   useEffect(() => { openConfigRef.current = onOpenConfig; }, [onOpenConfig]);
   useEffect(() => { openStudyStatsRef.current = onOpenStudyStats; }, [onOpenStudyStats]);
-  useEffect(() => { toggleThemeRef.current = onToggleTheme; }, [onToggleTheme]);
   useEffect(() => { logoutRef.current = onLogout; }, [onLogout]);
   useEffect(() => () => {
     if (controlPulseRef.current) {
@@ -240,55 +230,7 @@ export default function HeroSection({
           ),
         },
       );
-      base.push(
-        { type: 'divider' },
-        {
-          key: 'background',
-          label: (
-            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-              <Text>后台播放</Text>
-              <Switch size="small" checked={backgroundPlaybackEnabled} onChange={onToggleBackgroundPlayback} />
-            </div>
-          ),
-        },
-        {
-          key: 'sleep-timer',
-          label: (
-            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-              <Text>定时关闭</Text>
-              <Select
-                size="small"
-                value={sleepTimerMinutes}
-                style={{ width: 110 }}
-                onChange={(v) => onSleepTimerMinutesChange(v)}
-                options={[
-                  { value: 0, label: '不关闭' },
-                  { value: 15, label: '15 分钟' },
-                  { value: 30, label: '30 分钟' },
-                  { value: 60, label: '60 分钟' },
-                ]}
-              />
-            </div>
-          ),
-        },
-        { key: 'stats', label: '学习统计' },
-        { key: 'config', label: 'TTS 配置' },
-        { key: 'shadowing-config', label: '影子跟读' },
-        {
-          key: 'theme-toggle',
-          label: (
-            <div className="hero-menu-row" onClick={(e) => e.stopPropagation()}>
-              <Text>暗色模式</Text>
-              <Switch
-                size="small"
-                checked={themeMode === 'dark'}
-                onChange={(checked) => setThemeMode(checked ? 'dark' : 'light')}
-              />
-            </div>
-          ),
-        },
-        { key: 'logout', label: '退出登录' },
-      );
+      // keep this divider only when we later add mobile-specific sections
     }
     return base;
   }, [
@@ -297,15 +239,12 @@ export default function HeroSection({
     autoPlayCount,
     autoPlayCountCn,
     autoPlayIntervalSeconds,
-    backgroundPlaybackEnabled,
     blurWords,
     handleToggleMode,
     imagePrefetching,
     isMobile,
     prefetching,
     prefetchingCn,
-    onSleepTimerMinutesChange,
-    onToggleBackgroundPlayback,
     onToggleShadowing,
     setAccentCheck,
     setAutoCarousel,
@@ -314,10 +253,7 @@ export default function HeroSection({
     setAutoPlayIntervalSeconds,
     setBlurWords,
     shadowingEnabled,
-    sleepTimerMinutes,
-    setThemeMode,
     showCloze,
-    themeMode,
   ]);
 
   const wrappedMenuItems = useMemo(() => menuItems.map((item) => {
@@ -361,9 +297,6 @@ export default function HeroSection({
     blurWords,
     shadowingEnabled,
     autoCarousel,
-    backgroundPlaybackEnabled,
-    sleepTimerMinutes,
-    themeMode,
     isMobile,
   }), [
     accentCheck,
@@ -371,7 +304,6 @@ export default function HeroSection({
     autoPlayCount,
     autoPlayCountCn,
     autoPlayIntervalSeconds,
-    backgroundPlaybackEnabled,
     blurWords,
     imagePrefetching,
     isMobile,
@@ -379,8 +311,6 @@ export default function HeroSection({
     prefetchingCn,
     shadowingEnabled,
     showCloze,
-    sleepTimerMinutes,
-    themeMode,
   ]);
 
   useEffect(() => {

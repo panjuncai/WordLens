@@ -7,6 +7,7 @@ export default function useTtsAudio() {
   const audioRef = useRef(null);
   const pendingResolverRef = useRef(null);
   const playbackTokenRef = useRef(0);
+  const mediaSessionReadyRef = useRef(false);
   const CACHE_KEY = 'wordlens-audio-cache';
 
   const sanitizeText = (text) => (text || '')
@@ -39,6 +40,9 @@ export default function useTtsAudio() {
       audioRef.current.pause();
       audioRef.current.currentTime = 0;
       cleanupAudio();
+    }
+    if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+      navigator.mediaSession.playbackState = 'paused';
     }
     if (pendingResolverRef.current) {
       const resolver = pendingResolverRef.current;
@@ -95,12 +99,19 @@ export default function useTtsAudio() {
         pendingResolverRef.current = null;
       }
       cleanupAudio();
+      if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+        navigator.mediaSession.playbackState = 'paused';
+      }
       resolve();
     };
     pendingResolverRef.current = resolve;
     audio.onended = finalize;
     audio.onerror = finalize;
-    audio.play().catch(finalize);
+    audio.play().then(() => {
+      if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+        navigator.mediaSession.playbackState = 'playing';
+      }
+    }).catch(finalize);
   });
 
   const playWord = async (word, times = 1, voice, options = {}) => {
@@ -112,6 +123,35 @@ export default function useTtsAudio() {
     const playbackToken = playbackTokenRef.current + 1;
     playbackTokenRef.current = playbackToken;
     try {
+      if (typeof navigator !== 'undefined' && navigator.mediaSession) {
+        if (!mediaSessionReadyRef.current) {
+          try {
+            navigator.mediaSession.setActionHandler('play', () => {
+              if (audioRef.current) {
+                audioRef.current.play().catch(() => {});
+              }
+            });
+            navigator.mediaSession.setActionHandler('pause', () => {
+              if (audioRef.current) {
+                audioRef.current.pause();
+              }
+            });
+            navigator.mediaSession.setActionHandler('stop', () => {
+              stop();
+            });
+          } catch {
+            // ignore unsupported action handlers
+          }
+          mediaSessionReadyRef.current = true;
+        }
+        if (typeof window !== 'undefined' && window.MediaMetadata) {
+          navigator.mediaSession.metadata = new window.MediaMetadata({
+            title: normalized,
+            artist: voice || 'WordLens',
+            album: 'Shadowing',
+          });
+        }
+      }
       const url = await ensureAudio(normalized, voice, rate);
       for (let i = 0; i < times; i += 1) {
         if (playbackTokenRef.current !== playbackToken) break;

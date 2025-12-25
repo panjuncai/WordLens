@@ -14,6 +14,7 @@ import ArticleList from '../components/ArticleList';
 import ExerciseBoard from '../components/ExerciseBoard';
 import ImageCarousel from '../components/ImageCarousel';
 import ConfigModal from '../components/ConfigModal';
+import ShadowingConfigModal from '../components/ShadowingConfigModal';
 import { addStudyTime, getStudyStats } from '../services/userService';
 import useTtsAudio from '../hooks/useTtsAudio';
 import useImageSearch from '../hooks/useImageSearch';
@@ -28,6 +29,7 @@ export default function DashboardPage() {
   const { user, logout } = useAuthStore();
   const [configOpen, setConfigOpen] = useState(false);
   const [configLoading, setConfigLoading] = useState(false);
+  const [shadowingConfigOpen, setShadowingConfigOpen] = useState(false);
   const [loadingWord, setLoadingWord] = useState('');
   const [prefetching, setPrefetching] = useState(false);
   const [prefetchProgress, setPrefetchProgress] = useState({ done: 0, total: 0 });
@@ -1518,6 +1520,7 @@ export default function DashboardPage() {
                 setConfigOpen(true);
                 loadConfig();
               }}
+              onOpenShadowingConfig={() => setShadowingConfigOpen(true)}
               onOpenStudyStats={() => setStudyStatsOpen(true)}
               backgroundPlaybackEnabled={backgroundPlaybackEnabled}
               onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
@@ -1561,6 +1564,7 @@ export default function DashboardPage() {
                 setConfigOpen(true);
                 loadConfig();
               }}
+              onOpenShadowingConfig={() => setShadowingConfigOpen(true)}
               onOpenStudyStats={() => setStudyStatsOpen(true)}
               backgroundPlaybackEnabled={backgroundPlaybackEnabled}
               onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
@@ -1644,6 +1648,7 @@ export default function DashboardPage() {
                     setConfigOpen(true);
                     loadConfig();
                   }}
+                  onOpenShadowingConfig={() => setShadowingConfigOpen(true)}
                   onOpenStudyStats={() => setStudyStatsOpen(true)}
                   onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
                   onLogout={logout}
@@ -1701,6 +1706,7 @@ export default function DashboardPage() {
                       setConfigOpen(true);
                       loadConfig();
                     }}
+                    onOpenShadowingConfig={() => setShadowingConfigOpen(true)}
                     onOpenStudyStats={() => setStudyStatsOpen(true)}
                     onToggleTheme={() => setThemeMode(themeMode === 'dark' ? 'light' : 'dark')}
                     onLogout={logout}
@@ -1832,6 +1838,10 @@ export default function DashboardPage() {
         setAzureKey={setAzureKey}
         setAzureRegion={setAzureRegion}
         setAzureVoice={setAzureVoice}
+      />
+      <ShadowingConfigModal
+        open={shadowingConfigOpen}
+        onClose={() => setShadowingConfigOpen(false)}
         shadowingEnabled={shadowingEnabled}
         setShadowingEnabled={setShadowingEnabled}
         shadowingSequence={shadowingSequence}

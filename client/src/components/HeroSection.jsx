@@ -61,6 +61,7 @@ export default function HeroSection({
   setAccentCheck,
   isMobile = false,
   onOpenConfig = () => {},
+  onOpenShadowingConfig = () => {},
   onOpenStudyStats = () => {},
   onToggleTheme = () => {},
   setThemeMode = () => {},
@@ -272,6 +273,7 @@ export default function HeroSection({
         },
         { key: 'stats', label: '学习统计' },
         { key: 'config', label: 'TTS 配置' },
+        { key: 'shadowing-config', label: '影子跟读' },
         {
           key: 'theme-toggle',
           label: (
@@ -336,8 +338,9 @@ export default function HeroSection({
     if (key === 'image') prefetchImagesRef.current();
     if (key === 'stats') openStudyStatsRef.current();
     if (key === 'config') openConfigRef.current();
+    if (key === 'shadowing-config') onOpenShadowingConfig();
     if (key === 'logout') logoutRef.current();
-  }, []);
+  }, [onOpenShadowingConfig]);
   const menuProps = useMemo(() => ({
     items: wrappedMenuItems,
     onClick: handleMenuClick,

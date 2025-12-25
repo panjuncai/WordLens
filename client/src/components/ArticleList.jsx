@@ -44,6 +44,7 @@ export default function ArticleList({
   themeMode = 'light',
   onToggleTheme = () => {},
   onOpenConfig = () => {},
+  onOpenShadowingConfig = () => {},
   onOpenStudyStats = () => {},
   backgroundPlaybackEnabled = true,
   onToggleBackgroundPlayback = () => {},
@@ -132,6 +133,7 @@ export default function ArticleList({
     },
     { key: 'stats', label: '学习统计' },
     { key: 'config', label: 'TTS 配置' },
+    { key: 'shadowing-config', label: '影子跟读' },
     {
       key: 'theme',
       label: (
@@ -148,6 +150,7 @@ export default function ArticleList({
   const handleMenuClick = ({ key }) => {
     if (key === 'stats') onOpenStudyStats();
     if (key === 'config') onOpenConfig();
+    if (key === 'shadowing-config') onOpenShadowingConfig();
     if (key === 'logout') onLogout();
   };
 

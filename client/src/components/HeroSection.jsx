@@ -14,7 +14,7 @@ import {
   ArrowDownOutlined,
   ArrowLeftOutlined,
   ArrowRightOutlined,
-  AudioOutlined,
+  ShrinkOutlined,
   DoubleRightOutlined,
   DoubleLeftOutlined,
 } from '@ant-design/icons';
@@ -211,8 +211,8 @@ export default function HeroSection({
                 size="small"
                 checked={shadowingEnabled}
                 onChange={onToggleShadowing}
-                checkedChildren={<AudioOutlined />}
-                unCheckedChildren={<AudioOutlined />}
+                checkedChildren={<ShrinkOutlined />}
+                unCheckedChildren={<ShrinkOutlined />}
               />
             </div>
           ),
@@ -383,15 +383,6 @@ export default function HeroSection({
           unCheckedChildren={<EyeOutlined />}
         />
       </Tooltip>
-      <Tooltip title="影子跟读">
-        <Switch
-          size={switchSize}
-          checked={shadowingEnabled}
-          onChange={onToggleShadowing}
-          checkedChildren={<AudioOutlined />}
-          unCheckedChildren={<AudioOutlined />}
-        />
-      </Tooltip>
     </Space>
   );
 
@@ -437,17 +428,15 @@ export default function HeroSection({
                     onClick={() => pulseControl('loop-foreign', onToggleForeignLoop)}
                   />
                 </Tooltip>
-                {isMobile && (
-                  <Tooltip title="影子跟读">
-                    <Button
-                      size={controlSize}
-                      type="text"
-                      icon={<AudioOutlined />}
-                      className={shadowingEnabled || activeControl === 'shadowing' ? 'hero-control-active' : ''}
-                      onClick={() => pulseControl('shadowing', () => onToggleShadowing(!shadowingEnabled))}
-                    />
-                  </Tooltip>
-                )}
+                <Tooltip title="影子跟读">
+                  <Button
+                    size={controlSize}
+                    type="text"
+                    icon={<ShrinkOutlined />}
+                    className={shadowingEnabled || activeControl === 'shadowing' ? 'hero-control-active' : ''}
+                    onClick={() => pulseControl('shadowing', () => onToggleShadowing(!shadowingEnabled))}
+                  />
+                </Tooltip>
                 <Button
                   size={controlSize}
                   type="text"

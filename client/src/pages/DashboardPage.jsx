@@ -779,7 +779,7 @@ export default function DashboardPage() {
         nextTargets.forEach((seg) => {
           const textValue = (seg.value || '').trim();
           if (!textValue) return;
-          const cacheKey = `${azureVoice || ''}:${textValue.toLowerCase()}`;
+          const cacheKey = buildAudioCacheKey(textValue, azureVoice, 1.0);
           if (audioCache.current?.[cacheKey]) return;
           ensureAudio(textValue, azureVoice).catch(() => {});
         });
@@ -895,6 +895,7 @@ export default function DashboardPage() {
     clampedFrCount,
     clampedCnCount,
     azureVoice,
+    buildAudioCacheKey,
     playWord,
     ensureAudio,
     showCloze,
@@ -1346,20 +1347,37 @@ export default function DashboardPage() {
   }, [isMobile, onKeyNavigate]);
 
   const prefetchAudio = async () => {
-    const blankWords = segments.filter((seg) => seg.role === 'blank');
-    const uniqueWords = Array.from(new Set(blankWords.map((b) => b.value)));
-    const pending = uniqueWords.filter((w) => !audioCache.current?.[`${azureVoice || ''}:${w.toLowerCase()}`]);
+    const blankWords = segments
+      .filter((seg) => seg.role === 'blank' && (seg.value || '').trim())
+      .map((seg) => seg.value);
+    const fallbackWords = segments
+      .filter((seg) => seg.type === 'fr' && seg.type !== 'punct' && (seg.value || '').trim())
+      .map((seg) => seg.value);
+    const uniqueWords = Array.from(new Set((blankWords.length ? blankWords : fallbackWords).map((w) => String(w).trim())));
+    if (!uniqueWords.length) {
+      message.info('暂无可缓存的外语语块');
+      return;
+    }
+    const rates = shadowingEnabled ? normalizedShadowingSequence : [1.0];
+    const pending = [];
+    uniqueWords.forEach((word) => {
+      rates.forEach((rate) => {
+        const key = buildAudioCacheKey(word, azureVoice, rate);
+        if (!audioCache.current?.[key]) {
+          pending.push({ word, rate });
+        }
+      });
+    });
     if (!pending.length) {
       message.info('外语音频已全部缓存');
-      message.info('暂无可缓存的挖空词');
       return;
     }
     setPrefetching(true);
     setPrefetchProgress({ done: 0, total: pending.length });
     try {
       for (let i = 0; i < pending.length; i += 1) {
-        const word = pending[i];
-        await ensureAudio(word, azureVoice);
+        const { word, rate } = pending[i];
+        await ensureAudio(word, azureVoice, rate);
         setPrefetchProgress({ done: i + 1, total: pending.length });
       }
       message.success('音频已缓存完成');
@@ -1377,7 +1395,7 @@ export default function DashboardPage() {
       .map((seg) => (seg.value || '').trim())
       .filter(Boolean);
     const unique = Array.from(new Set(segs));
-    const pending = unique.filter((t) => !audioCache.current?.[`${azureVoice || ''}:${t.toLowerCase()}`]);
+    const pending = unique.filter((t) => !audioCache.current?.[buildAudioCacheKey(t, azureVoice, 1.0)]);
     if (!pending.length) {
       message.info('中文音频已全部缓存');
       message.info('暂无可缓存的中文片段');
@@ -1490,6 +1508,12 @@ export default function DashboardPage() {
     const words = Array.from(new Set(selectedWords));
     await prefetchImagesAll(words);
   };
+
+  const buildAudioCacheKey = useCallback((text, voice, rate = 1.0) => {
+    const normalized = String(text || '').trim().toLowerCase();
+    const rateKey = Number.isFinite(Number(rate)) ? Number(rate).toFixed(2) : '1.00';
+    return `${voice || ''}:${rateKey}:${normalized}`;
+  }, []);
 
   const handleCarouselDragStart = (e) => {
     if (e.target.closest('button') || e.target.tagName === 'IMG') return;

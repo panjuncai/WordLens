@@ -400,6 +400,11 @@ export default function DashboardPage() {
     };
     tick();
   }), []);
+  const buildAudioCacheKey = useCallback((text, voice, rate = 1.0) => {
+    const normalized = String(text || '').trim().toLowerCase();
+    const rateKey = Number.isFinite(Number(rate)) ? Number(rate).toFixed(2) : '1.00';
+    return `${voice || ''}:${rateKey}:${normalized}`;
+  }, []);
   const normalizedShadowingSequence = useMemo(() => {
     const raw = Array.isArray(shadowingSequence) ? shadowingSequence : [];
     const cleaned = raw
@@ -1508,12 +1513,6 @@ export default function DashboardPage() {
     const words = Array.from(new Set(selectedWords));
     await prefetchImagesAll(words);
   };
-
-  const buildAudioCacheKey = useCallback((text, voice, rate = 1.0) => {
-    const normalized = String(text || '').trim().toLowerCase();
-    const rateKey = Number.isFinite(Number(rate)) ? Number(rate).toFixed(2) : '1.00';
-    return `${voice || ''}:${rateKey}:${normalized}`;
-  }, []);
 
   const handleCarouselDragStart = (e) => {
     if (e.target.closest('button') || e.target.tagName === 'IMG') return;

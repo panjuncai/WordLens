@@ -1139,17 +1139,29 @@ export default function DashboardPage() {
     startSentenceLoop,
   ]);
 
+  const resolveMoveScope = useCallback((scope) => {
+    if (scope === 'foreign') {
+      return showCloze ? 'blank' : 'fr';
+    }
+    if (foreignLooping && scope === 'all') {
+      return showCloze ? 'blank' : 'fr';
+    }
+    return scope;
+  }, [foreignLooping, showCloze]);
+
   const moveActiveWithin = useCallback((list, delta) => {
     if (!list.length) return null;
-    const order = list.map((seg) => seg.index);
-    const currentIdx = order.indexOf(activeIndex);
+    const getKey = (value) => (Number.isFinite(Number(value)) ? Number(value) : value);
+    const order = list.map((seg) => getKey(seg.index));
+    const activeKey = getKey(activeIndex);
+    const currentIdx = order.findIndex((idx) => idx === activeKey);
     if (currentIdx === -1) {
       const fallbackIdx = delta > 0 ? 0 : order.length - 1;
-      return list.find((seg) => seg.index === order[fallbackIdx]) || null;
+      return list.find((seg) => getKey(seg.index) === order[fallbackIdx]) || null;
     }
     const nextIdx = currentIdx + delta;
     const wrappedIdx = (nextIdx % order.length + order.length) % order.length;
-    return list.find((seg) => seg.index === order[wrappedIdx]) || null;
+    return list.find((seg) => getKey(seg.index) === order[wrappedIdx]) || null;
   }, [activeIndex]);
 
   const moveActive = useCallback((delta, options = {}) => {
@@ -1752,7 +1764,7 @@ export default function DashboardPage() {
                   onTogglePause={togglePausePlayback}
                   isPlaying={isPlaying}
                   isPaused={isPaused}
-                  onMoveShortcut={(delta, scope) => moveActive(delta, { scope: scope === 'foreign' ? (showCloze ? 'blank' : 'fr') : scope })}
+                  onMoveShortcut={(delta, scope) => moveActive(delta, { scope: resolveMoveScope(scope) })}
                   autoPlayCount={autoPlayCount}
                   setAutoPlayCount={setAutoPlayCount}
                   autoPlayCountCn={autoPlayCountCn}
@@ -1812,7 +1824,7 @@ export default function DashboardPage() {
                     onTogglePause={togglePausePlayback}
                     isPlaying={isPlaying}
                     isPaused={isPaused}
-                    onMoveShortcut={(delta, scope) => moveActive(delta, { scope: scope === 'foreign' ? (showCloze ? 'blank' : 'fr') : scope })}
+                    onMoveShortcut={(delta, scope) => moveActive(delta, { scope: resolveMoveScope(scope) })}
                     autoPlayCount={autoPlayCount}
                     setAutoPlayCount={setAutoPlayCount}
                     autoPlayCountCn={autoPlayCountCn}

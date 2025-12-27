@@ -882,7 +882,7 @@ export default function DashboardPage() {
     }
     if (controller.paused) return;
     if (controller.cancelled) {
-      if (!continuous && typeof lastPlayedIndex === 'number') {
+      if (!continuous && !controller.skipRestore && typeof lastPlayedIndex === 'number') {
         setActiveIndex(lastPlayedIndex);
       }
       return;
@@ -1155,6 +1155,8 @@ export default function DashboardPage() {
   const moveActive = useCallback((delta, options = {}) => {
     const { scope = 'all' } = options;
     if (!segments.length) return;
+    const wasSentenceLooping = sentenceLooping;
+    const wasForeignLooping = foreignLooping;
     let target = null;
     if (scope === 'blank') {
       const blanksOnly = segments.filter((seg) => seg.role === 'blank');
@@ -1173,9 +1175,35 @@ export default function DashboardPage() {
       target = moveActiveWithin(sorted, delta);
     }
     if (target) {
+      if (wasSentenceLooping || wasForeignLooping) {
+        sentenceLoopTokenRef.current += 1;
+        if (playbackRef.current) {
+          playbackRef.current.skipRestore = true;
+        }
+        cancelCurrentPlayback(true);
+        flushSync(() => {
+          setActiveIndex(target.index);
+        });
+        if (wasSentenceLooping) {
+          startSentenceLoop(target.index, { forceShadowing: shadowingEnabled });
+        } else {
+          startForeignLoop(target.index, { forceShadowing: shadowingEnabled });
+        }
+        return;
+      }
       activateAndPlay(target.index, { triggerPreview: true, triggerReveal: false });
     }
-  }, [activateAndPlay, moveActiveWithin, segments]);
+  }, [
+    activateAndPlay,
+    cancelCurrentPlayback,
+    foreignLooping,
+    moveActiveWithin,
+    shadowingEnabled,
+    segments,
+    sentenceLooping,
+    startForeignLoop,
+    startSentenceLoop,
+  ]);
 
   const registerChunkRef = useCallback((index, el) => {
     if (el) {

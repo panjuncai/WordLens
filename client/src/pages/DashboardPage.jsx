@@ -1090,12 +1090,21 @@ export default function DashboardPage() {
         await handleChunkPlay(current.index, {
           repeat: 1,
           gapMs: 0,
-          betweenChunksMs: intervalMs,
+          betweenChunksMs: 0,
           triggerPreview: false,
           triggerReveal: false,
           forceShadowing,
         });
         if (singleSentenceLoopTokenRef.current !== token) return;
+        if (intervalMs > 0) {
+          let remaining = intervalMs;
+          while (remaining > 0) {
+            if (singleSentenceLoopTokenRef.current !== token) return;
+            const step = Math.min(250, remaining);
+            await new Promise((resolve) => setTimeout(resolve, step));
+            remaining -= step;
+          }
+        }
       }
     })()
       .finally(() => {

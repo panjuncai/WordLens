@@ -415,6 +415,8 @@ export default function DashboardPage() {
   const sentenceLoopTokenRef = useRef(0);
   const [sentenceLooping, setSentenceLooping] = useState(false);
   const [foreignLooping, setForeignLooping] = useState(false);
+  const singleSentenceLoopTokenRef = useRef(0);
+  const [singleSentenceLooping, setSingleSentenceLooping] = useState(false);
 
   useEffect(() => {
     refreshArticleRef.current = async () => {
@@ -1068,14 +1070,59 @@ export default function DashboardPage() {
     segments,
   ]);
 
+  const startSingleSentenceLoop = useCallback((startIndex, options = {}) => {
+    const { forceShadowing = false } = options;
+    if (!segments.length) return;
+    const speakable = segments
+      .filter((seg) => seg.type !== 'punct' && (seg.value || '').trim())
+      .sort((a, b) => a.index - b.index);
+    if (!speakable.length) return;
+    const current = typeof startIndex === 'number'
+      ? speakable.find((seg) => seg.index === startIndex)
+      : speakable.find((seg) => seg.index === activeIndex) || speakable[0];
+    if (!current) return;
+    singleSentenceLoopTokenRef.current += 1;
+    const token = singleSentenceLoopTokenRef.current;
+    setSingleSentenceLooping(true);
+    const intervalMs = Math.round(clampedIntervalSeconds * 1000);
+    (async () => {
+      while (singleSentenceLoopTokenRef.current === token) {
+        await handleChunkPlay(current.index, {
+          repeat: 1,
+          gapMs: 0,
+          betweenChunksMs: intervalMs,
+          triggerPreview: false,
+          triggerReveal: false,
+          forceShadowing,
+        });
+        if (singleSentenceLoopTokenRef.current !== token) return;
+      }
+    })()
+      .finally(() => {
+        if (singleSentenceLoopTokenRef.current === token) {
+          setSingleSentenceLooping(false);
+        }
+      });
+  }, [
+    activeIndex,
+    clampedIntervalSeconds,
+    handleChunkPlay,
+    segments,
+  ]);
+
   const toggleSentenceLoop = useCallback(() => {
     if (!segments.length) return;
     if (sentenceLooping) {
       sentenceLoopTokenRef.current += 1;
       setSentenceLooping(false);
       setForeignLooping(false);
+      setSingleSentenceLooping(false);
       cancelCurrentPlayback(true);
       return;
+    }
+    if (singleSentenceLooping) {
+      singleSentenceLoopTokenRef.current += 1;
+      setSingleSentenceLooping(false);
     }
     startSentenceLoop();
   }, [
@@ -1083,6 +1130,9 @@ export default function DashboardPage() {
     segments,
     startSentenceLoop,
     sentenceLooping,
+    singleSentenceLoopTokenRef,
+    singleSentenceLooping,
+    setSingleSentenceLooping,
   ]);
 
   const toggleForeignLoop = useCallback(() => {
@@ -1091,8 +1141,13 @@ export default function DashboardPage() {
       sentenceLoopTokenRef.current += 1;
       setForeignLooping(false);
       setSentenceLooping(false);
+      setSingleSentenceLooping(false);
       cancelCurrentPlayback(true);
       return;
+    }
+    if (singleSentenceLooping) {
+      singleSentenceLoopTokenRef.current += 1;
+      setSingleSentenceLooping(false);
     }
     startForeignLoop();
   }, [
@@ -1100,12 +1155,38 @@ export default function DashboardPage() {
     foreignLooping,
     segments,
     startForeignLoop,
+    singleSentenceLoopTokenRef,
+    singleSentenceLooping,
+    setSingleSentenceLooping,
+  ]);
+
+  const toggleSingleSentenceLoop = useCallback(() => {
+    if (!segments.length) return;
+    if (singleSentenceLooping) {
+      singleSentenceLoopTokenRef.current += 1;
+      setSingleSentenceLooping(false);
+      cancelCurrentPlayback(true);
+      return;
+    }
+    sentenceLoopTokenRef.current += 1;
+    setSentenceLooping(false);
+    setForeignLooping(false);
+    cancelCurrentPlayback(true);
+    startSingleSentenceLoop(undefined, { forceShadowing: shadowingEnabled });
+  }, [
+    cancelCurrentPlayback,
+    segments,
+    shadowingEnabled,
+    singleSentenceLooping,
+    startSingleSentenceLoop,
   ]);
 
   const handleShadowingAction = useCallback(() => {
     const current = segments.find((seg) => seg.index === activeIndex);
     if (!current || current.type !== 'fr' || current.type === 'punct') return;
     if (shadowingEnabled) {
+      singleSentenceLoopTokenRef.current += 1;
+      setSingleSentenceLooping(false);
       sentenceLoopTokenRef.current += 1;
       setSentenceLooping(false);
       setForeignLooping(false);
@@ -1114,6 +1195,10 @@ export default function DashboardPage() {
       return;
     }
     setShadowingEnabled(true);
+    if (singleSentenceLooping) {
+      startSingleSentenceLoop(current.index, { forceShadowing: true });
+      return;
+    }
     if (sentenceLooping) {
       startSentenceLoop(current.index, { forceShadowing: true });
       return;
@@ -1131,12 +1216,16 @@ export default function DashboardPage() {
     segments,
     sentenceLoopTokenRef,
     sentenceLooping,
+    singleSentenceLoopTokenRef,
+    singleSentenceLooping,
     setForeignLooping,
     setSentenceLooping,
+    setSingleSentenceLooping,
     setShadowingEnabled,
     shadowingEnabled,
     startForeignLoop,
     startSentenceLoop,
+    startSingleSentenceLoop,
   ]);
 
   const resolveMoveScope = useCallback((scope) => {
@@ -1148,6 +1237,41 @@ export default function DashboardPage() {
     }
     return scope;
   }, [foreignLooping, showCloze]);
+
+  const handleChunkActivate = useCallback((segment) => {
+    if (!segment) return;
+    if (sentenceLooping || foreignLooping || singleSentenceLooping) {
+      sentenceLoopTokenRef.current += 1;
+      singleSentenceLoopTokenRef.current += 1;
+      if (playbackRef.current) {
+        playbackRef.current.skipRestore = true;
+      }
+      cancelCurrentPlayback(true);
+      flushSync(() => {
+        setActiveIndex(segment.index);
+      });
+      if (singleSentenceLooping) {
+        startSingleSentenceLoop(segment.index, { forceShadowing: shadowingEnabled });
+      } else if (sentenceLooping) {
+        startSentenceLoop(segment.index, { forceShadowing: shadowingEnabled });
+      } else {
+        startForeignLoop(segment.index, { forceShadowing: shadowingEnabled });
+      }
+      return;
+    }
+    activateAndPlay(segment.index, { triggerPreview: true, triggerReveal: true });
+  }, [
+    activateAndPlay,
+    cancelCurrentPlayback,
+    foreignLooping,
+    sentenceLooping,
+    singleSentenceLooping,
+    shadowingEnabled,
+    startForeignLoop,
+    startSentenceLoop,
+    startSingleSentenceLoop,
+    singleSentenceLoopTokenRef,
+  ]);
 
   const moveActiveWithin = useCallback((list, delta) => {
     if (!list.length) return null;
@@ -1169,6 +1293,7 @@ export default function DashboardPage() {
     if (!segments.length) return;
     const wasSentenceLooping = sentenceLooping;
     const wasForeignLooping = foreignLooping;
+    const wasSingleSentenceLooping = singleSentenceLooping;
     let target = null;
     if (scope === 'blank') {
       const blanksOnly = segments.filter((seg) => seg.role === 'blank');
@@ -1187,8 +1312,9 @@ export default function DashboardPage() {
       target = moveActiveWithin(sorted, delta);
     }
     if (target) {
-      if (wasSentenceLooping || wasForeignLooping) {
+      if (wasSentenceLooping || wasForeignLooping || wasSingleSentenceLooping) {
         sentenceLoopTokenRef.current += 1;
+        singleSentenceLoopTokenRef.current += 1;
         if (playbackRef.current) {
           playbackRef.current.skipRestore = true;
         }
@@ -1196,7 +1322,9 @@ export default function DashboardPage() {
         flushSync(() => {
           setActiveIndex(target.index);
         });
-        if (wasSentenceLooping) {
+        if (wasSingleSentenceLooping) {
+          startSingleSentenceLoop(target.index, { forceShadowing: shadowingEnabled });
+        } else if (wasSentenceLooping) {
           startSentenceLoop(target.index, { forceShadowing: shadowingEnabled });
         } else {
           startForeignLoop(target.index, { forceShadowing: shadowingEnabled });
@@ -1213,8 +1341,10 @@ export default function DashboardPage() {
     shadowingEnabled,
     segments,
     sentenceLooping,
+    singleSentenceLooping,
     startForeignLoop,
     startSentenceLoop,
+    startSingleSentenceLoop,
   ]);
 
   const registerChunkRef = useCallback((index, el) => {
@@ -1775,6 +1905,8 @@ export default function DashboardPage() {
                   onToggleSentenceLoop={toggleSentenceLoop}
                   isForeignLooping={foreignLooping}
                   onToggleForeignLoop={toggleForeignLoop}
+                  isSingleSentenceLooping={singleSentenceLooping}
+                  onToggleSingleSentenceLoop={toggleSingleSentenceLoop}
                   backgroundPlaybackEnabled={backgroundPlaybackEnabled}
                   onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
                   sleepTimerMinutes={sleepTimerMinutes}
@@ -1835,6 +1967,8 @@ export default function DashboardPage() {
                     onToggleSentenceLoop={toggleSentenceLoop}
                     isForeignLooping={foreignLooping}
                     onToggleForeignLoop={toggleForeignLoop}
+                    isSingleSentenceLooping={singleSentenceLooping}
+                    onToggleSingleSentenceLoop={toggleSingleSentenceLoop}
                     backgroundPlaybackEnabled={backgroundPlaybackEnabled}
                     onToggleBackgroundPlayback={setBackgroundPlaybackEnabled}
                     sleepTimerMinutes={sleepTimerMinutes}
@@ -1953,9 +2087,7 @@ export default function DashboardPage() {
                         triggerReveal: false,
                       });
                     }}
-                    onChunkActivate={(segment) => {
-                      activateAndPlay(segment.index, { triggerPreview: true, triggerReveal: true });
-                    }}
+                    onChunkActivate={handleChunkActivate}
                     onKeyNavigate={onKeyNavigate}
                     imageMap={imageMap}
                     fetchImages={fetchImages}

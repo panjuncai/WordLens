@@ -17,6 +17,7 @@ import {
   ShrinkOutlined,
   DoubleRightOutlined,
   DoubleLeftOutlined,
+  RollbackOutlined,
 } from '@ant-design/icons';
 
 const { Text } = Typography;
@@ -39,6 +40,8 @@ export default function HeroSection({
   onToggleSentenceLoop = () => {},
   isForeignLooping = false,
   onToggleForeignLoop = () => {},
+  isSingleSentenceLooping = false,
+  onToggleSingleSentenceLoop = () => {},
   shadowingEnabled = false,
   onToggleShadowing = () => {},
   onShadowingAction = () => {},
@@ -427,6 +430,15 @@ export default function HeroSection({
                     icon={<SwapOutlined />}
                     className={isForeignLooping || activeControl === 'loop-foreign' ? 'hero-loop-active hero-control-active' : ''}
                     onClick={() => pulseControl('loop-foreign', onToggleForeignLoop)}
+                  />
+                </Tooltip>
+                <Tooltip title={isSingleSentenceLooping ? '停止单句循环' : '单句循环'}>
+                  <Button
+                    size={controlSize}
+                    type="text"
+                    icon={<RollbackOutlined />}
+                    className={isSingleSentenceLooping || activeControl === 'loop-single' ? 'hero-loop-active hero-control-active' : ''}
+                    onClick={() => pulseControl('loop-single', onToggleSingleSentenceLoop)}
                   />
                 </Tooltip>
                 <Tooltip title="影子跟读">

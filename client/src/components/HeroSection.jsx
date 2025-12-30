@@ -414,7 +414,7 @@ export default function HeroSection({
                 </Tooltip>
               )}
               <div className={`hero-loop-group ${navPanelOpen ? 'collapsed' : ''}`}>
-                <Tooltip title={isSentenceLooping ? '停止单句循环' : '单句循环'}>
+                <Tooltip title={isSentenceLooping ? '停止全文循环' : '全文循环'}>
                   <Button
                     size={controlSize}
                     type="text"

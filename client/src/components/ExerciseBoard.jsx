@@ -103,6 +103,19 @@ export default function ExerciseBoard({
       message.error('复制失败，请检查浏览器权限');
     }
   };
+  const handleCopySegment = async (segment) => {
+    const text = String(segment?.value || '').trim();
+    if (!text) {
+      message.info('暂无可复制内容');
+      return;
+    }
+    try {
+      await navigator.clipboard.writeText(text);
+      message.success('句子已复制');
+    } catch {
+      message.error('复制失败，请检查浏览器权限');
+    }
+  };
 
   return (
     <>
@@ -157,6 +170,18 @@ export default function ExerciseBoard({
                   tabIndex={isPunct ? -1 : 0}
                 >
                   <span className="cloze-text">{core}</span>
+                  <Tooltip title="复制句子">
+                    <Button
+                      size="small"
+                      type="text"
+                      icon={<CopyOutlined />}
+                      className="chunk-copy-btn"
+                      onClick={(e) => {
+                        e.stopPropagation();
+                        handleCopySegment(segment);
+                      }}
+                    />
+                  </Tooltip>
                   {isShadowingActive && (
                     <Tag
                       className={`shadowing-tag shadowing-tag-${speedTone(Number(currentPlayingSpeed))}`}
@@ -234,6 +259,20 @@ export default function ExerciseBoard({
                       registerInputRef(segment.id, el);
                     }}
                   />
+                  {!isPunct && (
+                    <Tooltip title="复制句子">
+                      <Button
+                        size="small"
+                        type="text"
+                        icon={<CopyOutlined />}
+                        className="chunk-copy-btn"
+                        onClick={(e) => {
+                          e.stopPropagation();
+                          handleCopySegment(segment);
+                        }}
+                      />
+                    </Tooltip>
+                  )}
                   {isShadowingActive && (
                     <Tag
                       className={`shadowing-tag shadowing-tag-${speedTone(Number(currentPlayingSpeed))}`}

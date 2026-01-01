@@ -1089,7 +1089,7 @@ export default function DashboardPage() {
       while (singleSentenceLoopTokenRef.current === token) {
         await handleChunkPlay(current.index, {
           repeat: 1,
-          gapMs: 0,
+          gapMs: intervalMs,
           betweenChunksMs: 0,
           triggerPreview: false,
           triggerReveal: false,

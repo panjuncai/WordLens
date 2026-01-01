@@ -830,6 +830,21 @@ body,
   transition: background 120ms, box-shadow 120ms, outline 120ms;
 }
 
+.chunk-copy-btn {
+  position: absolute;
+  left: -6px;
+  bottom: -18px;
+  opacity: 0;
+  transform: translateY(2px);
+  transition: opacity 160ms ease, transform 160ms ease;
+}
+
+.chunk-item:hover .chunk-copy-btn,
+.chunk-item:focus-within .chunk-copy-btn {
+  opacity: 1;
+  transform: translateY(0);
+}
+
 .chunk-item.chunk-text {
   display: inline;
 }
